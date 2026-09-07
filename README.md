@@ -3,6 +3,8 @@
 A browser Snake game with a karate-dojo theme. One HTML file, no build step,
 no dependencies, nothing to install — open it and play.
 
+Current version: **v0.1.0** — see [CHANGELOG.md](CHANGELOG.md).
+
 ## Play
 
 Open `strike-first.html` in any browser.
@@ -49,6 +51,19 @@ across the board is 40 moves, and a mouse gives you 65.
   showing your current rank
 - "No Mercy" as a mode you unlock by rank
 - Sound
+
+## Versioning
+
+The version lives in three places and they move together:
+
+1. the `VERSION` constant at the top of the script in `strike-first.html`,
+   which renders in the footer
+2. a new entry in `CHANGELOG.md`
+3. a git tag, e.g. `git tag -a v0.1.0 -m "..."`
+
+Read the numbers as: **major** when the game plays differently enough to be a
+new thing, **minor** for a new mechanic or mode, **patch** for balance tuning,
+art and fixes.
 
 ## Files
 
