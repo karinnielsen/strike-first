@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strike First</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:     #09090b;   /* the mat, at night          */
+    --panel:  #131316;   /* the board itself           */
+    --line:   #2a2a30;
+    --text:   #ece6da;   /* bone                       */
+    --dim:    #7b7480;
+    --gold:   #e8b53a;   /* rank, reward, the big hits */
+    --red:    #d3262f;   /* blood, and losses only     */
+    --brand:  #ee3524;   /* the wordmark, hotter than the gameplay red */
+    --bone:   #e8e2d6;   /* the cobra                  */
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .wrap { padding: 24px; }
+
+  header { margin-bottom: 16px; }
+
+  /* The brush face belongs to the wordmark and nothing else. Everything
+     in the game keeps the monospace voice, which is what lets the header
+     read as a logo rather than as large text. Impact is the fallback if
+     the font can't be fetched - still heavy, still shouts. */
+  h1 {
+    /* That bottom margin is load-bearing: the floating +N rises 24px out
+       of the score counter, so the wordmark has to stay clear of it. */
+    margin: 0 0 68px;
+    text-align: center;
+    font-family: 'Permanent Marker', Impact, Haettenschweiler, sans-serif;
+    font-weight: 400;
+    font-variant: small-caps;   /* big S and F, smaller letters after */
+    font-size: 68px;
+    line-height: 1.1;
+    letter-spacing: 1px;
+    color: var(--brand);        /* the fallback, if the gradient can't apply */
+    transform: skewX(-11deg);   /* the forward lean */
+
+    /* drop-shadow, not text-shadow: text-shadow paints ON TOP of a
+       background-clipped gradient and would blot it out. A filter is
+       applied to the finished picture instead, so the gradient survives. */
+    filter: drop-shadow(0 3px 0 #6d1015)
+            drop-shadow(0 0 22px rgba(238, 53, 36, 0.28));
+  }
+
+  /* Fire: red at the top burning down to yellow. The trick is to paint a
+     gradient as the element's BACKGROUND, then clip it to the shape of the
+     letters and make the letters themselves see-through. Wrapped in
+     @supports so that on a browser that can't do it, the title stays solid
+     red rather than turning invisible. */
+  @supports (-webkit-background-clip: text) or (background-clip: text) {
+    h1 {
+      /* The stops start below 0% and finish before 100% because the line
+         box is taller than the letters - a stop at 0% would be spent on
+         empty space above them, and the red would barely show. */
+      background: linear-gradient(180deg,
+                    #ee3524 16%,
+                    #f4761c 55%,
+                    #f7c948 93%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+    }
+  }
+
+  /* Pushed to the outer edges of the board rather than huddled together. */
+  .scores {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--dim);
+  }
+  .scores b { color: var(--text); font-size: 15px; }
+
+  /* The span has to be "relative" so the floating +N can be positioned
+     against it rather than against the whole page. */
+  .scores span { position: relative; }
+
+  /* inline-block, otherwise a scale() transform has nothing to scale. */
+  #score { display: inline-block; }
+
+  /* The little number that floats up out of the score. */
+  .score-pop {
+    position: absolute;
+    left: 50%;
+    bottom: 100%;                    /* sit directly above the counter */
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--food);
+    white-space: nowrap;
+    pointer-events: none;            /* never let it block a click */
+    color: var(--bone);              /* bone: a routine gain */
+    animation: float-up 900ms ease-out forwards;
+  }
+
+  /* A mouse is worth five times an apple, so its +5 arrives bigger and
+     gold. The size difference IS the message. */
+  .score-pop.big { font-size: 21px; color: var(--gold); }
+
+  /* Red is reserved for LOSING points, and nothing else - so the moment we
+     add something that costs you, it reads as bad without explanation. */
+  .score-pop.minus { color: var(--red); }
+
+  @keyframes float-up {
+    0%   { opacity: 0; transform: translate(-50%,   6px) scale(0.8); }
+    15%  { opacity: 1; transform: translate(-50%,   0px) scale(1.1); }
+    100% { opacity: 0; transform: translate(-50%, -24px) scale(1);   }
+  }
+
+  /* The counter itself gives a quick squash, so the eye is pulled to the
+     number even if you missed the +N drifting past. */
+  #score.bump { animation: bump 260ms ease-out; }
+
+  @keyframes bump {
+    0%   { transform: scale(1);    }
+    40%  { transform: scale(1.35); }
+    100% { transform: scale(1);    }
+  }
+
+  /* .stage is the positioning parent so the overlay can sit on top of the canvas */
+  .stage { position: relative; }
+
+  canvas {
+    display: block;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+
+  .overlay {
+    position: absolute;
+    inset: 0;                              /* fill the whole stage */
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+    border-radius: 10px;
+    background: rgba(9, 9, 11, 0.9);
+  }
+
+  .overlay.hidden { display: none; }
+  .overlay h2 { margin: 0; font-size: 22px; letter-spacing: 3px; color: var(--gold); }
+  .overlay p  { margin: 0; font-size: 13px; color: var(--dim); }
+
+  button {
+    margin-top: 6px;
+    padding: 9px 22px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--bg);
+    background: var(--gold);
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  button:hover { background: #f5cd6b; }
+
+  .hint {
+    margin: 12px 0 0;
+    text-align: center;
+    font-size: 12px;
+    color: var(--dim);
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Strike First</h1>
+    <div class="scores">
+      <span>score <b id="score">0</b></span>
+      <span>best <b id="best">0</b></span>
+    </div>
+  </header>
+
+  <div class="stage">
+    <canvas id="game" width="420" height="420"></canvas>
+
+    <div class="overlay" id="overlay">
+      <h2 id="overlay-title">Strike hard. No mercy.</h2>
+      <p  id="overlay-text">Arrow keys or WASD to move</p>
+      <button id="play-btn">Enter the dojo</button>
+    </div>
+  </div>
+
+  <p class="hint">arrows / wasd &middot; space = mercy &middot; r = restart</p>
+</div>
+
+<script>
+// =====================================================================
+//  1. SETUP - grab the canvas and work out the size of the grid
+// =====================================================================
+// A canvas is just a rectangle of pixels we can draw on. "ctx" (context)
+// is the paintbrush: every shape we draw goes through it.
+const canvas = document.getElementById('game');
+const ctx    = canvas.getContext('2d');
+
+// The whole game happens on a grid of squares, not on free pixels.
+// That makes collisions easy: two things collide if their x/y match.
+const CELL = 20;                      // one grid square = 20 pixels
+const COLS = canvas.width  / CELL;    // 21 columns across
+const ROWS = canvas.height / CELL;    // 21 rows down
+
+// Handy references to the bits of HTML we update as the game runs.
+const scoreEl   = document.getElementById('score');
+const bestEl    = document.getElementById('best');
+const overlay   = document.getElementById('overlay');
+const titleEl   = document.getElementById('overlay-title');
+const textEl    = document.getElementById('overlay-text');
+const playBtn   = document.getElementById('play-btn');
+
+
+// =====================================================================
+//  2. STATE - every fact the game needs to remember
+// =====================================================================
+// If you can describe all of these, you can describe the game exactly as
+// it looks at this instant. That is all "game state" means.
+let snake;          // list of squares, snake[0] is the head
+let direction;      // the way we ARE moving, e.g. {x:1, y:0} is right
+let nextDirection;  // the way the player just asked to move
+let food;           // the square the apple sits on, e.g. {x:4, y:7}
+let mouse;          // the mouse, or null when there isn't one about
+let score;
+let phase;          // 'ready' | 'playing' | 'paused' | 'over'
+
+// What the food is worth, and how the mouse behaves. All the balance of
+// the game lives in these four numbers - they're the first thing to
+// fiddle with if it feels too easy or too mean.
+const APPLE_POINTS = 1;
+const MOUSE_POINTS = 5;
+const MOUSE_CHANCE = 0.4;   // roughly two apples in five flush out a mouse
+const MOUSE_LIFE   = 65;    // how many of YOUR MOVES it sticks around for
+const MOUSE_WARNING = 18;   // moves left when it starts flashing in panic
+
+// localStorage is the browser's tiny notepad - it survives a refresh.
+// Renaming the game shouldn't cost you your record, so we still read the
+// old key if the new one isn't there yet.
+let best = Number(
+  localStorage.getItem('strikeFirstBest') || localStorage.getItem('snakeBest') || 0
+);
+bestEl.textContent = best;
+
+// Put the game back to its opening position. Called at the start and
+// after every game over, so a fresh game is always identical.
+function reset() {
+  snake         = [{x: 10, y: 10}, {x: 9, y: 10}, {x: 8, y: 10}];
+  direction     = {x: 1, y: 0};   // heading right
+  nextDirection = direction;
+  score         = 0;
+  mouse         = null;
+  scoreEl.textContent = score;
+  placeFood();
+}
+
+// Pick a random square that nothing is sitting on yet. The do/while just
+// keeps re-rolling until it finds a free one.
+function randomEmptySquare() {
+  let spot;
+  do {
+    spot = {
+      x: Math.floor(Math.random() * COLS),
+      y: Math.floor(Math.random() * ROWS)
+    };
+  } while (isOccupied(spot));
+  return spot;
+}
+
+function isOccupied(spot) {
+  if (snake.some(part => part.x === spot.x && part.y === spot.y)) return true;
+  if (food  && food.x  === spot.x && food.y  === spot.y)  return true;
+  if (mouse && mouse.x === spot.x && mouse.y === spot.y)   return true;
+  return false;
+}
+
+function placeFood() {
+  food = null;                    // clear it first so it can't block itself
+  food = randomEmptySquare();
+}
+
+// Called after every apple. Most of the time nothing happens - that's what
+// makes a mouse feel like an event rather than a routine.
+function maybeSpawnMouse() {
+  if (mouse) return;                          // never more than one at a time
+  if (Math.random() > MOUSE_CHANCE) return;
+
+  const spot = randomEmptySquare();
+  mouse = {
+    x: spot.x,
+    y: spot.y,
+    life:   MOUSE_LIFE,
+    facing: Math.random() < 0.5 ? 1 : -1      // which way it happens to sit
+  };
+}
+
+
+// =====================================================================
+//  3. UPDATE - move the world forward by exactly one step
+// =====================================================================
+function update() {
+  // Apply the turn the player asked for. We only do this once per step,
+  // which stops a fast double-tap from folding the snake back on itself.
+  direction = nextDirection;
+
+  // The mouse is on a countdown, measured in your moves rather than in
+  // seconds. That keeps it just as catchable at top speed as at level 1,
+  // and means it doesn't quietly escape while the game is paused.
+  if (mouse) {
+    mouse.life -= 1;
+    if (mouse.life <= 0) mouse = null;   // it got bored and scurried off
+  }
+
+  // The new head is the old head, one square along in our direction.
+  const head = {
+    x: snake[0].x + direction.x,
+    y: snake[0].y + direction.y
+  };
+
+  // Did we hit a wall?
+  if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) {
+    return gameOver();
+  }
+
+  // Did we hit ourselves? .some() asks "is ANY body part on this square?"
+  if (snake.some(part => part.x === head.x && part.y === head.y)) {
+    return gameOver();
+  }
+
+  // Move: add the new head to the front of the list...
+  snake.unshift(head);
+
+  // Did we land on anything edible? Only one of these can be true, since
+  // the apple and the mouse are never on the same square.
+  let ate = false;
+
+  if (head.x === food.x && head.y === food.y) {
+    ate = true;
+    addScore(APPLE_POINTS, 'apple');
+    placeFood();
+    maybeSpawnMouse();          // an apple sometimes flushes a mouse out
+  } else if (mouse && head.x === mouse.x && head.y === mouse.y) {
+    ate = true;
+    addScore(MOUSE_POINTS, 'mouse');
+    mouse = null;
+  }
+
+  // If we ate, we DON'T remove the tail. That one skipped removal is the
+  // entire reason the snake grows. Neat, right?
+  if (!ate) snake.pop();
+}
+
+// Every point in the game goes through here, so the feedback can never
+// get out of step with the number.
+function addScore(points, kind) {
+  score += points;
+  scoreEl.textContent = score;
+
+  // Restart the squash animation. Removing the class isn't enough on its
+  // own - the browser batches up our changes and sees no difference.
+  // Reading offsetWidth forces it to catch up, so the animation re-runs.
+  scoreEl.classList.remove('bump');
+  void scoreEl.offsetWidth;
+  scoreEl.classList.add('bump');
+
+  // The sign decides the colour, so red can never turn up on a gain by
+  // accident - the rule is enforced here rather than left to whoever
+  // adds the next food type.
+  const pop = document.createElement('div');
+  pop.className = 'score-pop'
+                + (kind === 'mouse' ? ' big'   : '')
+                + (points < 0       ? ' minus' : '');
+  pop.textContent = (points < 0 ? '−' : '+') + Math.abs(points);
+  scoreEl.parentElement.appendChild(pop);
+
+  // CSS handles the drifting and fading; we just clear up afterwards.
+  setTimeout(() => pop.remove(), 900);
+}
+
+function gameOver() {
+  phase = 'over';
+
+  if (score > best) {
+    best = score;
+    bestEl.textContent = best;
+    localStorage.setItem('strikeFirstBest', best);
+  }
+
+  showOverlay('DEFEATED', 'You scored ' + score, 'Again');
+}
+
+
+// =====================================================================
+//  4. DRAW - paint the current state onto the canvas
+// =====================================================================
+// Note that drawing never CHANGES anything. It only shows what update()
+// already decided. Keeping those two jobs separate keeps games sane.
+function draw() {
+  // Wipe the previous frame, otherwise we'd smear trails everywhere.
+  ctx.fillStyle = '#131316';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Faint dot in the middle of each grid square, just for looks.
+  ctx.fillStyle = '#1e1e24';
+  for (let x = 0; x < COLS; x++) {
+    for (let y = 0; y < ROWS; y++) {
+      ctx.fillRect(x * CELL + CELL / 2 - 1, y * CELL + CELL / 2 - 1, 2, 2);
+    }
+  }
+
+  // Food, with a gentle pulse driven by the clock.
+  const pulse = 1 + Math.sin(Date.now() / 200) * 0.12;
+  ctx.fillStyle = '#d3262f';
+  circle(food.x * CELL + CELL / 2, food.y * CELL + CELL / 2, (CELL / 2 - 3) * pulse);
+
+  if (mouse) drawMouse();
+
+  drawSnake();
+}
+
+
+// ---- the mouse --------------------------------------------------------
+function drawMouse() {
+  // Flash when it's nearly out of time, so you get fair warning that it's
+  // about to bolt. This is the whole reason the mouse is a decision.
+  if (mouse.life < MOUSE_WARNING && Math.floor(Date.now() / 140) % 2 === 0) return;
+
+  const cx = mouse.x * CELL + CELL / 2;
+  const cy = mouse.y * CELL + CELL / 2;
+  const f  = mouse.facing;          // +1 faces right, -1 faces left
+
+  // Tail, curling out behind it.
+  ctx.strokeStyle = '#8a7461';
+  ctx.lineWidth   = 1.6;
+  ctx.lineCap     = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - f * 5.5, cy + 0.5);
+  ctx.quadraticCurveTo(cx - f * 10, cy + 4, cx - f * 5, cy + 7.5);
+  ctx.stroke();
+
+  // Ear, drawn before the head so it peeks out from behind it.
+  ctx.fillStyle = '#b89a7e';
+  circle(cx + f * 1.4, cy - 4.4, 3.2);
+  ctx.fillStyle = '#d9938a';
+  circle(cx + f * 1.4, cy - 4.4, 1.5);
+
+  // Body, then the head on top of it. Deliberately a touch brighter than
+  // the apple - it's worth five times as much, so it should catch the eye.
+  ctx.fillStyle = '#a58a70';
+  ctx.beginPath();
+  ctx.ellipse(cx - f * 1, cy + 1, 6.3, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#b89a7e';
+  circle(cx + f * 4, cy - 0.6, 4);
+
+  // Eye and nose.
+  ctx.fillStyle = '#09090b';
+  circle(cx + f * 5.1, cy - 1.6, 1);
+  ctx.fillStyle = '#d9938a';
+  circle(cx + f * 7.4, cy + 0.6, 1.3);
+}
+
+
+// ---- the snake --------------------------------------------------------
+// Drawn tail-first, so the head always ends up painted on top.
+function drawSnake() {
+  for (let i = snake.length - 1; i >= 1; i--) {
+    // t runs from 0 (just behind the head) to 1 (the very tip of the tail).
+    // Everything below is just "make it smaller and darker as t grows",
+    // which is what turns a row of identical blocks into a real tail.
+    const t = i / (snake.length - 1);
+
+    const size  = (CELL - 2) - t * 7;   // segments shrink toward the tip
+    const inset = (CELL - size) / 2;    // keeps each one centred in its square
+
+    // The very last segment gets fully rounded off, so the tail ends in a
+    // point rather than stopping dead with a square edge.
+    const radius = (i === snake.length - 1) ? size / 2 : size / 3;
+
+    // Bone white at the shoulders, fading to a dusty grey at the tip.
+    ctx.fillStyle = mixColour([232, 226, 214], [124, 118, 108], t);
+    roundedSquare(
+      snake[i].x * CELL + inset,
+      snake[i].y * CELL + inset,
+      size,
+      radius
+    );
+  }
+
+  drawHead();
+}
+
+// The head is where all the personality lives: it faces the way you're
+// travelling, blinks, flicks its tongue, and gets X eyes when you crash.
+function drawHead() {
+  const head = snake[0];
+  const cx   = head.x * CELL + CELL / 2;
+  const cy   = head.y * CELL + CELL / 2;
+
+  // "fwd" is the way we're heading. "side" is that turned 90 degrees, so
+  // it points out of the snake's cheeks. With those two we can place
+  // features correctly no matter which way the snake is facing.
+  const fwd  = direction;
+  const side = { x: -direction.y, y: direction.x };
+
+  // THE HOOD. Rotating the whole canvas is much easier than working out
+  // the maths for a flared ellipse pointing in four different directions:
+  // we spin the paper, draw it facing right, then spin the paper back.
+  const angle = Math.atan2(fwd.y, fwd.x);
+  ctx.save();
+  ctx.translate(cx - fwd.x * 4, cy - fwd.y * 4);
+  ctx.rotate(angle);
+
+  // Deliberately duller than the head, so the two read as separate things
+  // rather than one white blob.
+  ctx.fillStyle = '#cec6b2';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 7.5, 13, 0, 0, Math.PI * 2);   // 7.5 deep, 13 wide
+  ctx.fill();
+
+  // The spectacle markings, sitting right out on the flare where the head
+  // can't cover them.
+  ctx.fillStyle = '#d3262f';
+  circle(-1.5,  8.5, 2.6);
+  circle(-1.5, -8.5, 2.6);
+
+  ctx.restore();
+
+  // Tongue flicks every couple of seconds - and stays out the whole time
+  // there's food directly ahead, because the snake gets excited.
+  const foodAhead = food.x === head.x + fwd.x && food.y === head.y + fwd.y;
+  if (phase === 'playing' && (foodAhead || Date.now() % 2600 < 280)) {
+    drawTongue(cx, cy, fwd, side);
+  }
+
+  // The head sits small and bright on top of the hood, the way a real
+  // cobra's does.
+  ctx.fillStyle = '#f8f4ea';
+  roundedSquare(head.x * CELL + 3, head.y * CELL + 3, CELL - 6, 6);
+
+  // Two eyes, set forward of centre, one on each cheek.
+  for (const s of [1, -1]) {
+    const ex = cx + fwd.x * 1.8 + side.x * 3.2 * s;
+    const ey = cy + fwd.y * 1.8 + side.y * 3.2 * s;
+
+    if (phase === 'over') {          // crashed: classic cartoon X eyes
+      drawCross(ex, ey);
+      continue;
+    }
+
+    if (Date.now() % 4200 < 130) {   // a quick blink every four seconds
+      strokeLine(ex - fwd.x * 1.9, ey - fwd.y * 1.9,
+                 ex + fwd.x * 1.9, ey + fwd.y * 1.9, '#09090b', 1.4);
+      continue;
+    }
+
+    // Gold eyes - white wouldn't show against a bone-white head.
+    ctx.fillStyle = '#e8b53a';
+    circle(ex, ey, 2.2);
+
+    // Pupil nudged forward, so the snake looks where it's going.
+    ctx.fillStyle = '#09090b';
+    circle(ex + fwd.x * 0.8, ey + fwd.y * 0.8, 1.05);
+  }
+}
+
+function drawTongue(cx, cy, fwd, side) {
+  const baseX = cx + fwd.x * (CELL / 2 - 2);
+  const baseY = cy + fwd.y * (CELL / 2 - 2);
+  const tipX  = baseX + fwd.x * 6;
+  const tipY  = baseY + fwd.y * 6;
+
+  ctx.strokeStyle = '#d3262f';
+  ctx.lineWidth   = 2;
+  ctx.lineCap     = 'round';
+  ctx.beginPath();
+  ctx.moveTo(baseX, baseY);
+  ctx.lineTo(tipX, tipY);
+  // the two prongs of the fork
+  ctx.moveTo(tipX, tipY);
+  ctx.lineTo(tipX + fwd.x * 3 + side.x * 2.5, tipY + fwd.y * 3 + side.y * 2.5);
+  ctx.moveTo(tipX, tipY);
+  ctx.lineTo(tipX + fwd.x * 3 - side.x * 2.5, tipY + fwd.y * 3 - side.y * 2.5);
+  ctx.stroke();
+}
+
+
+// ---- small drawing helpers, so the code above stays readable ----------
+function roundedSquare(x, y, size, radius) {
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, size, size, radius);
+  else               ctx.rect(x, y, size, size);
+  ctx.fill();
+}
+
+function circle(x, y, r) {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function strokeLine(x1, y1, x2, y2, colour, width) {
+  ctx.strokeStyle = colour;
+  ctx.lineWidth   = width;
+  ctx.lineCap     = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+}
+
+function drawCross(x, y) {
+  strokeLine(x - 2, y - 2, x + 2, y + 2, '#09090b', 1.6);
+  strokeLine(x + 2, y - 2, x - 2, y + 2, '#09090b', 1.6);
+}
+
+// Blend two colours together. t=0 gives the first, t=1 gives the second,
+// and anything between gives a mix - that's the fade along the tail.
+function mixColour(from, to, t) {
+  const blended = from.map((channel, i) =>
+    Math.round(channel + (to[i] - channel) * t)
+  );
+  return 'rgb(' + blended.join(',') + ')';
+}
+
+
+// =====================================================================
+//  5. THE GAME LOOP - the heartbeat
+// =====================================================================
+// Every game ever made is some version of: update, draw, wait, repeat.
+// The loop runs forever; update() only actually runs while we're playing,
+// which is what makes pausing and the menus work.
+function loop() {
+  if (phase === 'playing') update();
+  draw();
+  setTimeout(loop, stepDelay());
+}
+
+// How long to wait between steps, in milliseconds. Smaller = faster.
+// START_DELAY is your level-1 speed - raise this number for a gentler
+// opening, lower it if you want to be thrown in at the deep end.
+const START_DELAY = 200;   // level 1: an unhurried, thinking-time pace
+const SPEED_UP    = 4;     // ms shaved off for each piece of food eaten
+const FASTEST     = 70;    // the speed cap, no matter how high you score
+
+function stepDelay() {
+  return Math.max(FASTEST, START_DELAY - score * SPEED_UP);
+}
+
+
+// =====================================================================
+//  6. INPUT - turn key presses into intentions
+// =====================================================================
+const KEYS = {
+  ArrowUp:    {x:  0, y: -1},
+  ArrowDown:  {x:  0, y:  1},
+  ArrowLeft:  {x: -1, y:  0},
+  ArrowRight: {x:  1, y:  0},
+  w: {x: 0, y: -1}, s: {x: 0, y:  1},
+  a: {x: -1, y: 0}, d: {x: 1, y:  0}
+};
+
+document.addEventListener('keydown', (event) => {
+  const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+
+  // Stop arrows and space from scrolling the page underneath us.
+  if (key in KEYS || key === ' ') event.preventDefault();
+
+  if (key === 'r') { startGame(); return; }
+
+  if (key === ' ') {
+    if (phase === 'playing') {
+      phase = 'paused';
+      showOverlay('MERCY', 'Press space to fight on', 'Continue');
+    } else if (phase === 'paused') {
+      phase = 'playing';
+      overlay.classList.add('hidden');
+    } else {
+      startGame();
+    }
+    return;
+  }
+
+  const turn = KEYS[key];
+  if (!turn || phase !== 'playing') return;
+
+  // Refuse a straight U-turn - you'd instantly eat your own neck.
+  if (turn.x === -direction.x && turn.y === -direction.y) return;
+
+  nextDirection = turn;
+});
+
+
+// =====================================================================
+//  7. MENUS + KICKOFF
+// =====================================================================
+function showOverlay(title, text, buttonLabel) {
+  titleEl.textContent = title;
+  textEl.textContent  = text;
+  playBtn.textContent = buttonLabel;
+  overlay.classList.remove('hidden');
+}
+
+function startGame() {
+  reset();
+  phase = 'playing';
+  overlay.classList.add('hidden');
+}
+
+playBtn.addEventListener('click', () => {
+  if (phase === 'paused') {
+    phase = 'playing';
+    overlay.classList.add('hidden');
+  } else {
+    startGame();
+  }
+});
+
+// Set up an opening position to look at behind the menu, then start the
+// heartbeat. Nothing moves until phase becomes 'playing'.
+reset();
+phase = 'ready';
+loop();
+</script>
+
+</body>
+</html>
