@@ -3,22 +3,15 @@
 A browser Snake game with a karate-dojo theme. One HTML file, no build step,
 no dependencies, nothing to install — open it and play.
 
-Current version: **v0.2.0** — see [CHANGELOG.md](CHANGELOG.md).
+Current version: **v0.1.0** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Play
 
 Open `strike-first.html` in any browser.
 
-On a computer:
-
 - **Arrow keys** or **WASD** to move
 - **Space** to pause
 - **R** to restart
-
-On a phone or tablet:
-
-- **Swipe** anywhere on the board to turn
-- **Tap** the board to pause and resume
 
 ## What's in it
 
