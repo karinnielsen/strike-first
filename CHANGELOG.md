@@ -15,8 +15,31 @@ For a game, read the version parts as:
 ### Planned
 - Belt ranks (white through black) driven by score, with the snake's colour
   showing your current rank
-- "No Mercy" as a mode unlocked by rank
 - Sound
+- "No Mercy" as a mode unlocked by rank
+
+## [0.2.0] — 2026-09-08
+
+Playable on a phone.
+
+### Added
+- Swipe anywhere on the board to turn. A sloppy diagonal resolves to
+  whichever axis travelled further, and a swipe that would reverse the snake
+  into itself is refused, exactly as with the keyboard
+- Tap the board to pause and resume
+- On-screen hints reword themselves for touch devices
+
+### Changed
+- The board scales to the viewport. The canvas keeps its 420x420 drawing
+  surface and CSS scales the picture, so no game coordinate changed
+- The wordmark is fluid, `clamp(32px, 15vw, 68px)`, so it never outgrows a
+  narrow screen
+- Layout respects the notch and home indicator via `env(safe-area-inset-*)`
+- Keyboard and touch now share one `steer()` and one `togglePause()`, so the
+  U-turn and pause rules can't drift apart between the two inputs
+
+### Fixed
+- The page no longer scrolls or rubber-bands while you swipe to steer
 
 ## [0.1.0] — 2026-09-07
 

@@ -30,9 +30,17 @@
     background: var(--bg);
     color: var(--text);
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    touch-action: manipulation;   /* kills the 300ms double-tap-zoom delay */
   }
 
-  .wrap { padding: 24px; }
+  .wrap {
+    width: 100%;
+    max-width: 468px;             /* 420 board + 24 padding each side */
+    /* env() keeps the layout clear of the notch and the home indicator */
+    padding: max(20px, env(safe-area-inset-top)) 24px
+             max(20px, env(safe-area-inset-bottom));
+    box-sizing: border-box;
+  }
 
   header { margin-bottom: 16px; }
 
@@ -43,12 +51,17 @@
   h1 {
     /* That bottom margin is load-bearing: the floating +N rises 24px out
        of the score counter, so the wordmark has to stay clear of it. */
+    /* Fixed, NOT fluid. The +N popup is a fixed size and travels a fixed
+       24px, so the room it needs is the same on a phone as on a desktop.
+       Scaling this with the viewport squeezed it to 4px at 320px wide. */
     margin: 0 0 68px;
     text-align: center;
     font-family: 'Permanent Marker', Impact, Haettenschweiler, sans-serif;
     font-weight: 400;
     font-variant: small-caps;   /* big S and F, smaller letters after */
-    font-size: 68px;
+    /* Fluid, so the wordmark never outgrows a narrow screen. 15vw keeps
+       it inside the board's width at every size from 320px up. */
+    font-size: clamp(32px, 15vw, 68px);
     line-height: 1.1;
     letter-spacing: 1px;
     color: var(--brand);        /* the fallback, if the gradient can't apply */
@@ -139,11 +152,18 @@
   /* .stage is the positioning parent so the overlay can sit on top of the canvas */
   .stage { position: relative; }
 
+  /* The canvas keeps its 420x420 drawing surface - every game coordinate
+     stays exactly as it was - and CSS just scales the picture to fit.
+     Nothing in the game logic has to know the screen got smaller. */
   canvas {
     display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: 10px;
+    touch-action: none;           /* we handle the swipes ourselves */
   }
 
   .overlay {
@@ -158,7 +178,12 @@
   }
 
   .overlay.hidden { display: none; }
-  .overlay h2 { margin: 0; font-size: 22px; letter-spacing: 3px; color: var(--gold); }
+  .overlay h2 {
+    margin: 0;
+    font-size: clamp(17px, 5.2vw, 22px);
+    letter-spacing: 3px;
+    color: var(--gold);
+  }
   .overlay p  { margin: 0; font-size: 13px; color: var(--dim); }
 
   button {
@@ -234,7 +259,7 @@ const ROWS = canvas.height / CELL;    // 21 rows down
 // Handy references to the bits of HTML we update as the game runs.
 // Single source of truth for the version. Bump this, add a CHANGELOG entry
 // and tag the commit - those three go together, always.
-const VERSION = '0.1.0';
+const VERSION = '0.2.0';
 document.getElementById('version').textContent = 'v' + VERSION;
 
 const scoreEl   = document.getElementById('score');
@@ -693,6 +718,34 @@ const KEYS = {
   a: {x: -1, y: 0}, d: {x: 1, y:  0}
 };
 
+// Are we on a touch device? Used only to word the on-screen hints, never
+// to decide what works - a laptop with a touchscreen gets both.
+const TOUCH = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+// Keyboard and touch both funnel through these two, so the rules about
+// U-turns and pausing are written once and can't drift apart.
+function steer(turn) {
+  if (phase !== 'playing') return;
+
+  // Refuse a straight U-turn - you'd instantly eat your own neck.
+  if (turn.x === -direction.x && turn.y === -direction.y) return;
+
+  nextDirection = turn;
+}
+
+function togglePause() {
+  if (phase === 'playing') {
+    phase = 'paused';
+    showOverlay('MERCY', TOUCH ? 'Tap the board to fight on'
+                               : 'Press space to fight on', 'Continue');
+  } else if (phase === 'paused') {
+    phase = 'playing';
+    overlay.classList.add('hidden');
+  } else {
+    startGame();
+  }
+}
+
 document.addEventListener('keydown', (event) => {
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
 
@@ -700,28 +753,57 @@ document.addEventListener('keydown', (event) => {
   if (key in KEYS || key === ' ') event.preventDefault();
 
   if (key === 'r') { startGame(); return; }
+  if (key === ' ') { togglePause(); return; }
 
-  if (key === ' ') {
-    if (phase === 'playing') {
-      phase = 'paused';
-      showOverlay('MERCY', 'Press space to fight on', 'Continue');
-    } else if (phase === 'paused') {
-      phase = 'playing';
-      overlay.classList.add('hidden');
-    } else {
-      startGame();
-    }
+  const turn = KEYS[key];
+  if (turn) steer(turn);
+});
+
+
+// ---- touch: swipe to turn, tap to pause ------------------------------
+// Only the start and end points matter, so there's no need to track the
+// finger the whole way across the screen.
+const SWIPE_MIN = 24;      // pixels before we call it a swipe, not a tap
+let touchFrom = null;
+
+canvas.addEventListener('touchstart', (event) => {
+  const touch = event.changedTouches[0];
+  touchFrom = { x: touch.clientX, y: touch.clientY };
+  event.preventDefault();          // no scrolling, no rubber-band bounce
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (event) => event.preventDefault(),
+                        { passive: false });
+
+canvas.addEventListener('touchend', (event) => {
+  if (!touchFrom) return;
+
+  const touch = event.changedTouches[0];
+  const dx = touch.clientX - touchFrom.x;
+  const dy = touch.clientY - touchFrom.y;
+  touchFrom = null;
+  event.preventDefault();
+
+  // Barely moved? That was a tap, not a swipe.
+  if (Math.abs(dx) < SWIPE_MIN && Math.abs(dy) < SWIPE_MIN) {
+    togglePause();
     return;
   }
 
-  const turn = KEYS[key];
-  if (!turn || phase !== 'playing') return;
+  // Whichever axis travelled further wins, so a sloppy diagonal still
+  // resolves to the direction the player obviously meant.
+  steer(Math.abs(dx) > Math.abs(dy)
+    ? { x: Math.sign(dx), y: 0 }
+    : { x: 0, y: Math.sign(dy) });
+}, { passive: false });
 
-  // Refuse a straight U-turn - you'd instantly eat your own neck.
-  if (turn.x === -direction.x && turn.y === -direction.y) return;
 
-  nextDirection = turn;
-});
+// Word the on-screen hints for whichever way you're actually playing.
+if (TOUCH) {
+  document.querySelector('.hint').textContent =
+    'swipe to move \u00b7 tap the board to pause';
+  textEl.textContent = 'Swipe to move';
+}
 
 
 // =====================================================================
