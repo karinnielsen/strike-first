@@ -21,10 +21,27 @@ For a game, read the version parts as:
   Cho Dan Bo, midnight blue. Red sits near the top, which inverts what most
   people expect, and the last belt is midnight blue rather than black because
   black symbolises an end.
-- Your rank is shown on the start screen and after a defeat, as the belt's
-  **name** alongside a colour swatch. The name carries the information and the
-  colour reinforces it, never the other way round — seven hues can't be told
-  apart under a colour vision deficiency.
+- The snake **wears its belt** as a single coloured band one segment behind the
+  head. A belt is literally a band around a body, so it needs no explaining,
+  and it leaves the rest of the snake free to show condition instead. At white
+  belt the band is bone, so you visibly have no belt until you earn one.
+- The same swatch annotates **best** in the header. Your best score is what
+  produces your rank, so putting them together makes the link visible without
+  a tutorial — and it's what connects "my snake has an orange block" to "I am
+  an orange belt".
+- Your rank is also named in full on the start screen. The name carries the
+  information and the colour reinforces it, never the other way round: seven
+  hues can't be told apart under a colour vision deficiency.
+- **The promotion moment.** Crossing a threshold pulses a ring around the board
+  in your new belt colour and names the rank below the board. It fires mid-run,
+  while you're still playing — peripheral vision reads motion better than text,
+  and your eyes are on the snake, so the alert reaches you without the board
+  ever being covered. Honours the reduced-motion preference.
+
+### Changed
+- **Your best score now updates the moment you pass it**, rather than when you
+  die. That's what lets a promotion land mid-run, which is the whole point of
+  it — you find out while you're still trying not to die, not afterwards.
 
 ### Planned
 See the [project roadmap](https://linear.app/unrulylabs/project/strike-first-3ec05fe538aa)

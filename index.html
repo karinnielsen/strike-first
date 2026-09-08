@@ -218,6 +218,39 @@
     color: var(--dim);
   }
 
+  /* THE PROMOTION MOMENT.
+     It fires mid-run, at speed, at the exact moment you are playing better
+     than you ever have - so it must not cover the board. A ring around the
+     edge does the alerting: peripheral vision is far better at motion than
+     at reading, and your eyes are locked on the snake. The board itself
+     stays completely clear. */
+  @keyframes promote-ring {
+    0%   { box-shadow: 0 0 0 0 var(--belt), 0 0 0 0 rgba(0,0,0,0); }
+    35%  { box-shadow: 0 0 0 5px var(--belt), 0 0 34px 6px var(--belt); }
+    100% { box-shadow: 0 0 0 0 rgba(0,0,0,0), 0 0 0 0 rgba(0,0,0,0); }
+  }
+  .stage.promoting canvas {
+    border-color: var(--belt);
+    animation: promote-ring 1400ms ease-out forwards;
+  }
+
+  /* The words go BELOW the board, in the line the controls hint already
+     occupies, so nothing reflows and nothing is covered. The score popup
+     lives above the board, so a +5 and a promotion on the same move can
+     never collide. */
+  .hint.promoting {
+    color: var(--belt);
+    font-weight: bold;
+    letter-spacing: 3px;
+  }
+
+  /* Motion has to have a way out. The ring is the part that moves; the
+     colour change stays, so the moment still reads without animating.
+     Doing this properly across the whole game is its own issue. */
+  @media (prefers-reduced-motion: reduce) {
+    .stage.promoting canvas { animation: none; box-shadow: 0 0 0 4px var(--belt); }
+  }
+
   .version {
     margin: 8px 0 0;
     text-align: center;
@@ -239,7 +272,7 @@
     </div>
   </header>
 
-  <div class="stage">
+  <div class="stage" id="stage">
     <canvas id="game" width="420" height="420"></canvas>
 
     <div class="overlay" id="overlay">
@@ -250,7 +283,7 @@
     </div>
   </div>
 
-  <p class="hint">arrows / wasd &middot; space = mercy &middot; r = restart</p>
+  <p class="hint" id="hint">arrows / wasd &middot; space = mercy &middot; r = restart</p>
   <p class="version" id="version"></p>
 </div>
 
@@ -283,6 +316,9 @@ const titleEl   = document.getElementById('overlay-title');
 const textEl    = document.getElementById('overlay-text');
 const beltEl    = document.getElementById('overlay-belt');
 const bestBeltEl = document.getElementById('best-belt');
+const stageEl   = document.getElementById('stage');
+const hintEl    = document.getElementById('hint');
+const HINT_TEXT = hintEl.textContent;
 const playBtn   = document.getElementById('play-btn');
 
 
@@ -512,6 +548,25 @@ function addScore(points, kind) {
   scoreEl.textContent = score;
   levelEl.textContent = levelFor(score);
 
+  // Rank moves the INSTANT you pass your own record, not when you die.
+  // That is what lets a promotion land mid-run, which is the entire point
+  // of it: you are still holding the controller, still trying not to die,
+  // and the game tells you that you have never been this good. Working it
+  // out at gameOver() meant you found out afterwards, which is no moment
+  // at all.
+  //
+  // Order matters here. promotionFor() is asked BEFORE best moves, because
+  // the question is whether this point crossed a threshold the old best
+  // had not. Afterwards the answer would always be no.
+  if (score > best) {
+    const earned = promotionFor(best, score);
+    best = score;
+    bestEl.textContent = best;
+    localStorage.setItem('strikeFirstBest', best);
+    showBestBelt();
+    if (earned) promote(earned);
+  }
+
   // Restart the squash animation. Removing the class isn't enough on its
   // own - the browser batches up our changes and sees no difference.
   // Reading offsetWidth forces it to catch up, so the animation re-runs.
@@ -536,13 +591,9 @@ function addScore(points, kind) {
 function gameOver() {
   phase = 'over';
 
-  if (score > best) {
-    best = score;
-    bestEl.textContent = best;
-    localStorage.setItem('strikeFirstBest', best);
-  }
-
-  showBestBelt();
+  // `best` is not touched here any more. It moves the moment you pass it,
+  // inside addScore(), which is what lets the promotion land while you are
+  // still playing. By the time you die it is already correct.
 
   // This screen says one thing: you lost. A promotion is a separate
   // moment and putting it here made the screen argue with itself -
@@ -1024,6 +1075,10 @@ function stepDelay() {
 // snake is three segments long before it has eaten anything.
 const BELT_SEGMENT = 1;
 
+// How long the promotion moment lasts. Long enough to read without
+// pausing, short enough that it is over before it costs you the run.
+const PROMOTION_MS = 1400;
+
 const BELTS = [
   { name: 'White',         colour: '#e8e2d6', from:   0 },
   { name: 'Orange',        colour: '#f4761c', from:  15 },
@@ -1146,6 +1201,34 @@ function showBelt(belt) {
   const worn = belt || BELTS[beltFor(best) - 1];
   beltEl.textContent = worn.name + ' belt';
   beltEl.style.setProperty('--belt', worn.colour);
+}
+
+// You crossed a threshold you had never crossed. Rare - perhaps once in
+// twenty runs - so it can afford a real beat rather than a flicker that
+// has to get out of its own way.
+//
+// It fires exactly once per promotion for free, without any bookkeeping:
+// `best` has already moved past the threshold by the time this runs, so
+// the same rank can never be earned twice. A restart doesn't fire it, and
+// neither does re-reaching a rank you already hold.
+function promote(belt) {
+  // Restarting a CSS animation needs the class off, a forced reflow, then
+  // the class back on - the same trick the score counter uses.
+  stageEl.classList.remove('promoting');
+  void stageEl.offsetWidth;
+
+  stageEl.style.setProperty('--belt', belt.colour);
+  hintEl.style.setProperty('--belt', belt.colour);
+  hintEl.textContent = belt.name.toUpperCase() + ' BELT';
+
+  stageEl.classList.add('promoting');
+  hintEl.classList.add('promoting');
+
+  setTimeout(() => {
+    stageEl.classList.remove('promoting');
+    hintEl.classList.remove('promoting');
+    hintEl.textContent = HINT_TEXT;
+  }, PROMOTION_MS);
 }
 
 // The header swatch, which is the persistent one. It annotates `best`

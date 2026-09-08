@@ -632,6 +632,38 @@ describe('rank comes from best, not the current run', () => {
 });
 
 
+describe('rank moves mid-run', () => {
+  // The point of the whole promotion moment: you find out while you are
+  // still playing, not afterwards on the defeat screen.
+  test('beating your best raises it on the spot', () => {
+    game.best = 14; game.score = 14;
+    game.addScore(1, 'egg');
+    is(game.best, 15, 'best');
+  });
+
+  test('and the rank you wear follows immediately', () => {
+    game.best = 14; game.score = 14;
+    is(game.beltFor(game.best), 1, 'white before');
+    game.addScore(1, 'egg');
+    is(game.beltFor(game.best), 2, 'orange after');
+  });
+
+  test('a run below your best leaves your rank alone', () => {
+    game.best = 50; game.score = 5;
+    game.addScore(1, 'egg');
+    is(game.best, 50, 'best');
+    is(game.beltFor(game.best), 3, 'still green');
+  });
+
+  test('losing points cannot demote you', () => {
+    game.best = 40; game.score = 40;
+    game.addScore(-3, 'rotten');
+    is(game.best, 40, 'best');
+    is(game.beltFor(game.best), 3, 'rank');
+  });
+});
+
+
 describe('version', () => {
   test('matches the changelog', () => {
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
