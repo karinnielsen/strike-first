@@ -140,9 +140,11 @@ tool and hand it over. Karin has asked for this explicitly.
 
 Known weak spots, worst first:
 
-- **Detailed artwork.** Can't draw. The cobra crest proved it twice. Crests,
-  character portraits and any illustration want an image generator or a vector
-  editor, then dropping in as a file. See UNR-86, UNR-114, UNR-115.
+- **Detailed artwork.** Can't draw. The cobra crest proved it twice, and the
+  rotten egg took three attempts. Karin has ChatGPT/Astra credits — send
+  crests, portraits and any real illustration there, then drop the file in.
+  See UNR-86, UNR-114, UNR-115. Small shapes drawn straight into canvas are
+  fine; anything that needs to look *drawn* is not.
 - **Judging whether it's fun.** Can drive the game with real key events and
   confirm it *works*, but has no sense of whether it *feels* good. Balance,
   difficulty and how a reward lands need human playtesting. This is the reason
@@ -156,6 +158,31 @@ Known weak spots, worst first:
 Things worth doing *here* rather than elsewhere: contrast and colour-blindness
 checks (Chrome DevTools emulates vision deficiencies), factual research before
 writing specifics into a spec, and anything structural in the code.
+
+## Keeping the session cheap
+
+Measured on 8 September: 70% of the cost was re-reading the conversation, once
+per turn, 600 times. What sat in that context: screenshots 34%, Linear echoes
+31%, my own writing 29%, shell 6%. **Reading files was 0.1%** — file volume is
+not the problem in a five-file repo, so nothing to gain from ignore rules.
+
+- **Screenshots are ~5k tokens each and get re-read every turn afterwards.**
+  Only take one to judge how something *looks*. To check whether something
+  *works*, read the page as text or assert in `test.js`. Use the `scale`
+  parameter when a rough look will do.
+- **Every Linear write echoes the whole issue back.** Compose the edit once
+  and save once, rather than saving then patching the wording twice. Prefer
+  `list_issues` with `fields` over `get_issue` when only a status is needed.
+- **Hand low-brow work to a cheaper subagent** — bulk search, sweeping a large
+  file for facts, mechanical verification across many places. *But size it
+  first:* spawning an agent costs more than the work when the work is one
+  command with three lines of output. Delegate when a task reads a lot to
+  produce a little. Don't delegate judgement, design, or anything where being
+  wrong is expensive and hard to spot.
+- **A fresh session is the biggest single saving.** This file and the Linear
+  project description exist so one can start cold without re-deriving
+  anything. Use them: end a long session and begin again rather than dragging
+  a morning of screenshots into the afternoon.
 
 ## Gotchas that have already cost time
 
