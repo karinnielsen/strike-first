@@ -7,7 +7,7 @@ Current version: **v0.1.0** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Play
 
-Open `strike-first.html` in any browser.
+Open `index.html` in any browser.
 
 - **Arrow keys** or **WASD** to move
 - **Space** to pause
@@ -56,7 +56,7 @@ across the board is 40 moves, and a mouse gives you 65.
 
 The version lives in three places and they move together:
 
-1. the `VERSION` constant at the top of the script in `strike-first.html`,
+1. the `VERSION` constant at the top of the script in `index.html`,
    which renders in the footer
 2. a new entry in `CHANGELOG.md`
 3. a git tag, e.g. `git tag -a v0.1.0 -m "..."`
@@ -67,6 +67,6 @@ art and fixes.
 
 ## Files
 
-- `strike-first.html` — the entire game, heavily commented
+- `index.html` — the entire game, heavily commented
 - `design/font-options.html` — side-by-side of the brush typefaces considered
   for the wordmark

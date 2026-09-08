@@ -65,7 +65,7 @@ only shows it. Never mix them.
 
 Three things move together, always:
 
-1. the `VERSION` constant at the top of the script in `strike-first.html`
+1. the `VERSION` constant at the top of the script in `index.html`
 2. a new entry in `CHANGELOG.md`
 3. an annotated git tag, e.g. `git tag -a v0.2.0 -m "..."`
 
@@ -81,7 +81,7 @@ No build step. Serve the folder and open the file:
 python3 -m http.server 8770
 ```
 
-Then <http://localhost:8770/strike-first.html>.
+Then <http://localhost:8770/>.
 
 Running means *playing* it — click through the start screen and drive it with
 real key events, not by calling internals directly.
