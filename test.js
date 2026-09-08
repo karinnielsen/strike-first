@@ -95,6 +95,14 @@ sandbox.window = sandbox;
 // skipped. queasyShake is pure and gets tested directly either way.
 sandbox.matchMedia = () => ({ matches: false, addEventListener() {} });
 
+// The sprites are built as Path2D at load. Node has no such thing, and the
+// canvas context here is a no-op Proxy anyway, so this just has to hold the
+// path string without throwing. It also lets the tests assert that every
+// sprite path is a real string rather than undefined.
+sandbox.Path2D = class Path2D {
+  constructor(d) { this.d = d; }
+};
+
 
 // ---- load the game --------------------------------------------------
 
@@ -129,6 +137,7 @@ globalThis.game = {
   BONE_BODY, DUSTY_TAIL, SICK_GREEN, blend, bodyColour, BELT_SEGMENT,
   QUEASY_SHAKE, queasyShake,
   DEFEAT_LINES, defeatLine,
+  SPRITE, SPRITE_SIZE, drawSprite,
   get bestAtStart() { return bestAtStart }, set bestAtStart(v) { bestAtStart = v },
   get best() { return best }, set best(v) { best = v }
 };`;
@@ -816,6 +825,66 @@ describe('defeat lines', () => {
     is(shouting.length,   0, 'no exclamation marks: ' + shouting.join(' / '));
     is(unpunctued.length, 0, 'all end in a full stop: ' + unpunctued.join(' / '));
     is(rambling.length,   0, 'none over nine words: ' + rambling.join(' / '));
+  });
+});
+
+
+describe('sprites', () => {
+  test('every sprite layer has a fill and real path data', () => {
+    let bad = [];
+    for (const [name, layers] of Object.entries(game.SPRITE)) {
+      layers.forEach((l, i) => {
+        if (typeof l.d !== 'string' || l.d.length < 10) bad.push(name + '[' + i + '] d');
+        if (!/^(#|rgba?\()/.test(l.fill))              bad.push(name + '[' + i + '] fill');
+        if (!l.path)                                    bad.push(name + '[' + i + '] Path2D');
+      });
+    }
+    is(bad.join(', '), '', 'malformed layers');
+  });
+
+  // Built once at load, not per frame. These are painted sixty times a
+  // second and reparsing a path string that often is pure waste.
+  test('paths are built once, not rebuilt on every draw', () => {
+    const before = game.SPRITE.egg[0].path;
+    game.drawSprite('egg', 10, 10, 1);
+    is(game.SPRITE.egg[0].path === before, true, 'same Path2D object');
+  });
+
+  // The rule the delivered mouse broke: at 20px a shape gets a silhouette
+  // and about one internal detail. Ten paths read worse than five.
+  // The hazard must be the biggest thing on the board. The tilt
+  // foreshortens it, so at matching numbers it reads as the SMALLER of
+  // the two, which is backwards for the thing you are meant to avoid.
+  test('the rotten egg is drawn larger than the good one', () => {
+    const egg    = 12.8 * game.SPRITE_SIZE.egg.scale;
+    const rotten = 13.6 * game.SPRITE_SIZE.rottenEgg.scale;
+    is(rotten > egg, true, 'rotten ' + rotten.toFixed(1) + ' vs egg ' + egg.toFixed(1));
+  });
+
+  // A reward you cannot read is not a reward. These should carry about
+  // the weight of a snake segment, which is 18px.
+  test('every food is drawn at a legible size', () => {
+    const heights = {
+      egg:       12.8 * game.SPRITE_SIZE.egg.scale,
+      rottenEgg: 13.6 * game.SPRITE_SIZE.rottenEgg.scale,
+      mouse:     14.8 * game.SPRITE_SIZE.mouse.scale
+    };
+    const small = Object.entries(heights).filter(([, h]) => h < 15);
+    is(small.length, 0, 'too small: ' + JSON.stringify(small));
+  });
+
+  test('the mouse keeps only the paths that survive cell size', () => {
+    is(game.SPRITE.mouse.length, 5, 'mouse paths');
+  });
+
+  // The regression that mattered. The snake is bone and it is most of what
+  // moves on the board, so the baseline food must never share its colour.
+  test('the egg is never the same colour as the snake', () => {
+    const eggFill = game.SPRITE.egg[0].fill.toLowerCase();
+    const bone    = 'rgb(' + game.BONE_BODY.join(',') + ')';
+    is(eggFill === '#e8e2d6', false, 'egg is not bone');
+    is(game.bodyColour(0, 0) === eggFill, false, 'egg differs from the body');
+    is(eggFill, '#f4e8cf', 'the warm shell');
   });
 });
 
