@@ -90,6 +90,11 @@ const sandbox = {
 sandbox.globalThis = sandbox;
 sandbox.window = sandbox;
 
+// The game asks whether the player wants reduced motion. In here they
+// don't, so anything that moves is exercised by the tests rather than
+// skipped. queasyShake is pure and gets tested directly either way.
+sandbox.matchMedia = () => ({ matches: false, addEventListener() {} });
+
 
 // ---- load the game --------------------------------------------------
 
@@ -121,7 +126,8 @@ globalThis.game = {
   update, reset, isOccupied, stepDelay, mixColour, KEYS, addScore, queasiness,
   levelFor, reachableSquare,
   BELTS, beltFor, promotionFor,
-  ASHEN, BONE_BODY, DUSTY_TAIL, blend, bodyColour, BELT_SEGMENT,
+  BONE_BODY, DUSTY_TAIL, SICK_GREEN, blend, bodyColour, BELT_SEGMENT,
+  QUEASY_SHAKE, queasyShake,
   get best() { return best }, set best(v) { best = v }
 };`;
 
@@ -680,25 +686,59 @@ describe('the unwell snake', () => {
     is(game.bodyColour(1, 0), 'rgb(' + game.DUSTY_TAIL.join(',') + ')', 'colour');
   });
 
-  // The rule the whole issue exists for. Condition is shown by taking
-  // colour away, never by adding a hue, because every hue is a belt.
-  test('being unwell drains colour rather than adding any', () => {
-    const rgb    = channelsOf(game.bodyColour(0, 1));
-    const spread = Math.max(...rgb) - Math.min(...rgb);
-    is(spread < 12, true, 'near-neutral (spread was ' + spread + ')');
+  // The rule the whole issue exists for. Being unwell borrows NOTHING
+  // from the palette, so it cannot collide with a belt now or with
+  // whatever claims a colour next. The old version tinted the snake
+  // green, green is the third belt, and a green-belt player got no
+  // signal at all.
+  // Being unwell is a big, obvious change to the body - which is the
+  // thing the ash version and the too-timid shiver both failed at.
+  test('being unwell visibly changes the body', () => {
+    const well = channelsOf(game.bodyColour(0, 0));
+    const sick = channelsOf(game.bodyColour(0, 1));
+    const shift = Math.max(...well.map((c, i) => Math.abs(c - sick[i])));
+    is(shift > 60, true, 'unmistakable (largest channel shift ' + shift + ')');
   });
 
-  // The actual bug: the old sick tint was green, green is the third belt,
-  // and a green-belt player got no signal at all.
-  test('an unwell snake is never green', () => {
-    const [r, g, b] = channelsOf(game.bodyColour(0, 1));
-    is(g > r && g > b, false, 'green-dominant');
+  // Rank lives on the band, so the body's baseline is bone at EVERY rank.
+  // That is what makes a green tint legible whatever belt you hold, and
+  // it is why the original collision no longer applies.
+  test('the body starts from bone regardless of rank', () => {
+    is(game.bodyColour(0, 0), 'rgb(' + game.BONE_BODY.join(',') + ')', 'shoulders');
+    is(game.bodyColour(1, 0), 'rgb(' + game.DUSTY_TAIL.join(',') + ')', 'tip');
   });
 
-  test('being unwell darkens the snake, so it reads on a dark board', () => {
-    const well = channelsOf(game.bodyColour(0, 0)).reduce((a, c) => a + c, 0);
-    const sick = channelsOf(game.bodyColour(0, 1)).reduce((a, c) => a + c, 0);
-    is(sick < well, true, 'darker when unwell');
+  test('a well snake is perfectly still', () => {
+    const shake = game.queasyShake(0, 1000);
+    is(shake.x, 0, 'x');
+    is(shake.y, 0, 'y');
+  });
+
+  test('a queasy snake shivers', () => {
+    // Sampled across a stretch of time, because any single instant can
+    // legitimately be the moment the wobble passes through zero.
+    let moved = false;
+    for (let now = 0; now < 400; now += 7) {
+      const shake = game.queasyShake(1, now);
+      if (Math.abs(shake.x) > 0.2 || Math.abs(shake.y) > 0.2) moved = true;
+    }
+    is(moved, true, 'moved');
+  });
+
+  test('the shiver never leaves the square the head is actually in', () => {
+    let worst = 0;
+    for (let now = 0; now < 2000; now += 3) {
+      const shake = game.queasyShake(1, now);
+      worst = Math.max(worst, Math.abs(shake.x), Math.abs(shake.y));
+    }
+    is(worst <= game.QUEASY_SHAKE, true, 'within amplitude');
+    is(worst < game.CELL / 2, true, 'stays inside its own cell');
+  });
+
+  test('the shiver fades as the queasiness wears off', () => {
+    const strong = Math.abs(game.queasyShake(1.0, 90).x);
+    const weak   = Math.abs(game.queasyShake(0.2, 90).x);
+    is(weak < strong, true, 'fades');
   });
 
   // Rank and condition live on different surfaces, so one cannot erase

@@ -319,6 +319,10 @@ const bestBeltEl = document.getElementById('best-belt');
 const stageEl   = document.getElementById('stage');
 const hintEl    = document.getElementById('hint');
 const HINT_TEXT = hintEl.textContent;
+
+// Asked once and kept, so anything that moves can check it cheaply. The
+// game honours this in CSS too; doing it properly everywhere is UNR-104.
+const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
 const playBtn   = document.getElementById('play-btn');
 
 
@@ -836,8 +840,21 @@ function drawSnake() {
 // travelling, blinks, flicks its tongue, and gets X eyes when you crash.
 function drawHead() {
   const head = snake[0];
-  const cx   = head.x * CELL + CELL / 2;
-  const cy   = head.y * CELL + CELL / 2;
+
+  // The whole head is painted around cx/cy, so shifting them shudders the
+  // hood, eyes, markings and tongue together as one thing.
+  //
+  // Skipped entirely when the player has asked for reduced motion. A
+  // shiver is exactly the kind of small high-frequency movement that
+  // makes people with vestibular sensitivity feel ill, and giving someone
+  // motion sickness to convey nausea is a poor trade. They still get the
+  // tongue, which stays out the whole time you are queasy.
+  const shake = REDUCED_MOTION.matches
+    ? { x: 0, y: 0 }
+    : queasyShake(queasiness(), Date.now());
+
+  const cx = head.x * CELL + CELL / 2 + shake.x;
+  const cy = head.y * CELL + CELL / 2 + shake.y;
 
   // "fwd" is the way we're heading. "side" is that turned 90 degrees, so
   // it points out of the snake's cheeks. With those two we can place
@@ -855,7 +872,7 @@ function drawHead() {
 
   // Deliberately duller than the head, so the two read as separate things
   // rather than one white blob.
-  ctx.fillStyle = mixColour([206, 198, 178], ASHEN, queasiness() * 0.85);
+  ctx.fillStyle = mixColour([206, 198, 178], SICK_GREEN, queasiness() * 0.85);
   ctx.beginPath();
   ctx.ellipse(0, 0, 7.5, 13, 0, 0, Math.PI * 2);   // 7.5 deep, 13 wide
   ctx.fill();
@@ -882,7 +899,7 @@ function drawHead() {
 
   // The head sits small and bright on top of the hood, the way a real
   // cobra's does.
-  ctx.fillStyle = mixColour([248, 244, 234], ASHEN, queasiness() * 0.85);
+  ctx.fillStyle = mixColour([248, 244, 234], SICK_GREEN, queasiness() * 0.85);
   roundedSquare(head.x * CELL + 3, head.y * CELL + 3, CELL - 6, 6);
 
   // Two eyes, set forward of centre, one on each cheek.
@@ -962,29 +979,52 @@ function drawCross(x, y) {
 }
 
 // What a snake that has just eaten something it regrets looks like.
-// CONDITION IS SHOWN WITHOUT HUE.
+// HOW CONDITION IS SHOWN, AND WHY IT MAY USE COLOUR AFTER ALL.
 //
-// This used to be a sick green, and green is the third belt. So the
-// feedback collided with rank, and at exactly one rank it disappeared:
-// a green-belt player who ate a rotten egg turned the colour they already
-// were and got no signal at all.
+// The original sick green was rejected because green is the third belt,
+// so being unwell collided with rank. Then ash was rejected because a
+// grey snake is a dull snake and the game is black-and-gold for a reason.
 //
-// Ash is the fix, and it is a subtraction rather than an addition. The
-// snake drains toward a cool, dead grey - nothing is added, colour is
-// taken away - so it reads identically at all seven ranks and can never
-// impersonate a belt. Cooler and darker than the warm grey the tail
-// already fades to, so the two don't read as the same thing.
-const ASHEN = [88, 86, 92];
+// The green is back, and the first objection turns out not to hold any
+// more. It was written when the WHOLE snake was going to carry the belt
+// colour - at green belt a green snake really did say nothing. But rank
+// moved onto a single band, so the body's baseline is bone at every rank,
+// and bone turning green reads exactly the same whatever belt you hold.
+//
+// So the rule is narrower than it looked: THE BAND owns rank colour, and
+// the body is free to use colour for condition because its baseline is
+// never a belt colour. The one cost is that at green belt the band blends
+// into a queasy body for a few moves. That is a fair trade - condition is
+// temporary and urgent, rank is permanent and also in the header, so
+// briefly losing sight of your belt costs far less than missing the fact
+// that you just ate something rotten.
+const SICK_GREEN = [138, 190, 64];
 
-// The body's own two ends, named so the unwell blend can compose with them.
+// The body's own two ends.
 const BONE_BODY  = [232, 226, 214];   // bright at the shoulders
 const DUSTY_TAIL = [124, 118, 108];   // dusty at the tip
 
 // The colour of one body segment. `t` runs 0 at the shoulders to 1 at the
-// tip; `sick` runs 0 (well) to 1 (just ate a rotten egg). Pure, so the
-// rule that this never produces a hue can actually be tested.
+// tip; `sick` runs 0 (well) to 1 (just ate a rotten egg).
+//
+// The whole body carries it now, not just the head as it did originally.
+// That is the real reason the first version was easy to miss: one square
+// changing colour at the far end of a moving snake is nothing.
 function bodyColour(t, sick) {
-  return mixColour(blend(BONE_BODY, DUSTY_TAIL, t), ASHEN, sick * 0.85);
+  return mixColour(blend(BONE_BODY, DUSTY_TAIL, t), SICK_GREEN, sick * 0.8);
+}
+
+// The shudder, as an offset in pixels. Two different frequencies so it
+// wobbles rather than sliding along one line, which reads as a shiver
+// instead of a drift.
+//
+// PURELY VISUAL. The snake still occupies exactly the square it occupies;
+// this only moves where the head is painted. draw() never changes what is
+// true - that is update()'s job, and mixing the two is how games rot.
+function queasyShake(sick, now) {
+  if (sick <= 0) return { x: 0, y: 0 };
+  const amp = QUEASY_SHAKE * sick;
+  return { x: Math.sin(now / 18) * amp, y: Math.cos(now / 13) * amp };
 }
 
 // 1 immediately after a rotten egg, fading to 0 as it wears off. Used to
@@ -1107,6 +1147,11 @@ function stepDelay() {
 // defeat. One behind it reads as a collar and is always present, since the
 // snake is three segments long before it has eaten anything.
 const BELT_SEGMENT = 1;
+
+// How far the head shivers when the snake is queasy, in pixels at full
+// nausea. Small: it has to read as a shudder without making the head hard
+// to aim. Cells are 20px, so this stays well inside one square.
+const QUEASY_SHAKE = 3.2;
 
 // How long the promotion moment lasts. Long enough to read without
 // pausing, short enough that it is over before it costs you the run.

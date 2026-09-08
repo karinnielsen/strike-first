@@ -39,13 +39,19 @@ For a game, read the version parts as:
   ever being covered. Honours the reduced-motion preference.
 
 ### Changed
-- **The unwell snake is drained, not tinted.** Eating a rotten egg used to turn
-  the snake green — and green is the third belt, so the feedback collided with
-  rank and disappeared entirely at that one rank. Now the body drains toward a
-  cool ash: nothing is added, colour is taken away, so it reads identically at
-  all seven ranks and can never impersonate a belt. The whole body carries it
-  rather than just the head, so it's far harder to miss. The belt band itself
-  doesn't drain — being sick has never cost anybody their rank.
+- **Eating a rotten egg is much harder to miss.** The whole body turns green
+  now, not just the head — one square changing colour at the end of a moving
+  snake was nothing. The head also shudders while the queasiness lasts, fading
+  out as it wears off, which is skipped for anyone who has asked for reduced
+  motion.
+- The rule about rank and colour is narrower than it first looked. **The band
+  owns rank colour; the body is free to use colour for condition,** because the
+  body's baseline is bone at every rank. The green was briefly removed on the
+  grounds that it collided with the green belt — that objection was written
+  when the belt was going to colour the whole snake, and stopped applying once
+  rank moved onto a single band. At green belt the band does blend into a
+  queasy body for a few moves, which is a fair trade: condition is temporary
+  and urgent, rank is permanent and also in the header.
 - **Your best score now updates the moment you pass it**, rather than when you
   die. That's what lets a promotion land mid-run, which is the whole point of
   it — you find out while you're still trying not to die, not afterwards.
