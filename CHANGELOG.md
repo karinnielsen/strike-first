@@ -47,8 +47,22 @@ For a game, read the version parts as:
   while you're still playing — peripheral vision reads motion better than text,
   and your eyes are on the snake, so the alert reaches you without the board
   ever being covered. Honours the reduced-motion preference.
+- **Defeat lines that know how you died.** Sixteen of them, grouped into four
+  cases: you hit a wall, you ate yourself, you scored nothing, or you died on a
+  new record. A line that names your actual mistake is worth three generic ones.
+  The record lines are warm rather than cutting — somebody who has just beaten
+  their own best deserves acknowledgement, not a joke at their expense.
+- A microcopy and tone-of-voice guide at `design/MICROCOPY.md`: two voices, the
+  locked vocabulary, capitalisation, and how to write a defeat line. The house
+  style is asserted in the tests, so a line that contracts, shouts or runs long
+  fails the build rather than being noticed later.
 
 ### Changed
+- The start screen's controls line is lowercase, matching the footer and the
+  utility voice. It was the one string in the game with no voice at all.
+- The defeat screen no longer repeats your score. It is still in the header
+  where you have been watching it all run, so the screen gets one thing to say
+  and it may as well be worth reading.
 - **Eating a rotten egg is much harder to miss.** The whole body turns green
   now, not just the head — one square changing colour at the end of a moving
   snake was nothing. The head also shudders while the queasiness lasts, fading

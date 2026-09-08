@@ -128,6 +128,8 @@ globalThis.game = {
   BELTS, beltFor, promotionFor,
   BONE_BODY, DUSTY_TAIL, SICK_GREEN, blend, bodyColour, BELT_SEGMENT,
   QUEASY_SHAKE, queasyShake,
+  DEFEAT_LINES, defeatLine,
+  get bestAtStart() { return bestAtStart }, set bestAtStart(v) { bestAtStart = v },
   get best() { return best }, set best(v) { best = v }
 };`;
 
@@ -745,6 +747,75 @@ describe('the unwell snake', () => {
   // the other. Being sick has never cost anybody their belt.
   test('the belt band is not a body segment, so it never drains', () => {
     is(game.BELT_SEGMENT > 0, true, 'the band is never the head');
+  });
+});
+
+
+describe('defeat lines', () => {
+  test('a wall death gets a wall line', () => {
+    const line = game.defeatLine('wall', 20, false, 0);
+    is(game.DEFEAT_LINES.wall.includes(line), true, 'from the wall pool');
+  });
+
+  test('eating yourself gets a self line', () => {
+    const line = game.defeatLine('self', 20, false, 0);
+    is(game.DEFEAT_LINES.self.includes(line), true, 'from the self pool');
+  });
+
+  test('scoring nothing gets its own line, whatever killed you', () => {
+    for (const cause of ['wall', 'self']) {
+      const line = game.defeatLine(cause, 0, false, 0);
+      is(game.DEFEAT_LINES.nothing.includes(line), true, 'from the nothing pool');
+    }
+  });
+
+  // Never sneer at somebody's best ever run.
+  test('a new record outranks how you died', () => {
+    for (const cause of ['wall', 'self']) {
+      const line = game.defeatLine(cause, 90, true, 0);
+      is(game.DEFEAT_LINES.record.includes(line), true, 'from the record pool');
+    }
+  });
+
+  test('every roll from 0 up to 1 lands on a real line', () => {
+    let bad = null;
+    for (let roll = 0; roll < 1; roll += 0.001) {
+      const line = game.defeatLine('wall', 20, false, roll);
+      if (!game.DEFEAT_LINES.wall.includes(line)) bad = roll;
+    }
+    is(bad, null, 'no roll fell off the end');
+  });
+
+  test('a roll of exactly 1 is still safe', () => {
+    const line = game.defeatLine('wall', 20, false, 1);
+    is(game.DEFEAT_LINES.wall.includes(line), true, 'in the pool');
+  });
+
+  test('an unknown cause still returns a line rather than nothing', () => {
+    is(typeof game.defeatLine(undefined, 20, false, 0.5), 'string', 'type');
+  });
+
+  test('the whole pool is reachable, so no line is dead copy', () => {
+    for (const pool of Object.values(game.DEFEAT_LINES)) {
+      const seen = new Set();
+      for (let roll = 0; roll < 1; roll += 0.001) {
+        seen.add(pool[Math.min(pool.length - 1, Math.floor(roll * pool.length))]);
+      }
+      is(seen.size, pool.length, 'all ' + pool.length + ' reachable');
+    }
+  });
+
+  // The house style, asserted rather than trusted. See design/MICROCOPY.md.
+  test('every line obeys the dojo voice', () => {
+    const all = Object.values(game.DEFEAT_LINES).flat();
+    const contracted = all.filter(l => /\w'\w/.test(l));
+    const shouting   = all.filter(l => l.includes('!'));
+    const unpunctued = all.filter(l => !l.endsWith('.'));
+    const rambling   = all.filter(l => l.split(/\s+/).length > 9);
+    is(contracted.length, 0, 'no contractions: ' + contracted.join(' / '));
+    is(shouting.length,   0, 'no exclamation marks: ' + shouting.join(' / '));
+    is(unpunctued.length, 0, 'all end in a full stop: ' + unpunctued.join(' / '));
+    is(rambling.length,   0, 'none over nine words: ' + rambling.join(' / '));
   });
 });
 

@@ -291,7 +291,7 @@
 
     <div class="overlay" id="overlay">
       <h2 id="overlay-title">Strike hard. No mercy.</h2>
-      <p  id="overlay-text">Arrow keys or WASD to move</p>
+      <p  id="overlay-text">arrows or wasd to move</p>
       <button id="play-btn">Enter the dojo</button>
     </div>
   </div>
@@ -351,6 +351,7 @@ let egg;            // the baseline food. There is always exactly one.
 let visitor;        // the second slot: a mouse or a rotten egg, or null
 let grow;           // squares still owed to the snake from something eaten
 let queasy;         // moves left of looking green, after a rotten egg
+let bestAtStart;    // the record as it stood when this run began
 let score;
 let phase;          // 'ready' | 'playing' | 'paused' | 'over'
 
@@ -419,6 +420,9 @@ function reset() {
   turnQueue     = [];
   score         = 0;
   grow          = 0;
+  // Snapshot, because `best` moves during the run now. Without this there
+  // is no way to ask afterwards whether THIS run beat the record.
+  bestAtStart   = best;
   queasy        = 0;
   visitor       = null;
   scoreEl.textContent = score;
@@ -518,12 +522,12 @@ function update() {
 
   // Did we hit a wall?
   if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) {
-    return gameOver();
+    return gameOver('wall');
   }
 
   // Did we hit ourselves? .some() asks "is ANY body part on this square?"
   if (snake.some(part => part.x === head.x && part.y === head.y)) {
-    return gameOver();
+    return gameOver('self');
   }
 
   // Move: add the new head to the front of the list...
@@ -605,7 +609,7 @@ function addScore(points, kind) {
   setTimeout(() => pop.remove(), 900);
 }
 
-function gameOver() {
+function gameOver(cause) {
   phase = 'over';
 
   // `best` is not touched here any more. It moves the moment you pass it,
@@ -617,7 +621,14 @@ function gameOver() {
   // "DEFEATED" and "PROMOTED" are not the same news and should not
   // share a slot. The promotion lands on its own, mid-run, which is
   // where it belongs and what makes it worth having. See UNR-81.
-  showOverlay('DEFEATED', 'You scored ' + score, 'Again');
+  // The score is not repeated here - it is still sitting in the header
+  // where you have been watching it all run. This screen gets one thing
+  // to say, so it may as well be worth reading.
+  showOverlay(
+    'DEFEATED',
+    defeatLine(cause, score, score > bestAtStart, Math.random()),
+    'Again'
+  );
 }
 
 
@@ -1165,6 +1176,58 @@ const BELT_SEGMENT = 1;
 // nausea. Small: it has to read as a shudder without making the head hard
 // to aim. Cells are 20px, so this stays well inside one square.
 const QUEASY_SHAKE = 3.2;
+
+// DEFEAT LINES.
+//
+// The dojo voice: no contractions, second person, eight words at most,
+// full stops even on fragments, never an exclamation mark, nine words
+// at most. See
+// design/MICROCOPY.md - that file is the authority, this is just where
+// the strings live.
+//
+// Grouped by how you died, because a line that names your actual mistake
+// is worth three generic ones. The game already knows: it can only ever
+// be a wall or your own tail.
+//
+// `record` outranks everything. Somebody who has just beaten their own
+// best deserves acknowledgement rather than a joke at their expense - the
+// dojo is harsh, not cruel.
+const DEFEAT_LINES = {
+  wall: [
+    'The wall does not move. You do.',
+    'Fear does not exist in this dojo. Walls do.',
+    'You found the edge of the mat.',
+    'Straight lines are not a strategy.',
+    'No mercy from the wall either.'
+  ],
+  self: [
+    'You struck first. At yourself.',
+    'The enemy was you. It usually is.',
+    'A cobra that bites itself learns twice.',
+    'Even a cobra cannot swallow all of itself.',
+    'Turn earlier. That is the entire lesson.'
+  ],
+  nothing: [
+    'Not one thing. Not one.',
+    'The dojo will pretend it did not see that.',
+    'This is a karate game, not a standing-still game.'
+  ],
+  record: [
+    'Better than you have ever been. Still dead.',
+    'A record and a corpse.',
+    'You have never done that before. Do it again.'
+  ]
+};
+
+// Pick the line. `roll` is a number from 0 up to 1 - passed in rather than
+// rolled in here, so this takes arguments and returns an answer and needs
+// no scaffolding to test.
+function defeatLine(cause, points, isRecord, roll) {
+  const pool = isRecord      ? DEFEAT_LINES.record
+             : points === 0  ? DEFEAT_LINES.nothing
+             : DEFEAT_LINES[cause] || DEFEAT_LINES.wall;
+  return pool[Math.min(pool.length - 1, Math.floor(roll * pool.length))];
+}
 
 // How long the promotion moment lasts. Long enough to read without
 // pausing, short enough that it is over before it costs you the run.
