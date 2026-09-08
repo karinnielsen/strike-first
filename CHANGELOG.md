@@ -35,7 +35,11 @@ For a game, read the version parts as:
   they can't see. The swatch stays the quick read for everyone else; the name is
   what makes it unambiguous. Verified against a deuteranopia simulation rather
   than by eye.
-- Your rank is also named in full on the start screen. The name carries the
+- The header row is split into two clusters: **score and level are live** and
+  move while you play; **hi-score and belt are standing** and a bad run can't
+  take them away. Every item reads label-then-value, so the row has one grammar
+  rather than three. `best` became `hi-score` — the arcade string, and what
+  bought the width for an explicit `belt` label. The name carries the
   information and the colour reinforces it, never the other way round: seven
   hues can't be told apart under a colour vision deficiency.
 - **The promotion moment.** Crossing a threshold pulses a ring around the board

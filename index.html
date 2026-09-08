@@ -83,12 +83,26 @@
   }
 
   /* Pushed to the outer edges of the board rather than huddled together. */
+  /* Two clusters rather than four evenly spread items, because these are
+     two kinds of thing. Score and level are LIVE - they move while you
+     play. Best and rank are STANDING - they are what you hold, and a bad
+     run cannot take them away. Spacing them equally would have implied
+     four things of one kind.
+
+     Every item reads label then value - score 0, level 1, hi-score 53,
+     belt GREEN - so the row has one grammar rather than three.
+
+     "hi-score" rather than "high score" is the arcade string, and it is
+     also what buys the room for the word "belt": measured at the top
+     rank, "high score" plus an explicit belt label exactly fills the row
+     with nothing between the clusters. */
   .scores {
     display: flex;
     justify-content: space-between;
     font-size: 13px;
     color: var(--dim);
   }
+  .scores .group { display: flex; gap: 20px; }
   .scores b { color: var(--text); font-size: 15px; }
 
   /* The swatch sits on `best` rather than in a column of its own, because
@@ -96,7 +110,7 @@
      together makes the causal link visible without a tutorial, and it is
      the same swatch that rides on the snake - which is what closes the
      loop between "my snake has an orange block" and "I am an orange belt". */
-  .best { display: inline-flex; align-items: center; gap: 6px; }
+  .rank { display: inline-flex; align-items: center; gap: 6px; }
   .belt-swatch {
     width: 16px;
     height: 5px;
@@ -111,7 +125,7 @@
      consecutive ranks - so without the name, the promotion someone most
      wants to see is the one they can't. The swatch stays the quick read
      for everyone else; the name is what makes it unambiguous. */
-  .best em {
+  .rank em {
     font-style: normal;
     font-size: 11px;
     letter-spacing: 1px;
@@ -188,28 +202,6 @@
   .overlay h2 { margin: 0; font-size: 22px; letter-spacing: 3px; color: var(--gold); }
   .overlay p  { margin: 0; font-size: 13px; color: var(--dim); }
 
-  /* Your rank, shown where it reads as a standing fact rather than as a
-     live number. The swatch is set from the belt colour in code; the NAME
-     carries the same information, so rank never depends on colour alone. */
-  .overlay .belt {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-    font-size: 12px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--text);
-  }
-  .overlay .belt::before {
-    content: '';
-    width: 22px;
-    height: 6px;
-    border-radius: 1px;
-    background: var(--belt, var(--bone));   /* set per rank in code */
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
-  }
-  .overlay .belt:empty { display: none; }
 
   button {
     margin-top: 6px;
@@ -280,9 +272,17 @@
   <header>
     <h1>Strike First</h1>
     <div class="scores">
-      <span>score <b id="score">0</b></span>
-      <span>level <b id="level">1</b></span>
-      <span class="best">best <b id="best">0</b><i class="belt-swatch" id="best-belt"></i><em id="best-belt-name"></em></span>
+      <!-- Live: these move while you play. -->
+      <div class="group">
+        <span>score <b id="score">0</b></span>
+        <span>level <b id="level">1</b></span>
+      </div>
+
+      <!-- Standing: these are what you hold, and a run cannot take them away. -->
+      <div class="group">
+        <span>hi-score <b id="best">0</b></span>
+        <span class="rank">belt <i class="belt-swatch" id="best-belt"></i><em id="best-belt-name"></em></span>
+      </div>
     </div>
   </header>
 
@@ -292,7 +292,6 @@
     <div class="overlay" id="overlay">
       <h2 id="overlay-title">Strike hard. No mercy.</h2>
       <p  id="overlay-text">Arrow keys or WASD to move</p>
-      <p class="belt" id="overlay-belt"></p>
       <button id="play-btn">Enter the dojo</button>
     </div>
   </div>
@@ -328,7 +327,6 @@ const bestEl    = document.getElementById('best');
 const overlay   = document.getElementById('overlay');
 const titleEl   = document.getElementById('overlay-title');
 const textEl    = document.getElementById('overlay-text');
-const beltEl    = document.getElementById('overlay-belt');
 const bestBeltEl = document.getElementById('best-belt');
 const bestNameEl = document.getElementById('best-belt-name');
 const stageEl   = document.getElementById('stage');
@@ -1274,26 +1272,15 @@ document.addEventListener('keydown', (event) => {
 // =====================================================================
 //  7. MENUS + KICKOFF
 // =====================================================================
-// The belt line is cleared by default. An ordinary defeat says DEFEATED
-// and what you scored, and nothing else - your rank is already on the
-// snake and on `best` in the header, so repeating it here was a third
-// voice saying something you knew. Callers add it back when it is news.
+// An overlay says one thing. Rank is not repeated here: it is on the snake
+// and named in the header, so saying it a third time was a third voice
+// telling you something you already knew. A promotion is the exception,
+// and it has its own moment below the board rather than a line in here.
 function showOverlay(title, text, buttonLabel) {
   titleEl.textContent = title;
   textEl.textContent  = text;
   playBtn.textContent = buttonLabel;
-  beltEl.textContent  = '';
   overlay.classList.remove('hidden');
-}
-
-// The rank you hold, from your best score - not the run you just played.
-// The name is the signal; the colour swatch beside it is the reinforcement,
-// never the other way round, because seven hues cannot be told apart under
-// a colour vision deficiency.
-function showBelt(belt) {
-  const worn = belt || BELTS[beltFor(best) - 1];
-  beltEl.textContent = worn.name + ' belt';
-  beltEl.style.setProperty('--belt', worn.colour);
 }
 
 // You crossed a threshold you had never crossed. Rare - perhaps once in
@@ -1324,7 +1311,7 @@ function promote(belt) {
   }, PROMOTION_MS);
 }
 
-// The header swatch, which is the persistent one. It annotates `best`
+// The header swatch, which is the persistent one. It annotates `hi-score`
 // because that score is what produced the rank.
 function showBestBelt() {
   const worn = BELTS[beltFor(best) - 1];
@@ -1352,7 +1339,6 @@ playBtn.addEventListener('click', () => {
 // heartbeat. Nothing moves until phase becomes 'playing'.
 reset();
 phase = 'ready';
-showBelt();
 showBestBelt();
 loop();
 </script>
