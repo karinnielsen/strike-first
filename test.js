@@ -117,8 +117,9 @@ globalThis.game = {
   COLS, ROWS, CELL, VERSION,
   EGG_POINTS, MOUSE_POINTS, ROTTEN_POINTS, EGG_GROWTH, MOUSE_GROWTH,
   MOUSE_LIFE, ROTTEN_LIFE, WARNING_MOVES, QUEASY_MOVES,
-  START_DELAY, SPEED_UP, FASTEST, TURN_QUEUE_MAX,
-  update, reset, isOccupied, stepDelay, mixColour, KEYS, addScore, queasiness
+  LEVELS, REACH_BUDGET, TURN_QUEUE_MAX,
+  update, reset, isOccupied, stepDelay, mixColour, KEYS, addScore, queasiness,
+  levelFor, reachableSquare
 };`;
 
 vm.createContext(sandbox);
@@ -184,20 +185,41 @@ describe('the grid', () => {
 });
 
 
-describe('stepDelay - how fast the game runs', () => {
-  test('opens at the starting pace', () => {
+describe('levels - how fast the game runs', () => {
+  test('a fresh run opens on level 1', () => {
     freshGame({ score: 0 });
-    is(game.stepDelay(), game.START_DELAY);
+    is(game.levelFor(0), 1, 'level');
+    is(game.stepDelay(), game.LEVELS[0].ms, 'ms per move');
   });
 
-  test('speeds up as the score climbs', () => {
-    freshGame({ score: 10 });
-    is(game.stepDelay(), game.START_DELAY - 10 * game.SPEED_UP);
+  test('the level climbs with the score', () => {
+    is(game.levelFor(game.LEVELS[1].from), 2, 'at the level 2 threshold');
+    is(game.levelFor(game.LEVELS[2].from), 3, 'at the level 3 threshold');
   });
 
-  test('never goes below the floor, however high the score', () => {
-    freshGame({ score: 10000 });
-    is(game.stepDelay(), game.FASTEST);
+  test('a score just short of a threshold stays on the level below', () => {
+    is(game.levelFor(game.LEVELS[1].from - 1), 1, 'level');
+  });
+
+  test('every level is faster than the one before it', () => {
+    for (let i = 1; i < game.LEVELS.length; i++) {
+      is(game.LEVELS[i].ms < game.LEVELS[i - 1].ms, true,
+         `level ${i + 1} faster than ${i}`);
+      is(game.LEVELS[i].from > game.LEVELS[i - 1].from, true,
+         `level ${i + 1} starts later than ${i}`);
+    }
+  });
+
+  test('it caps at the last level however high the score goes', () => {
+    const last = game.LEVELS.length;
+    is(game.levelFor(100000), last, 'level');
+    is(game.stepDelay.call(null), game.stepDelay(), 'stable');
+    freshGame({ score: 100000 });
+    is(game.stepDelay(), game.LEVELS[last - 1].ms, 'ms per move');
+  });
+
+  test('the opening pace is unhurried enough to read three foods', () => {
+    is(game.LEVELS[0].ms >= 240, true, 'level 1 is at least 240ms');
   });
 });
 
@@ -319,6 +341,36 @@ describe('the visitor countdown', () => {
     freshGame({ visitor: {kind: 'rotten', x: 18, y: 18, life: 1, facing: 1} });
     game.update();
     is(game.visitor, null, 'visitor');
+  });
+});
+
+
+describe('where visitors appear', () => {
+  test('never further away than the snake could get in time', () => {
+    freshGame();
+    for (let i = 0; i < 300; i++) {
+      const spot = game.reachableSquare(game.MOUSE_LIFE);
+      const head = game.snake[0];
+      const steps = Math.abs(spot.x - head.x) + Math.abs(spot.y - head.y);
+      is(steps <= Math.floor(game.MOUSE_LIFE * game.REACH_BUDGET), true,
+         'within reach');
+    }
+  });
+
+  test('a spawned visitor is always reachable and always has a life', () => {
+    freshGame({ egg: {x: 6, y: 5} });
+    for (let i = 0; i < 120; i++) {
+      if (game.phase !== 'playing') break;
+      if (game.visitor) {
+        const head = game.snake[0];
+        const steps = Math.abs(game.visitor.x - head.x)
+                    + Math.abs(game.visitor.y - head.y);
+        const life = game.visitor.kind === 'mouse' ? game.MOUSE_LIFE : game.ROTTEN_LIFE;
+        is(steps <= life, true, 'reachable within its whole life');
+        is(game.visitor.life > 0, true, 'alive');
+      }
+      game.update();
+    }
   });
 });
 

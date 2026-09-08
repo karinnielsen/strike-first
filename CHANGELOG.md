@@ -29,11 +29,21 @@ For a game, read the version parts as:
   yourself regret it, rather than only seeing a number go down.
 
 ### Changed
+- **Levels.** The speed ramp is now visible tiers rather than an invisible
+  continuous slope, shown in the header beside score and best. A run gets a
+  rhythm: settle in, master a pace, get pushed.
+- The opening pace is slower, 260ms a move rather than 200. There are three
+  things to read on the board now instead of two, and the old opening was too
+  brisk for that.
 - A mouse now costs **2 length** instead of 1, so taking one is a real
   decision rather than pure upside. Provisional, needs playtesting.
-- `MOUSE_LIFE` cut from 65 moves to 45. The longest trip across the board is
-  40 moves, so the far corner becomes a genuine gamble rather than a
-  formality. Provisional, needs playtesting.
+- **Visitors only appear somewhere you could actually reach them.** Whether
+  you catch a mouse is now about whether it's worth the length and the risk
+  of boxing yourself in, not about whether it happened to spawn across the
+  board. Missing one should be a decision that went wrong, never bad luck.
+- `MOUSE_LIFE` raised to 60 moves. It was cut to 45 on the arithmetic that
+  the longest crossing is 40 moves; playing it showed that assumes you spot
+  the mouse instantly and travel in a straight line, and you do neither.
 - Score is floored at zero. A negative score reads as broken, and belt
   thresholds are all defined upwards from nothing.
 

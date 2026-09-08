@@ -197,6 +197,7 @@
     <h1>Strike First</h1>
     <div class="scores">
       <span>score <b id="score">0</b></span>
+      <span>level <b id="level">1</b></span>
       <span>best <b id="best">0</b></span>
     </div>
   </header>
@@ -237,6 +238,7 @@ const VERSION = '0.1.0';
 document.getElementById('version').textContent = 'v' + VERSION;
 
 const scoreEl   = document.getElementById('score');
+const levelEl   = document.getElementById('level');
 const bestEl    = document.getElementById('best');
 const overlay   = document.getElementById('overlay');
 const titleEl   = document.getElementById('overlay-title');
@@ -280,12 +282,26 @@ const MOUSE_GROWTH  = 2;    // PROVISIONAL - the whole point is that a mouse
 const VISITOR_CHANCE = 0.4;  // roughly two eggs in five bring something along
 const ROTTEN_SHARE   = 0.4;  // ...and this fraction of those are rotten
 
-// How many of YOUR MOVES a visitor sticks around for. The longest possible
-// trip across the board is 40 moves, corner to corner, so a mouse at 45 is
-// reachable from most places but the far corner is a real gamble.
-const MOUSE_LIFE    = 45;   // PROVISIONAL, was 65. Needs playing. See UNR-82.
-const ROTTEN_LIFE   = 35;
-const WARNING_MOVES = 12;   // moves left when a visitor starts flashing
+// How many of YOUR MOVES a visitor sticks around for.
+//
+// This was cut to 45 on the arithmetic that the longest crossing is 40
+// moves. Playing it showed that was wrong: 40 assumes you spot the thing
+// instantly and travel in a straight line, and you do neither. Mice were
+// vanishing before there was a fair chance at them.
+//
+// The timer is no longer what makes a mouse a decision. Reachability is
+// guaranteed at spawn instead, so the cost of going for one is the extra
+// length it leaves you carrying and the risk of boxing yourself in - not
+// whether you happened to notice in time. Missing one should be a
+// decision that went wrong, never bad luck.
+const MOUSE_LIFE    = 60;
+const ROTTEN_LIFE   = 45;
+const WARNING_MOVES = 15;   // moves left when a visitor starts flashing
+
+// How far a visitor may spawn from your head, as a fraction of its life.
+// The rest of the budget is slack for noticing it and for the fact that
+// nobody travels in a straight line.
+const REACH_BUDGET  = 0.5;
 
 // How long the snake looks ill after a rotten egg. Counted in YOUR MOVES
 // like everything else, so it lasts the same number of decisions at every
@@ -311,6 +327,7 @@ function reset() {
   queasy        = 0;
   visitor       = null;
   scoreEl.textContent = score;
+  levelEl.textContent = levelFor(score);
   placeEgg();
 }
 
@@ -334,6 +351,21 @@ function isOccupied(spot) {
   return false;
 }
 
+// Pick a free square close enough that the snake could actually get there
+// before the visitor leaves. A mouse parked in the far corner isn't a
+// decision, it's a tease; and a rotten egg out there is neither a threat
+// nor a choice. Either way the slot is wasted.
+function reachableSquare(life) {
+  const head   = snake[0];
+  const budget = Math.floor(life * REACH_BUDGET);
+  for (let tries = 0; tries < 200; tries++) {
+    const spot = randomEmptySquare();
+    const steps = Math.abs(spot.x - head.x) + Math.abs(spot.y - head.y);
+    if (steps <= budget) return spot;
+  }
+  return randomEmptySquare();   // give up rather than spin forever
+}
+
 function placeEgg() {
   egg = null;                     // clear it first so it can't block itself
   egg = randomEmptySquare();
@@ -351,7 +383,8 @@ function maybeSpawnVisitor() {
   if (Math.random() > VISITOR_CHANCE) return;
 
   const rotten = Math.random() < ROTTEN_SHARE;
-  const spot   = randomEmptySquare();
+  const life   = rotten ? ROTTEN_LIFE : MOUSE_LIFE;
+  const spot   = reachableSquare(life);
   visitor = {
     kind:   rotten ? 'rotten' : 'mouse',
     x:      spot.x,
@@ -435,6 +468,7 @@ function addScore(points, kind) {
   // thresholds are all defined upwards from nothing.
   score = Math.max(0, score + points);
   scoreEl.textContent = score;
+  levelEl.textContent = levelFor(score);
 
   // Restart the squash animation. Removing the class isn't enough on its
   // own - the browser batches up our changes and sees no difference.
@@ -846,15 +880,44 @@ function loop() {
   setTimeout(loop, stepDelay());
 }
 
-// How long to wait between steps, in milliseconds. Smaller = faster.
-// START_DELAY is your level-1 speed - raise this number for a gentler
-// opening, lower it if you want to be thrown in at the deep end.
-const START_DELAY = 200;   // level 1: an unhurried, thinking-time pace
-const SPEED_UP    = 4;     // ms shaved off per point scored
-const FASTEST     = 70;    // the speed cap, no matter how high you score
+// Difficulty within a run, as tiers rather than a smooth slope.
+//
+// This used to shave 4ms off per point, continuously. It worked, but it
+// was invisible: every run felt like the same gradient and nothing ever
+// happened. Steps give a run a rhythm - settle in, master a pace, get
+// pushed - and give you something to notice that isn't the score.
+//
+// A level is within a run and resets when you die. A belt is across runs
+// and is a rank you hold. They are different things and they live in
+// different places: the level in the header, the belt on the snake.
+//
+// Level 1 opened at 200ms and playing it showed that was too brisk to
+// start, especially now there are three things on the board to read
+// rather than two. It opens slower and takes longer to bite.
+const LEVELS = [
+  { from:   0, ms: 260 },   // 1 - unhurried, room to think
+  { from:   8, ms: 225 },
+  { from:  18, ms: 195 },
+  { from:  30, ms: 170 },
+  { from:  45, ms: 145 },
+  { from:  65, ms: 120 },
+  { from:  90, ms: 100 },
+  { from: 120, ms:  85 },
+  { from: 155, ms:  70 }    // 9 - the floor. Nothing gets faster than this.
+];
+
+// Takes a score, returns a level. Pure: it reads nothing and changes
+// nothing, which is why it needs no scaffolding to test.
+function levelFor(points) {
+  let level = 1;
+  for (let i = 0; i < LEVELS.length; i++) {
+    if (points >= LEVELS[i].from) level = i + 1;
+  }
+  return level;
+}
 
 function stepDelay() {
-  return Math.max(FASTEST, START_DELAY - score * SPEED_UP);
+  return LEVELS[levelFor(score) - 1].ms;
 }
 
 
