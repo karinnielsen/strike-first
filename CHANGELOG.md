@@ -12,11 +12,15 @@ For a game, read the version parts as:
 
 ## [Unreleased]
 
+### Fixed
+- Turns are queued instead of overwriting each other, so a fast two-key corner
+  no longer loses the second press. Previously a turn was checked against the
+  direction you were travelling rather than the one it would actually follow,
+  so rounding a corner quickly threw the second press away as a U-turn.
+
 ### Planned
-- Belt ranks (white through black) driven by score, with the snake's colour
-  showing your current rank
-- "No Mercy" as a mode unlocked by rank
-- Sound
+See the [project roadmap](https://linear.app/unrulylabs/project/strike-first-3ec05fe538aa)
+for what's coming and in what order. It moves faster than this file.
 
 ## [0.1.0] — 2026-09-07
 

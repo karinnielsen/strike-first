@@ -107,14 +107,14 @@ const epilogue = `
 globalThis.game = {
   get snake()         { return snake },         set snake(v)         { snake = v },
   get direction()     { return direction },     set direction(v)     { direction = v },
-  get nextDirection() { return nextDirection }, set nextDirection(v) { nextDirection = v },
+  get turnQueue()     { return turnQueue },     set turnQueue(v)     { turnQueue = v },
   get food()          { return food },          set food(v)          { food = v },
   get mouse()         { return mouse },         set mouse(v)         { mouse = v },
   get score()         { return score },         set score(v)         { score = v },
   get phase()         { return phase },         set phase(v)         { phase = v },
   COLS, ROWS, CELL, VERSION,
   APPLE_POINTS, MOUSE_POINTS, MOUSE_LIFE,
-  START_DELAY, SPEED_UP, FASTEST,
+  START_DELAY, SPEED_UP, FASTEST, TURN_QUEUE_MAX,
   update, reset, isOccupied, stepDelay, mixColour, KEYS
 };`;
 
@@ -156,7 +156,7 @@ function freshGame(state = {}) {
   game.phase = 'playing';
   game.snake = state.snake || [{x: 5, y: 5}, {x: 4, y: 5}, {x: 3, y: 5}];
   game.direction = state.direction || {x: 1, y: 0};
-  game.nextDirection = state.nextDirection || game.direction;
+  game.turnQueue = state.turnQueue || [];
   game.food = state.food || {x: 15, y: 15};
   game.mouse = state.mouse === undefined ? null : state.mouse;
   game.score = state.score || 0;
@@ -317,51 +317,82 @@ describe('the mouse countdown', () => {
 
 
 describe('input', () => {
-  test('a legal turn is accepted', () => {
+  test('a legal turn is queued', () => {
     freshGame();                 // heading right
     pressKey('ArrowUp');
-    is(game.nextDirection, {x: 0, y: -1}, 'nextDirection');
+    is(game.turnQueue, [{x: 0, y: -1}], 'queue');
   });
 
   test('wasd works the same as the arrows', () => {
     freshGame();
     pressKey('w');
-    is(game.nextDirection, {x: 0, y: -1}, 'nextDirection');
+    is(game.turnQueue, [{x: 0, y: -1}], 'queue');
   });
 
   test('a straight U-turn is refused', () => {
     freshGame();                 // heading right
     pressKey('ArrowLeft');
-    is(game.nextDirection, {x: 1, y: 0}, 'nextDirection');
+    is(game.turnQueue, [], 'queue');
   });
 
   test('turns are ignored unless the game is playing', () => {
     freshGame();
     game.phase = 'paused';
     pressKey('ArrowUp');
-    is(game.nextDirection, {x: 1, y: 0}, 'nextDirection');
+    is(game.turnQueue, [], 'queue');
   });
 
-  // ---- the real bug, see UNR-98 -------------------------------------
-  // Two turns inside one step. Heading right, you press Up then Left to
-  // round a corner. Both land before the next update().
-  //
-  // Up is stored. Left is then checked against `direction`, which is
-  // still right, so it reads as a U-turn and gets thrown away - even
-  // though by the time it would apply the snake is heading up, and left
-  // would be a perfectly good turn.
-  //
-  // The snake misses the corner. It does NOT die: nothing here can ever
-  // set a heading opposite to the current one, so a reversal is
-  // impossible. The defect is a dropped input, not a death.
-  //
-  // This test documents what happens today. When the input queue lands,
-  // flip it to expect {x:-1, y:0} and it becomes the test for the fix.
-  test('a fast corner turn loses the second press (known defect)', () => {
+  // ---- the fix, see UNR-98 ------------------------------------------
+  // Heading right, you press up then left to round a corner. Both land
+  // inside one step. Left used to be checked against the CURRENT
+  // direction, still right, so it read as a U-turn and was thrown away.
+  // Now it's checked against the up that's already queued, so it stands.
+  test('a fast corner turn keeps both presses', () => {
     freshGame();                 // heading right
     pressKey('ArrowUp');
     pressKey('ArrowLeft');
-    is(game.nextDirection, {x: 0, y: -1}, 'nextDirection');
+    is(game.turnQueue, [{x: 0, y: -1}, {x: -1, y: 0}], 'queue');
+  });
+
+  test('and the snake actually rounds the corner', () => {
+    freshGame({ snake: [{x: 5, y: 5}, {x: 4, y: 5}, {x: 3, y: 5}] });
+    pressKey('ArrowUp');
+    pressKey('ArrowLeft');
+    game.update();
+    is(game.snake[0], {x: 5, y: 4}, 'after the first step, up');
+    game.update();
+    is(game.snake[0], {x: 4, y: 4}, 'after the second step, left');
+  });
+
+  test('holding a key does not fill the queue', () => {
+    freshGame();                 // heading right
+    pressKey('ArrowRight');
+    pressKey('ArrowRight');
+    pressKey('ArrowRight');
+    is(game.turnQueue, [], 'queue');
+  });
+
+  test('the queue is capped', () => {
+    freshGame();                 // heading right
+    pressKey('ArrowUp');         // queued
+    pressKey('ArrowLeft');       // queued, now full
+    pressKey('ArrowDown');       // would fit the rules, but there's no room
+    is(game.turnQueue.length, game.TURN_QUEUE_MAX, 'queue length');
+  });
+
+  test('a queued turn still cannot reverse the snake', () => {
+    freshGame();                 // heading right
+    pressKey('ArrowUp');         // queued
+    pressKey('ArrowDown');       // opposite the queued up, so refused
+    is(game.turnQueue, [{x: 0, y: -1}], 'queue');
+  });
+
+  test('a turn queued before the step is consumed by it', () => {
+    freshGame();
+    pressKey('ArrowUp');
+    game.update();
+    is(game.turnQueue, [], 'queue');
+    is(game.direction, {x: 0, y: -1}, 'direction');
   });
 });
 

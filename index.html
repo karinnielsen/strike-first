@@ -252,7 +252,7 @@ const playBtn   = document.getElementById('play-btn');
 // it looks at this instant. That is all "game state" means.
 let snake;          // list of squares, snake[0] is the head
 let direction;      // the way we ARE moving, e.g. {x:1, y:0} is right
-let nextDirection;  // the way the player just asked to move
+let turnQueue;      // turns asked for but not made yet, soonest first
 let food;           // the square the apple sits on, e.g. {x:4, y:7}
 let mouse;          // the mouse, or null when there isn't one about
 let score;
@@ -280,7 +280,7 @@ bestEl.textContent = best;
 function reset() {
   snake         = [{x: 10, y: 10}, {x: 9, y: 10}, {x: 8, y: 10}];
   direction     = {x: 1, y: 0};   // heading right
-  nextDirection = direction;
+  turnQueue     = [];
   score         = 0;
   mouse         = null;
   scoreEl.textContent = score;
@@ -332,9 +332,11 @@ function maybeSpawnMouse() {
 //  3. UPDATE - move the world forward by exactly one step
 // =====================================================================
 function update() {
-  // Apply the turn the player asked for. We only do this once per step,
-  // which stops a fast double-tap from folding the snake back on itself.
-  direction = nextDirection;
+  // Take the next turn the player asked for, if there's one waiting. Turns
+  // are queued rather than overwritten, so a quick two-key corner survives.
+  // Exactly one comes off the queue per step, which is what stops a fast
+  // double-tap folding the snake back on itself.
+  if (turnQueue.length) direction = turnQueue.shift();
 
   // The mouse is on a countdown, measured in your moves rather than in
   // seconds. That keeps it just as catchable at top speed as at level 1,
@@ -684,6 +686,11 @@ function stepDelay() {
 // =====================================================================
 //  6. INPUT - turn key presses into intentions
 // =====================================================================
+// How many turns to remember while waiting for the next step. Two is enough
+// to round a corner with a quick double-tap. More and the snake starts to
+// feel like it's driving itself rather than answering you.
+const TURN_QUEUE_MAX = 2;
+
 const KEYS = {
   ArrowUp:    {x:  0, y: -1},
   ArrowDown:  {x:  0, y:  1},
@@ -717,10 +724,22 @@ document.addEventListener('keydown', (event) => {
   const turn = KEYS[key];
   if (!turn || phase !== 'playing') return;
 
-  // Refuse a straight U-turn - you'd instantly eat your own neck.
-  if (turn.x === -direction.x && turn.y === -direction.y) return;
+  // Check the turn against the direction it will ACTUALLY follow: the last
+  // one already queued, or the current one if nothing is waiting. Checking
+  // against `direction` was the old bug. Heading right, you'd press up then
+  // left to round a corner, and the left was thrown away as a U-turn - even
+  // though by the time it applied you'd have been heading up, and left would
+  // have been fine.
+  const after = turnQueue.length ? turnQueue[turnQueue.length - 1] : direction;
 
-  nextDirection = turn;
+  // Refuse a straight U-turn - you'd instantly eat your own neck.
+  if (turn.x === -after.x && turn.y === -after.y) return;
+
+  // Ignore a turn that changes nothing, so holding a key can't fill the queue.
+  if (turn.x === after.x && turn.y === after.y) return;
+
+  if (turnQueue.length >= TURN_QUEUE_MAX) return;
+  turnQueue.push(turn);
 });
 
 
