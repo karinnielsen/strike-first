@@ -91,6 +91,20 @@
   }
   .scores b { color: var(--text); font-size: 15px; }
 
+  /* The swatch sits on `best` rather than in a column of its own, because
+     your best score is literally what produces your rank. Putting them
+     together makes the causal link visible without a tutorial, and it is
+     the same swatch that rides on the snake - which is what closes the
+     loop between "my snake has an orange block" and "I am an orange belt". */
+  .best { display: inline-flex; align-items: center; gap: 6px; }
+  .belt-swatch {
+    width: 16px;
+    height: 5px;
+    border-radius: 1px;
+    background: var(--belt, var(--bone));
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+  }
+
   /* The span has to be "relative" so the floating +N can be positioned
      against it rather than against the whole page. */
   .scores span { position: relative; }
@@ -160,6 +174,29 @@
   .overlay h2 { margin: 0; font-size: 22px; letter-spacing: 3px; color: var(--gold); }
   .overlay p  { margin: 0; font-size: 13px; color: var(--dim); }
 
+  /* Your rank, shown where it reads as a standing fact rather than as a
+     live number. The swatch is set from the belt colour in code; the NAME
+     carries the same information, so rank never depends on colour alone. */
+  .overlay .belt {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+  .overlay .belt::before {
+    content: '';
+    width: 22px;
+    height: 6px;
+    border-radius: 1px;
+    background: var(--belt, var(--bone));   /* set per rank in code */
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+  }
+  .overlay .belt:empty { display: none; }
+
   button {
     margin-top: 6px;
     padding: 9px 22px;
@@ -198,7 +235,7 @@
     <div class="scores">
       <span>score <b id="score">0</b></span>
       <span>level <b id="level">1</b></span>
-      <span>best <b id="best">0</b></span>
+      <span class="best">best <b id="best">0</b><i class="belt-swatch" id="best-belt"></i></span>
     </div>
   </header>
 
@@ -208,6 +245,7 @@
     <div class="overlay" id="overlay">
       <h2 id="overlay-title">Strike hard. No mercy.</h2>
       <p  id="overlay-text">Arrow keys or WASD to move</p>
+      <p class="belt" id="overlay-belt"></p>
       <button id="play-btn">Enter the dojo</button>
     </div>
   </div>
@@ -243,6 +281,8 @@ const bestEl    = document.getElementById('best');
 const overlay   = document.getElementById('overlay');
 const titleEl   = document.getElementById('overlay-title');
 const textEl    = document.getElementById('overlay-text');
+const beltEl    = document.getElementById('overlay-belt');
+const bestBeltEl = document.getElementById('best-belt');
 const playBtn   = document.getElementById('play-btn');
 
 
@@ -502,6 +542,13 @@ function gameOver() {
     localStorage.setItem('strikeFirstBest', best);
   }
 
+  showBestBelt();
+
+  // This screen says one thing: you lost. A promotion is a separate
+  // moment and putting it here made the screen argue with itself -
+  // "DEFEATED" and "PROMOTED" are not the same news and should not
+  // share a slot. The promotion lands on its own, mid-run, which is
+  // where it belongs and what makes it worth having. See UNR-81.
   showOverlay('DEFEATED', 'You scored ' + score, 'Again');
 }
 
@@ -708,8 +755,16 @@ function drawSnake() {
     // point rather than stopping dead with a square edge.
     const radius = (i === snake.length - 1) ? size / 2 : size / 3;
 
-    // Bone white at the shoulders, fading to a dusty grey at the tip.
-    ctx.fillStyle = mixColour([232, 226, 214], [124, 118, 108], t);
+    // Bone white at the shoulders, fading to a dusty grey at the tip -
+    // except for the one segment wearing the belt, which is the rank you
+    // hold. A belt is a band around a body, so it needs no explaining.
+    //
+    // At white belt the band is bone, so it blends into the shoulders and
+    // there is visibly no belt yet. That is correct: the first coloured
+    // band you ever see is the moment you were promoted off white.
+    ctx.fillStyle = (i === BELT_SEGMENT)
+      ? BELTS[beltFor(best) - 1].colour
+      : mixColour([232, 226, 214], [124, 118, 108], t);
     roundedSquare(
       snake[i].x * CELL + inset,
       snake[i].y * CELL + inset,
@@ -924,6 +979,91 @@ function stepDelay() {
 
 
 // =====================================================================
+//  BELTS - rank across runs
+// =====================================================================
+// A belt is a rank you HOLD, and it is what unlocks things later. An
+// unlock has to survive a death to mean anything, which is why rank
+// persists and difficulty does not.
+//
+// Rank comes from your BEST score ever, never the run you are in. That
+// is the whole mechanism: you are promoted only by beating your own
+// record, and only by beating it enough to cross a threshold. A small
+// personal best doesn't promote you. A breakthrough does. It also means
+// you can't climb three belts in one sitting unless you have far
+// exceeded anything you have ever done - in which case you earned all
+// three.
+//
+// One consequence worth keeping: because rank is fixed while you play,
+// it doesn't flicker through three belts during a run. The exception is
+// the breakthrough, where the promotion lands live, mid-run, while you
+// are still trying not to die. Rare, and the best moment the game has.
+//
+// The ladder is the real Tang Soo Do progression rather than a generic
+// karate one. No yellow, no purple. Red sits near the TOP, after brown,
+// which inverts what most people expect. The last belt is midnight blue
+// rather than black, because black symbolises an end and the idea is
+// that learning never stops - Cho Dan Bo means black belt candidate.
+//
+// Colours are lifted off their real-world equivalents to stay legible on
+// a near-black board. Brown and midnight blue are the two that needed it
+// most. Rank is never carried by colour alone - the belt's NAME is shown
+// alongside it - because seven hues cannot be told apart under a colour
+// vision deficiency, and because the board is dark.
+//
+// THRESHOLDS ARE A STARTING SHAPE, to be corrected by play. The first
+// gap is the one that matters: every player experiences white to orange
+// and progressively fewer see each rank after it, so it is the
+// highest-traffic decision on the whole ladder. Nobody has watched a new
+// player score anything yet, so 15 is a compromise between "meet the
+// mechanic before you stop playing" and "make it feel earned", not a
+// finding. If new players bounce off it, lower it - that is a one-line
+// change and there is no cost to being wrong in that direction.
+// Which segment carries the band. Never 0 - that's the head, and the head
+// already carries direction, eyes, blinking, the tongue and the X on
+// defeat. One behind it reads as a collar and is always present, since the
+// snake is three segments long before it has eaten anything.
+const BELT_SEGMENT = 1;
+
+const BELTS = [
+  { name: 'White',         colour: '#e8e2d6', from:   0 },
+  { name: 'Orange',        colour: '#f4761c', from:  15 },
+  { name: 'Green',         colour: '#46a86c', from:  35 },
+  { name: 'Brown',         colour: '#9c6438', from:  65 },
+  { name: 'Red',           colour: '#d3262f', from: 110 },
+  { name: 'Cho Dan Bo',    colour: '#3f7fd0', from: 175 },
+  { name: 'Midnight blue', colour: '#324791', from: 275 }
+];
+
+// Takes a best score, returns the rank held as a 1-based number - the
+// same shape as levelFor, so BELTS[beltFor(x) - 1] gets you the belt.
+// Pure: it reads nothing and changes nothing.
+function beltFor(points) {
+  let rank = 1;
+  for (let i = 0; i < BELTS.length; i++) {
+    if (points >= BELTS[i].from) rank = i + 1;
+  }
+  return rank;
+}
+
+// Did going from one best score to another earn a belt? Returns the belt
+// just reached, or null.
+//
+// NOT CALLED YET. This is the seam the promotion moment plugs into, and
+// it is deliberately not wired to the defeat screen - see gameOver(). It
+// is tested, so whoever builds UNR-81 inherits a settled answer to "was
+// that a promotion?" rather than deriving it again.
+//
+// The first line is the rule that keeps rank honest: a score that isn't a
+// personal best can never promote you, however high it is. Everything
+// else is just asking whether the two scores sit in different bands.
+function promotionFor(oldBest, newBest) {
+  if (newBest <= oldBest) return null;
+  const earned = beltFor(newBest);
+  return earned > beltFor(oldBest) ? BELTS[earned - 1] : null;
+}
+
+
+// =====================================================================
 //  6. INPUT - turn key presses into intentions
 // =====================================================================
 // How many turns to remember while waiting for the next step. Two is enough
@@ -986,11 +1126,34 @@ document.addEventListener('keydown', (event) => {
 // =====================================================================
 //  7. MENUS + KICKOFF
 // =====================================================================
+// The belt line is cleared by default. An ordinary defeat says DEFEATED
+// and what you scored, and nothing else - your rank is already on the
+// snake and on `best` in the header, so repeating it here was a third
+// voice saying something you knew. Callers add it back when it is news.
 function showOverlay(title, text, buttonLabel) {
   titleEl.textContent = title;
   textEl.textContent  = text;
   playBtn.textContent = buttonLabel;
+  beltEl.textContent  = '';
   overlay.classList.remove('hidden');
+}
+
+// The rank you hold, from your best score - not the run you just played.
+// The name is the signal; the colour swatch beside it is the reinforcement,
+// never the other way round, because seven hues cannot be told apart under
+// a colour vision deficiency.
+function showBelt(belt) {
+  const worn = belt || BELTS[beltFor(best) - 1];
+  beltEl.textContent = worn.name + ' belt';
+  beltEl.style.setProperty('--belt', worn.colour);
+}
+
+// The header swatch, which is the persistent one. It annotates `best`
+// because that score is what produced the rank.
+function showBestBelt() {
+  const worn = BELTS[beltFor(best) - 1];
+  bestBeltEl.style.setProperty('--belt', worn.colour);
+  bestBeltEl.title = worn.name + ' belt';
 }
 
 function startGame() {
@@ -1012,6 +1175,8 @@ playBtn.addEventListener('click', () => {
 // heartbeat. Nothing moves until phase becomes 'playing'.
 reset();
 phase = 'ready';
+showBelt();
+showBestBelt();
 loop();
 </script>
 

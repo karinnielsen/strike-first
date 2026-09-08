@@ -12,6 +12,20 @@ For a game, read the version parts as:
 
 ## [Unreleased]
 
+### Added
+- **Belts.** A rank you hold across runs, derived from your best score ever
+  rather than the run you are in. You are promoted only by beating your own
+  record, and only by beating it by enough to cross a threshold — so a small
+  personal best doesn't promote you and a breakthrough does. Seven ranks
+  following the real Tang Soo Do ladder: white, orange, green, brown, red,
+  Cho Dan Bo, midnight blue. Red sits near the top, which inverts what most
+  people expect, and the last belt is midnight blue rather than black because
+  black symbolises an end.
+- Your rank is shown on the start screen and after a defeat, as the belt's
+  **name** alongside a colour swatch. The name carries the information and the
+  colour reinforces it, never the other way round — seven hues can't be told
+  apart under a colour vision deficiency.
+
 ### Planned
 See the [project roadmap](https://linear.app/unrulylabs/project/strike-first-3ec05fe538aa)
 for what's coming and in what order. It moves faster than this file.

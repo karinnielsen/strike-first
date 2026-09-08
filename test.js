@@ -52,7 +52,7 @@ function makeElement() {
     offsetWidth: 0,
     width: 420,          // 420 / CELL(20) = 21 columns, same as the real page
     height: 420,
-    style: {},
+    style: { setProperty() {}, removeProperty() {}, getPropertyValue: () => '' },
     classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
     appendChild() {},
     remove() {},
@@ -119,7 +119,9 @@ globalThis.game = {
   MOUSE_LIFE, ROTTEN_LIFE, WARNING_MOVES, QUEASY_MOVES,
   LEVELS, REACH_BUDGET, TURN_QUEUE_MAX,
   update, reset, isOccupied, stepDelay, mixColour, KEYS, addScore, queasiness,
-  levelFor, reachableSquare
+  levelFor, reachableSquare,
+  BELTS, beltFor, promotionFor,
+  get best() { return best }, set best(v) { best = v }
 };`;
 
 vm.createContext(sandbox);
@@ -544,6 +546,88 @@ describe('input', () => {
     game.update();
     is(game.turnQueue, [], 'queue');
     is(game.direction, {x: 0, y: -1}, 'direction');
+  });
+});
+
+
+describe('belts', () => {
+  test('a new player starts at white', () => {
+    is(game.beltFor(0), 1, 'rank');
+    is(game.BELTS[0].name, 'White', 'name');
+  });
+
+  test('every threshold promotes exactly at its own number', () => {
+    for (let i = 0; i < game.BELTS.length; i++) {
+      is(game.beltFor(game.BELTS[i].from), i + 1, game.BELTS[i].name);
+    }
+  });
+
+  test('one point short of a threshold is still the belt below', () => {
+    for (let i = 1; i < game.BELTS.length; i++) {
+      is(game.beltFor(game.BELTS[i].from - 1), i, 'below ' + game.BELTS[i].name);
+    }
+  });
+
+  test('the ladder is ordered, so every belt is reachable', () => {
+    const ascending = game.BELTS.every(
+      (belt, i) => i === 0 || belt.from > game.BELTS[i - 1].from
+    );
+    is(ascending, true, 'thresholds ascend');
+  });
+
+  test('the top belt caps - nothing outranks midnight blue', () => {
+    const top = game.BELTS.length;
+    is(game.beltFor(100000), top, 'rank');
+    is(game.BELTS[top - 1].name, 'Midnight blue', 'name');
+  });
+
+  test('every belt has a distinct colour', () => {
+    const seen = new Set(game.BELTS.map(b => b.colour));
+    is(seen.size, game.BELTS.length, 'distinct colours');
+  });
+});
+
+
+describe('promotion', () => {
+  test('crossing a threshold on a personal best earns the belt', () => {
+    const belt = game.promotionFor(14, 15);
+    is(belt && belt.name, 'Orange', 'name');
+  });
+
+  test('a personal best that crosses nothing promotes nobody', () => {
+    is(game.promotionFor(15, 16), null, 'promotion');
+  });
+
+  // The rule that keeps rank honest. Matching your record is not beating
+  // it, so it cannot promote you however high the number is.
+  test('equalling your best is not a promotion', () => {
+    is(game.promotionFor(15, 15), null, 'promotion');
+  });
+
+  test('a worse run never promotes, even from a low best', () => {
+    is(game.promotionFor(100, 20), null, 'promotion');
+  });
+
+  test('a breakthrough skips ranks and awards the highest reached', () => {
+    const belt = game.promotionFor(0, 300);
+    is(belt.name, 'Midnight blue', 'name');
+  });
+
+  test('a first run past the first threshold promotes off white', () => {
+    const belt = game.promotionFor(0, 15);
+    is(belt.name, 'Orange', 'name');
+  });
+});
+
+
+describe('rank comes from best, not the current run', () => {
+  test('a huge run does not change rank until it becomes your best', () => {
+    game.best = 0;
+    is(game.beltFor(game.best), 1, 'still white mid-run');
+
+    // Whatever the run scores, rank is a function of `best` alone.
+    game.score = 200;
+    is(game.beltFor(game.best), 1, 'unchanged by the live score');
   });
 });
 
