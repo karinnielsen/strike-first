@@ -18,6 +18,7 @@
     --red:    #d3262f;   /* blood, and losses only     */
     --brand:  #ee3524;   /* the wordmark, hotter than the gameplay red */
     --bone:   #e8e2d6;   /* the cobra                  */
+    --gold-deep: #7a5810; /* the shadow side of gold    */
   }
 
   * { box-sizing: border-box; }
@@ -203,19 +204,65 @@
   .overlay p  { margin: 0; font-size: 13px; color: var(--dim); }
 
 
+  /* The one thing the screen wants you to do, so it should look like a
+     button on a cabinet rather than a rectangle: a solid slab with a hard
+     edge underneath, that travels when you press it.
+
+     No blurred shadows anywhere here. The wordmark already establishes
+     the language - a hard offset behind the letters plus a warm bloom
+     around them - and the button rhymes with it rather than inventing a
+     second treatment. */
   button {
     margin-top: 6px;
     padding: 9px 22px;
     font: inherit;
     font-size: 14px;
+    font-weight: bold;     /* the overlay title above it is bold; a regular
+                              weight button read as the lesser of the two,
+                              which is backwards - this is the thing to do */
+    letter-spacing: 0.4px;
     color: var(--bg);
     background: var(--gold);
     border: 0;
     border-radius: 6px;
     cursor: pointer;
+
+    /* Two shadows doing different jobs: the first is the slab's own edge,
+       hard and unblurred. The second is the bloom the pulse animates. */
+    box-shadow: 0 6px 0 var(--gold-deep), 0 0 9px 1px rgba(232, 181, 58, 0.13);
+    animation: cta-call 2.8s ease-in-out infinite;
   }
 
   button:hover { background: #f5cd6b; }
+
+  /* Travels down onto its own shadow, the way a real key does. This is the
+     part that makes it feel like a button rather than a link, and the
+     pulse stops while you are pressing so the two never fight. */
+  button:active {
+    transform: translateY(6px);
+    box-shadow: 0 0 0 var(--gold-deep);
+    animation: none;
+  }
+
+  /* Keyboard users were getting whatever the browser decided. Bone rather
+     than gold, so the ring reads as separate from the button it is on. */
+  button:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 3px;
+  }
+
+  /* Slow enough to be an invitation rather than a nag, but it never drops
+     to nothing - a floor of 0.13 keeps the button looking lit even at the
+     bottom of the cycle, so it reads as warm rather than as blinking.
+
+     The slab edge is
+     repeated in every frame because a box-shadow list animates as a whole
+     - drop it from one keyframe and the button loses its edge halfway
+     through the cycle. */
+  @keyframes cta-call {
+    0%, 100% { box-shadow: 0 6px 0 var(--gold-deep), 0 0  9px 1px rgba(232, 181, 58, 0.13); }
+    50%      { box-shadow: 0 6px 0 var(--gold-deep), 0 0 24px 4px rgba(232, 181, 58, 0.42); }
+  }
 
   .hint {
     margin: 12px 0 0;
@@ -255,6 +302,10 @@
      Doing this properly across the whole game is its own issue. */
   @media (prefers-reduced-motion: reduce) {
     .stage.promoting canvas { animation: none; box-shadow: 0 0 0 4px var(--belt); }
+
+    /* The slab keeps its edge and its travel - those are not motion, they
+       are what makes it look pressable. Only the pulse stops. */
+    button { animation: none; }
   }
 
   .version {

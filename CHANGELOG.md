@@ -12,6 +12,16 @@ For a game, read the version parts as:
 
 ## [Unreleased]
 
+### Added
+- **The primary button looks like a button on a cabinet.** A solid slab edge
+  under it, no blur, borrowing the language the wordmark already uses; it
+  travels down onto that shadow when you press it, the way a real key does; and
+  a slow warm bloom calls you back to it. Bold, because the overlay title above
+  it is bold and a lighter button read as the lesser of the two — which is
+  backwards for the one thing the screen is asking you to do.
+- The button finally has a **visible focus ring**. Keyboard users were getting
+  whatever the browser decided.
+
 ### Planned
 See the [project roadmap](https://linear.app/unrulylabs/project/strike-first-3ec05fe538aa)
 for what's coming and in what order. It moves faster than this file.
