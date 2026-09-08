@@ -108,14 +108,16 @@ globalThis.game = {
   get snake()         { return snake },         set snake(v)         { snake = v },
   get direction()     { return direction },     set direction(v)     { direction = v },
   get turnQueue()     { return turnQueue },     set turnQueue(v)     { turnQueue = v },
-  get food()          { return food },          set food(v)          { food = v },
-  get mouse()         { return mouse },         set mouse(v)         { mouse = v },
+  get egg()           { return egg },           set egg(v)           { egg = v },
+  get visitor()       { return visitor },       set visitor(v)       { visitor = v },
+  get grow()          { return grow },          set grow(v)          { grow = v },
   get score()         { return score },         set score(v)         { score = v },
   get phase()         { return phase },         set phase(v)         { phase = v },
   COLS, ROWS, CELL, VERSION,
-  APPLE_POINTS, MOUSE_POINTS, MOUSE_LIFE,
+  EGG_POINTS, MOUSE_POINTS, ROTTEN_POINTS, EGG_GROWTH, MOUSE_GROWTH,
+  MOUSE_LIFE, ROTTEN_LIFE, WARNING_MOVES,
   START_DELAY, SPEED_UP, FASTEST, TURN_QUEUE_MAX,
-  update, reset, isOccupied, stepDelay, mixColour, KEYS
+  update, reset, isOccupied, stepDelay, mixColour, KEYS, addScore
 };`;
 
 vm.createContext(sandbox);
@@ -157,9 +159,10 @@ function freshGame(state = {}) {
   game.snake = state.snake || [{x: 5, y: 5}, {x: 4, y: 5}, {x: 3, y: 5}];
   game.direction = state.direction || {x: 1, y: 0};
   game.turnQueue = state.turnQueue || [];
-  game.food = state.food || {x: 15, y: 15};
-  game.mouse = state.mouse === undefined ? null : state.mouse;
+  game.egg = state.egg || {x: 15, y: 15};
+  game.visitor = state.visitor === undefined ? null : state.visitor;
   game.score = state.score || 0;
+  game.grow = 0;
 }
 
 function pressKey(key) {
@@ -219,13 +222,13 @@ describe('isOccupied - can something spawn here?', () => {
     is(game.isOccupied({x: 4, y: 5}), true);
   });
 
-  test('the apple square is occupied', () => {
-    freshGame({ food: {x: 12, y: 12} });
+  test('the egg square is occupied', () => {
+    freshGame({ egg: {x: 12, y: 12} });
     is(game.isOccupied({x: 12, y: 12}), true);
   });
 
-  test('the mouse square is occupied', () => {
-    freshGame({ mouse: {x: 8, y: 2, life: 30, facing: 1} });
+  test('the visitor square is occupied', () => {
+    freshGame({ visitor: {kind: 'mouse', x: 8, y: 2, life: 30, facing: 1} });
     is(game.isOccupied({x: 8, y: 2}), true);
   });
 
@@ -250,27 +253,24 @@ describe('update - moving one step', () => {
     is(game.snake.length, before, 'length');
   });
 
-  test('eating an apple grows the snake by one', () => {
-    freshGame({ food: {x: 6, y: 5} });
+  test('eating an egg grows the snake by one', () => {
+    freshGame({ egg: {x: 6, y: 5} });
     const before = game.snake.length;
     game.update();
     is(game.snake.length, before + 1, 'length');
   });
 
-  test('eating an apple scores a point', () => {
-    freshGame({ food: {x: 6, y: 5} });
+  test('eating an egg scores a point', () => {
+    freshGame({ egg: {x: 6, y: 5} });
     game.update();
-    is(game.score, game.APPLE_POINTS, 'score');
+    is(game.score, game.EGG_POINTS, 'score');
   });
 
-  test('eating the mouse scores five and clears it', () => {
-    freshGame({
-      food: {x: 15, y: 15},
-      mouse: {x: 6, y: 5, life: 30, facing: 1}
-    });
+  test('eating a mouse scores five and clears the slot', () => {
+    freshGame({ visitor: {kind: 'mouse', x: 6, y: 5, life: 30, facing: 1} });
     game.update();
     is(game.score, game.MOUSE_POINTS, 'score');
-    is(game.mouse, null, 'mouse');
+    is(game.visitor, null, 'visitor');
   });
 });
 
@@ -301,17 +301,93 @@ describe('update - dying', () => {
 });
 
 
-describe('the mouse countdown', () => {
+describe('the visitor countdown', () => {
   test('loses one life per move, not per second', () => {
-    freshGame({ mouse: {x: 18, y: 18, life: 10, facing: 1} });
+    freshGame({ visitor: {kind: 'mouse', x: 18, y: 18, life: 10, facing: 1} });
     game.update();
-    is(game.mouse.life, 9, 'life');
+    is(game.visitor.life, 9, 'life');
   });
 
   test('leaves when its life runs out', () => {
-    freshGame({ mouse: {x: 18, y: 18, life: 1, facing: 1} });
+    freshGame({ visitor: {kind: 'mouse', x: 18, y: 18, life: 1, facing: 1} });
     game.update();
-    is(game.mouse, null, 'mouse');
+    is(game.visitor, null, 'visitor');
+  });
+
+  test('a rotten egg goes off too', () => {
+    freshGame({ visitor: {kind: 'rotten', x: 18, y: 18, life: 1, facing: 1} });
+    game.update();
+    is(game.visitor, null, 'visitor');
+  });
+});
+
+
+describe('the food roster', () => {
+  test('a mouse costs you more length than an egg', () => {
+    is(game.MOUSE_GROWTH > game.EGG_GROWTH, true, 'mouse grows you more');
+  });
+
+  test('eating a mouse lengthens the snake over two steps, not one', () => {
+    freshGame({ visitor: {kind: 'mouse', x: 6, y: 5, life: 30, facing: 1} });
+    const before = game.snake.length;
+    game.update();                       // eats it
+    is(game.snake.length, before + 1, 'after the first step');
+    game.update();
+    is(game.snake.length, before + game.MOUSE_GROWTH, 'after the second');
+  });
+
+  test('a rotten egg takes points off', () => {
+    freshGame({
+      score: 10,
+      visitor: {kind: 'rotten', x: 6, y: 5, life: 30, facing: 1}
+    });
+    game.update();
+    is(game.score, 10 + game.ROTTEN_POINTS, 'score');
+  });
+
+  test('a rotten egg is worth negative points, so the popup goes red', () => {
+    is(game.ROTTEN_POINTS < 0, true, 'rotten is a loss');
+  });
+
+  test('a rotten egg does NOT change your length', () => {
+    freshGame({ visitor: {kind: 'rotten', x: 6, y: 5, life: 30, facing: 1} });
+    const before = game.snake.length;
+    game.update();
+    game.update();
+    is(game.snake.length, before, 'length');
+  });
+
+  test('the score never goes below zero', () => {
+    freshGame({
+      score: 1,
+      visitor: {kind: 'rotten', x: 6, y: 5, life: 30, facing: 1}
+    });
+    game.update();
+    is(game.score, 0, 'score');
+  });
+
+  test('eating an egg clears the slot for a new one somewhere else', () => {
+    freshGame({ egg: {x: 6, y: 5} });
+    game.update();
+    is(game.egg.x === 6 && game.egg.y === 5, false, 'egg moved');
+  });
+
+  test('there is only one visitor slot, so never three things at once', () => {
+    freshGame({ egg: {x: 6, y: 5} });
+    for (let i = 0; i < 200; i++) game.update();
+    const things = 1 + (game.visitor ? 1 : 0);
+    is(things <= 2, true, 'at most two things on the board');
+  });
+
+  test('nothing is ever placed on top of the snake', () => {
+    freshGame({ egg: {x: 6, y: 5} });
+    for (let i = 0; i < 60; i++) {
+      if (game.phase !== 'playing') break;
+      const onSnake = (t) => !!t && game.snake.some(p => p.x === t.x && p.y === t.y);
+      is(onSnake(game.egg), false, 'egg clear of the snake');
+      is(onSnake(game.visitor), false, 'visitor clear of the snake');
+      game.update();
+    }
   });
 });
 

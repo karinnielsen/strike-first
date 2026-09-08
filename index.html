@@ -105,14 +105,13 @@
     bottom: 100%;                    /* sit directly above the counter */
     font-size: 14px;
     font-weight: bold;
-    color: var(--food);
     white-space: nowrap;
     pointer-events: none;            /* never let it block a click */
     color: var(--bone);              /* bone: a routine gain */
     animation: float-up 900ms ease-out forwards;
   }
 
-  /* A mouse is worth five times an apple, so its +5 arrives bigger and
+  /* A mouse is worth five times an egg, so its +5 arrives bigger and
      gold. The size difference IS the message. */
   .score-pop.big { font-size: 21px; color: var(--gold); }
 
@@ -253,19 +252,39 @@ const playBtn   = document.getElementById('play-btn');
 let snake;          // list of squares, snake[0] is the head
 let direction;      // the way we ARE moving, e.g. {x:1, y:0} is right
 let turnQueue;      // turns asked for but not made yet, soonest first
-let food;           // the square the apple sits on, e.g. {x:4, y:7}
-let mouse;          // the mouse, or null when there isn't one about
+let egg;            // the baseline food. There is always exactly one.
+let visitor;        // the second slot: a mouse or a rotten egg, or null
+let grow;           // squares still owed to the snake from something eaten
 let score;
 let phase;          // 'ready' | 'playing' | 'paused' | 'over'
 
-// What the food is worth, and how the mouse behaves. All the balance of
-// the game lives in these four numbers - they're the first thing to
-// fiddle with if it feels too easy or too mean.
-const APPLE_POINTS = 1;
-const MOUSE_POINTS = 5;
-const MOUSE_CHANCE = 0.4;   // roughly two apples in five flush out a mouse
-const MOUSE_LIFE   = 65;    // how many of YOUR MOVES it sticks around for
-const MOUSE_WARNING = 18;   // moves left when it starts flashing in panic
+// Three foods filling three roles, and no more. The EGG is the baseline:
+// always there, low value, no cost. The MOUSE is the temptation: worth
+// five times as much, but it expires and it costs you extra length. The
+// ROTTEN egg is the hazard: it takes points off you.
+//
+// Only ever two things on the board - the egg, plus at most one visitor.
+// That's enforced by there being a single `visitor` slot rather than by
+// anyone remembering the rule, and it keeps every decision binary: the
+// egg, or the other thing. That's all you can answer at 70ms a move.
+const EGG_POINTS    = 1;
+const MOUSE_POINTS  = 5;
+const ROTTEN_POINTS = -3;   // worth three eggs, so it stings without ruining a run
+
+const EGG_GROWTH    = 1;
+const MOUSE_GROWTH  = 2;    // PROVISIONAL - the whole point is that a mouse
+                            // costs you something. Needs playing. See UNR-83.
+
+// How often a visitor turns up, and which kind it is when it does.
+const VISITOR_CHANCE = 0.4;  // roughly two eggs in five bring something along
+const ROTTEN_SHARE   = 0.4;  // ...and this fraction of those are rotten
+
+// How many of YOUR MOVES a visitor sticks around for. The longest possible
+// trip across the board is 40 moves, corner to corner, so a mouse at 45 is
+// reachable from most places but the far corner is a real gamble.
+const MOUSE_LIFE    = 45;   // PROVISIONAL, was 65. Needs playing. See UNR-82.
+const ROTTEN_LIFE   = 35;
+const WARNING_MOVES = 12;   // moves left when a visitor starts flashing
 
 // localStorage is the browser's tiny notepad - it survives a refresh.
 // Renaming the game shouldn't cost you your record, so we still read the
@@ -282,9 +301,10 @@ function reset() {
   direction     = {x: 1, y: 0};   // heading right
   turnQueue     = [];
   score         = 0;
-  mouse         = null;
+  grow          = 0;
+  visitor       = null;
   scoreEl.textContent = score;
-  placeFood();
+  placeEgg();
 }
 
 // Pick a random square that nothing is sitting on yet. The do/while just
@@ -302,28 +322,35 @@ function randomEmptySquare() {
 
 function isOccupied(spot) {
   if (snake.some(part => part.x === spot.x && part.y === spot.y)) return true;
-  if (food  && food.x  === spot.x && food.y  === spot.y)  return true;
-  if (mouse && mouse.x === spot.x && mouse.y === spot.y)   return true;
+  if (egg     && egg.x     === spot.x && egg.y     === spot.y) return true;
+  if (visitor && visitor.x === spot.x && visitor.y === spot.y) return true;
   return false;
 }
 
-function placeFood() {
-  food = null;                    // clear it first so it can't block itself
-  food = randomEmptySquare();
+function placeEgg() {
+  egg = null;                     // clear it first so it can't block itself
+  egg = randomEmptySquare();
 }
 
-// Called after every apple. Most of the time nothing happens - that's what
-// makes a mouse feel like an event rather than a routine.
-function maybeSpawnMouse() {
-  if (mouse) return;                          // never more than one at a time
-  if (Math.random() > MOUSE_CHANCE) return;
+// Called after every egg. Most of the time nothing happens - that's what
+// makes a visitor feel like an event rather than a routine.
+//
+// There is only one slot, so a mouse and a rotten egg can never be out at
+// the same time. Every arrival is therefore the same question: is that
+// worth going for, or is it going to cost me? You have to look, and
+// looking away from your own head is itself the risk.
+function maybeSpawnVisitor() {
+  if (visitor) return;                          // the slot is taken
+  if (Math.random() > VISITOR_CHANCE) return;
 
-  const spot = randomEmptySquare();
-  mouse = {
-    x: spot.x,
-    y: spot.y,
-    life:   MOUSE_LIFE,
-    facing: Math.random() < 0.5 ? 1 : -1      // which way it happens to sit
+  const rotten = Math.random() < ROTTEN_SHARE;
+  const spot   = randomEmptySquare();
+  visitor = {
+    kind:   rotten ? 'rotten' : 'mouse',
+    x:      spot.x,
+    y:      spot.y,
+    life:   rotten ? ROTTEN_LIFE : MOUSE_LIFE,
+    facing: Math.random() < 0.5 ? 1 : -1        // which way it happens to sit
   };
 }
 
@@ -341,9 +368,9 @@ function update() {
   // The mouse is on a countdown, measured in your moves rather than in
   // seconds. That keeps it just as catchable at top speed as at level 1,
   // and means it doesn't quietly escape while the game is paused.
-  if (mouse) {
-    mouse.life -= 1;
-    if (mouse.life <= 0) mouse = null;   // it got bored and scurried off
+  if (visitor) {
+    visitor.life -= 1;
+    if (visitor.life <= 0) visitor = null;   // it got bored, or it went off
   }
 
   // The new head is the old head, one square along in our direction.
@@ -365,30 +392,38 @@ function update() {
   // Move: add the new head to the front of the list...
   snake.unshift(head);
 
-  // Did we land on anything edible? Only one of these can be true, since
-  // the apple and the mouse are never on the same square.
-  let ate = false;
-
-  if (head.x === food.x && head.y === food.y) {
-    ate = true;
-    addScore(APPLE_POINTS, 'apple');
-    placeFood();
-    maybeSpawnMouse();          // an apple sometimes flushes a mouse out
-  } else if (mouse && head.x === mouse.x && head.y === mouse.y) {
-    ate = true;
-    addScore(MOUSE_POINTS, 'mouse');
-    mouse = null;
+  // Did we land on anything? Only one of these can be true, since nothing
+  // is ever placed on a square something else already occupies.
+  if (head.x === egg.x && head.y === egg.y) {
+    addScore(EGG_POINTS, 'egg');
+    grow += EGG_GROWTH;
+    placeEgg();
+    maybeSpawnVisitor();        // an egg sometimes brings something with it
+  } else if (visitor && head.x === visitor.x && head.y === visitor.y) {
+    if (visitor.kind === 'mouse') {
+      addScore(MOUSE_POINTS, 'mouse');
+      grow += MOUSE_GROWTH;     // the cost: worth five, but you carry two
+    } else {
+      addScore(ROTTEN_POINTS, 'rotten');
+      // Deliberately no length change. Taking length OFF would be a
+      // *relief* late in a run, which is the opposite of a punishment.
+    }
+    visitor = null;
   }
 
-  // If we ate, we DON'T remove the tail. That one skipped removal is the
-  // entire reason the snake grows. Neat, right?
-  if (!ate) snake.pop();
+  // Growing is just skipping the tail removal. `grow` is how many squares
+  // we still owe the snake, so a mouse worth two lengthens it over two
+  // steps rather than needing a special case.
+  if (grow > 0) grow -= 1;
+  else snake.pop();
 }
 
 // Every point in the game goes through here, so the feedback can never
 // get out of step with the number.
 function addScore(points, kind) {
-  score += points;
+  // Floored at zero. A negative score would read as broken, and belt
+  // thresholds are all defined upwards from nothing.
+  score = Math.max(0, score + points);
   scoreEl.textContent = score;
 
   // Restart the squash animation. Removing the class isn't enough on its
@@ -403,8 +438,8 @@ function addScore(points, kind) {
   // adds the next food type.
   const pop = document.createElement('div');
   pop.className = 'score-pop'
-                + (kind === 'mouse' ? ' big'   : '')
-                + (points < 0       ? ' minus' : '');
+                + (kind === 'mouse'  ? ' big'   : '')
+                + (points < 0        ? ' minus' : '');
   pop.textContent = (points < 0 ? '−' : '+') + Math.abs(points);
   scoreEl.parentElement.appendChild(pop);
 
@@ -443,26 +478,136 @@ function draw() {
     }
   }
 
-  // Food, with a gentle pulse driven by the clock.
-  const pulse = 1 + Math.sin(Date.now() / 200) * 0.12;
-  ctx.fillStyle = '#d3262f';
-  circle(food.x * CELL + CELL / 2, food.y * CELL + CELL / 2, (CELL / 2 - 3) * pulse);
+  // The egg, with a gentle pulse driven by the clock.
+  const pulse = 1 + Math.sin(Date.now() / 200) * 0.10;
+  drawEgg(egg.x * CELL + CELL / 2, egg.y * CELL + CELL / 2, pulse);
 
-  if (mouse) drawMouse();
+  if (visitor) {
+    // Flash when it's nearly out of time, so you get fair warning either
+    // way: that a mouse is about to bolt, or that a rotten one is about
+    // to stop being your problem.
+    const panicking = visitor.life < WARNING_MOVES;
+    if (!(panicking && Math.floor(Date.now() / 140) % 2 === 0)) {
+      if (visitor.kind === 'mouse') drawMouse();
+      else                          drawRottenEgg();
+    }
+  }
 
   drawSnake();
 }
 
 
+// ---- the egg ----------------------------------------------------------
+// Cobras raid nests; they don't eat fruit. The warm rim matters: the snake
+// is bone-white, and a plain pale oval next to it is one shape too many.
+function drawEgg(cx, cy, pulse) {
+  ctx.fillStyle = '#f4e8cf';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, 5.1 * pulse, 6.4 * pulse, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#c9a227';
+  ctx.lineWidth   = 1.1;
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.beginPath();
+  ctx.ellipse(cx - 1.6, cy - 2.3, 1.3, 1.9, -0.4, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+
+// ---- the rotten egg ---------------------------------------------------
+// The hazard. It reuses the egg's vocabulary on purpose - you already know
+// an egg is good, so an egg that looks WRONG needs no explaining.
+//
+// The difference has to be the silhouette, not just the colour. A shape
+// reads in the corner of your eye at 20 pixels; a hue does not, and a
+// player with colour blindness never sees it at all. So the shell is
+// broken open along the top rather than merely being a different green.
+function drawRottenEgg() {
+  const cx = visitor.x * CELL + CELL / 2;
+  const cy = visitor.y * CELL + CELL / 2;
+
+  // A stream of fumes coming off it. Three puffs on staggered phases, each
+  // rising, swelling and fading, so it reads as a continuous emission
+  // rather than three blobs. Drawn first so the shell sits on top.
+  //
+  // This is the bit that makes it findable. On a near-black board a dull
+  // shape disappears; movement does not, and it catches the eye well
+  // before you've consciously identified what it is.
+  for (let i = 0; i < 3; i++) {
+    const phase = ((Date.now() / 1100) + i / 3) % 1;
+    const rise  = 4 + phase * 9;
+    const wob   = Math.sin(phase * 5 + i * 2) * 2.2;
+    ctx.fillStyle = `rgba(178, 214, 92, ${0.42 * (1 - phase)})`;
+    circle(cx + wob, cy - rise, 1.6 + phase * 2.6);
+  }
+
+  // A soft halo, so the shell itself lifts off the dark board.
+  ctx.fillStyle = 'rgba(163, 201, 74, 0.13)';
+  circle(cx, cy + 1, 9);
+
+  ctx.save();
+  ctx.translate(cx, cy + 1);
+
+  // Tipped over. A good egg stands upright, so the tilt alone tells you
+  // something is wrong before you've registered the colour or the crack.
+  // It's also the one cue that can't be confused with the mouse, which
+  // shares this slot and is the only other thing that appears here.
+  ctx.rotate(-0.5);
+
+  // Acid green rather than the muted olive this started as. It has to be
+  // clearly visible against a very dark board - a hazard you cannot see
+  // is not a hazard, it is bad luck.
+  ctx.fillStyle = '#a8c341';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 5.0, 6.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Dull, dark rim. The egg's gold rim is what says "worth eating", so
+  // this must not have one - that contrast does as much work as the shape.
+  ctx.strokeStyle = '#454f1c';
+  ctx.lineWidth   = 1.2;
+  ctx.stroke();
+
+  // Mottling, so it reads as spoiled rather than simply green.
+  ctx.fillStyle = 'rgba(78, 92, 30, 0.55)';
+  circle(-1.8, 1.9, 1.5);
+  circle(1.9, 3.1, 1.0);
+
+  // A crack across the shell. Shallow on purpose: the egg silhouette has
+  // to survive, or it stops borrowing the vocabulary the player already
+  // knows and becomes just another blob to learn.
+  ctx.strokeStyle = '#2f3614';
+  ctx.beginPath();
+  ctx.moveTo(-4.6, -1.4);
+  ctx.lineTo(-1.9, -3.3);
+  ctx.lineTo(-0.1, -1.1);
+  ctx.lineTo(2.1,  -3.6);
+  ctx.lineTo(4.4,  -1.7);
+  ctx.lineWidth = 1.4;
+  ctx.lineJoin  = 'round';
+  ctx.stroke();
+
+  // A bite missing from the rim, so the outline itself is broken.
+  ctx.fillStyle = '#131316';
+  ctx.beginPath();
+  ctx.moveTo(1.6, -5.4);
+  ctx.lineTo(4.2, -4.0);
+  ctx.lineTo(4.9, -6.2);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+
 // ---- the mouse --------------------------------------------------------
 function drawMouse() {
-  // Flash when it's nearly out of time, so you get fair warning that it's
-  // about to bolt. This is the whole reason the mouse is a decision.
-  if (mouse.life < MOUSE_WARNING && Math.floor(Date.now() / 140) % 2 === 0) return;
-
-  const cx = mouse.x * CELL + CELL / 2;
-  const cy = mouse.y * CELL + CELL / 2;
-  const f  = mouse.facing;          // +1 faces right, -1 faces left
+  const cx = visitor.x * CELL + CELL / 2;
+  const cy = visitor.y * CELL + CELL / 2;
+  const f  = visitor.facing;        // +1 faces right, -1 faces left
 
   // Tail, curling out behind it.
   ctx.strokeStyle = '#8a7461';
@@ -479,8 +624,8 @@ function drawMouse() {
   ctx.fillStyle = '#d9938a';
   circle(cx + f * 1.4, cy - 4.4, 1.5);
 
-  // Body, then the head on top of it. Deliberately a touch brighter than
-  // the apple - it's worth five times as much, so it should catch the eye.
+  // Body, then the head on top of it. Deliberately warmer than the egg -
+  // it's worth five times as much, so it should catch the eye.
   ctx.fillStyle = '#a58a70';
   ctx.beginPath();
   ctx.ellipse(cx - f * 1, cy + 1, 6.3, 5, 0, 0, Math.PI * 2);
@@ -562,9 +707,14 @@ function drawHead() {
   ctx.restore();
 
   // Tongue flicks every couple of seconds - and stays out the whole time
-  // there's food directly ahead, because the snake gets excited.
-  const foodAhead = food.x === head.x + fwd.x && food.y === head.y + fwd.y;
-  if (phase === 'playing' && (foodAhead || Date.now() % 2600 < 280)) {
+  // there's something worth eating directly ahead, because the snake gets
+  // excited. Not for a rotten egg. It doesn't want that one either.
+  const ahead = { x: head.x + fwd.x, y: head.y + fwd.y };
+  const treatAhead =
+       (egg.x === ahead.x && egg.y === ahead.y)
+    || (visitor && visitor.kind === 'mouse'
+        && visitor.x === ahead.x && visitor.y === ahead.y);
+  if (phase === 'playing' && (treatAhead || Date.now() % 2600 < 280)) {
     drawTongue(cx, cy, fwd, side);
   }
 
@@ -675,7 +825,7 @@ function loop() {
 // START_DELAY is your level-1 speed - raise this number for a gentler
 // opening, lower it if you want to be thrown in at the deep end.
 const START_DELAY = 200;   // level 1: an unhurried, thinking-time pace
-const SPEED_UP    = 4;     // ms shaved off for each piece of food eaten
+const SPEED_UP    = 4;     // ms shaved off per point scored
 const FASTEST     = 70;    // the speed cap, no matter how high you score
 
 function stepDelay() {

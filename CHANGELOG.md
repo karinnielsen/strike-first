@@ -12,6 +12,27 @@ For a game, read the version parts as:
 
 ## [Unreleased]
 
+### Added
+- **Eggs** replace apples as the baseline food. Cobras raid nests; they don't
+  eat fruit. Same rule, same behaviour, different sprite, so nothing to relearn.
+- **Rotten eggs**, worth -3 points. The first thing in the game that punishes
+  you rather than rewarding you, and the first use of the red popup styling
+  that the "red means losing points" rule was written for. Eating one costs
+  points but not length, deliberately: taking length off would be a *relief*
+  late in a run, which is the opposite of a punishment.
+- Only ever two things on the board — the egg plus at most one visitor, which
+  is either a mouse or a rotten egg. Enforced by there being a single slot
+  rather than by anyone remembering the rule, so every decision stays binary.
+
+### Changed
+- A mouse now costs **2 length** instead of 1, so taking one is a real
+  decision rather than pure upside. Provisional, needs playtesting.
+- `MOUSE_LIFE` cut from 65 moves to 45. The longest trip across the board is
+  40 moves, so the far corner becomes a genuine gamble rather than a
+  formality. Provisional, needs playtesting.
+- Score is floored at zero. A negative score reads as broken, and belt
+  thresholds are all defined upwards from nothing.
+
 ### Fixed
 - Turns are queued instead of overwriting each other, so a fast two-key corner
   no longer loses the second press. Previously a turn was checked against the

@@ -28,9 +28,16 @@ Workspace **Unruly labs** (`UNR`). Project: **Strike First** —
 - **Ask before changing Linear configuration.** Workflow states, project
   structure, views. Creating a *new* label counts. *Applying* existing labels to
   issues does not — use them freely.
-- **Everything unimplemented lives in the `Idea` status.** It's a backlog-type
-  state ordered before `Backlog`. Issues reach `Backlog` and then `Todo` only as
-  a deliberate decision — otherwise the backlog becomes a graveyard.
+- **Three tiers, and the line between them is commitment.**
+  - `Idea` — blue sky. Written down so it isn't lost, not committed to. Most
+    things live here and that's correct.
+  - `Backlog` — committed in earnest. In practice: it sits in a milestone that
+    has a target date.
+  - `Todo` — being worked on now.
+
+  Promotion is always a deliberate decision, never drift. That's what stops the
+  backlog becoming a graveyard, and it's why an idea landing in `Idea` costs
+  nothing.
 - **Always assign new issues to Karin.** She is the only member of the team, so
   an unassigned issue is never correct. Set `assignee: "me"` on creation.
 - **The label set is deliberately small and complete:** Feature, Improvement,
@@ -165,11 +172,11 @@ ports, machines or to a published URL. That's expected, not a bug.
 twice as inline paths and rejected both times. Detailed artwork wants to be
 drawn in a vector editor and dropped in as a file. See UNR-86.
 
-**Naming a branch after an issue closes that issue when the branch merges.**
-The Linear integration matches `unr-90-...` to UNR-90 and marks it Done on
-merge.
-For a PR that only partly addresses an issue, use a branch name that doesn't
-reference it.
+**A merged *pull request* closes the issue its branch is named after.** The
+Linear integration matches `unr-90-...` to UNR-90 and marks it Done when the PR
+merges. A plain fast-forward push to `main` does *not* — that needs closing by
+hand. So: for a PR that only partly addresses an issue, use a branch name that
+doesn't reference it; and after a direct merge, close the issue yourself.
 
 **Balance lives in named constants** at the top of the script. Change those
 rather than scattering numbers through the code.
