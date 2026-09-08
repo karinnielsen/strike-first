@@ -12,6 +12,16 @@ For a game, read the version parts as:
 
 ## [Unreleased]
 
+### Planned
+See the [project roadmap](https://linear.app/unrulylabs/project/strike-first-3ec05fe538aa)
+for what's coming and in what order. It moves faster than this file.
+
+## [0.3.0] — 2026-09-08
+
+Earn your belt. Score becomes a rank you hold rather than a number you lose,
+the snake wears it, and beating your own record is now a moment that happens
+while you are still playing.
+
 ### Added
 - **Belts.** A rank you hold across runs, derived from your best score ever
   rather than the run you are in. You are promoted only by beating your own
@@ -79,10 +89,6 @@ For a game, read the version parts as:
 - **Your best score now updates the moment you pass it**, rather than when you
   die. That's what lets a promotion land mid-run, which is the whole point of
   it — you find out while you're still trying not to die, not afterwards.
-
-### Planned
-See the [project roadmap](https://linear.app/unrulylabs/project/strike-first-3ec05fe538aa)
-for what's coming and in what order. It moves faster than this file.
 
 ## [0.2.0] — 2026-09-08
 
