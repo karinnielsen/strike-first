@@ -29,6 +29,12 @@ For a game, read the version parts as:
   produces your rank, so putting them together makes the link visible without
   a tutorial — and it's what connects "my snake has an orange block" to "I am
   an orange belt".
+- **Your rank is named in words in the header, always.** Roughly one man in
+  twelve can't separate the brown and red belts, and those are consecutive
+  ranks — so without a name, the promotion someone most wants to see is the one
+  they can't see. The swatch stays the quick read for everyone else; the name is
+  what makes it unambiguous. Verified against a deuteranopia simulation rather
+  than by eye.
 - Your rank is also named in full on the start screen. The name carries the
   information and the colour reinforces it, never the other way round: seven
   hues can't be told apart under a colour vision deficiency.
