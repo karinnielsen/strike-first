@@ -1,0 +1,18 @@
+<!doctype html><meta charset="utf-8"><title>Strike First — pixel sprite review</title>
+<style>body{background:#09090b;color:#ece6da;font:14px monospace;margin:32px}h1{font-size:20px;color:#e8b53a}canvas{display:block;margin:24px 0;image-rendering:pixelated}label{margin-right:20px}select{background:#131316;color:#ece6da;padding:6px}img{max-width:100%}</style>
+<h1>Pixel board sprites / experiment</h1>
+<p>Native 20px cells below. Static artwork review; game timing remains in the game.</p>
+<label>Head state <select id="state"><option>eyes-open</option><option>eyes-blink</option><option>eyes-defeated</option></select></label>
+<label>Direction <select id="direction"><option value="0">Right</option><option value="1">Down</option><option value="2">Left</option><option value="3">Up</option></select></label>
+<label><input id="tongue" type="checkbox" checked>Tongue</label>
+<label><input id="mirror" type="checkbox">Mouse faces left</label>
+<canvas id="board" width="420" height="120"></canvas>
+<p>Same pixels enlarged for inspection:</p><canvas id="large" width="1008" height="168"></canvas>
+<img src="preview.png" alt="All six sprites at native and enlarged sizes">
+<script src="sprites.js"></script><script>
+const S=PIXEL_SPRITES, board=document.querySelector('#board'), large=document.querySelector('#large');
+function paint(ctx,sp,scale){for(let y=0;y<sp.rows.length;y++)for(let x=0;x<sp.rows.length;x++){const c=sp.palette[sp.rows[y][x]];if(c){ctx.fillStyle=c;ctx.fillRect(x*scale,y*scale,scale,scale);}}}
+function item(ctx,name,cx,cy,scale){ctx.save();ctx.translate(cx,cy);if(name==='snake-head'){ctx.rotate(+document.querySelector('#direction').value*Math.PI/2);ctx.translate(-9*scale,-9*scale);for(const key of ['hood','markings',...(document.querySelector('#tongue').checked?['tongue']:[]),'head',document.querySelector('#state').value])paint(ctx,S[name].parts[key],scale);}else{if(name==='mouse'&&document.querySelector('#mirror').checked)ctx.scale(-1,1);ctx.translate(-5*scale,-5*scale);paint(ctx,S[name],scale);}ctx.restore();}
+function draw(){for(const canvas of [board,large]){const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.fillStyle='#131316';ctx.fillRect(0,0,canvas.width,canvas.height);}const ctx=board.getContext('2d');ctx.strokeStyle='#2a2a30';ctx.lineWidth=1;for(let x=0;x<=420;x+=20){ctx.beginPath();ctx.moveTo(x+.5,0);ctx.lineTo(x+.5,120);ctx.stroke();}for(let y=0;y<=120;y+=20){ctx.beginPath();ctx.moveTo(0,y+.5);ctx.lineTo(420,y+.5);ctx.stroke();}['egg','rotten-egg','mouse','snake-head','body','tail'].forEach((n,i)=>{item(ctx,n,50+60*i,50,2);item(large.getContext('2d'),n,84+i*168,84,8);});}
+for(const el of document.querySelectorAll('select,input'))el.addEventListener('change',draw);draw();
+</script>
