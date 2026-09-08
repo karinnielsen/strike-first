@@ -335,7 +335,31 @@ Design direction is supplied separately. These are the functional targets.
 * The mouse must not be confusable with either egg at 20px
 * The snake head and body: see "The snake is not a picture" above
 
-## 9. Deliverables
+## 9. How to deliver
+
+Same every time, so a request can be one line rather than a page.
+
+**Push a branch. Never main.**
+
+* Branch name `assets/<what-it-is>`, e.g. `assets/pixel-sprites`
+* **One commit.** No force-pushing, no rewriting history
+* **Add files under `design/<what-it-is>/` only.** Do not modify `index.html`,
+  `test.js`, `CHANGELOG.md`, `CLAUDE.md`, or anything else in the repo — the
+  integration is done separately and by hand
+* Do not bump a version, create a tag, or merge anything
+* Open it as a draft PR and stop there
+
+The reason for the last two: integration always needs decisions the artwork
+cannot make on its own. Every batch so far has needed at least one — a colour
+that collided with something, a level of detail that did not survive cell
+size, a coordinate contract that had to be written down.
+
+**Say what you had to break.** A short `README.md` in the same directory
+listing anything in this spec you could not meet, and why. That has been more
+useful than the artwork twice now: the head scale conflict was found that way,
+and so was the fact that a blurred vapor cloud cannot be a filter-free path.
+
+## 10. What to send back
 
 1. The optimised `.svg` — ids prefixed, text outlined, no external references
 2. A PNG preview at intended display size; for board assets, a second at 20 × 20px
