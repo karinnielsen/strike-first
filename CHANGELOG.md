@@ -23,6 +23,10 @@ For a game, read the version parts as:
 - Only ever two things on the board — the egg plus at most one visitor, which
   is either a mouse or a rotten egg. Enforced by there being a single slot
   rather than by anyone remembering the rule, so every decision stays binary.
+- The snake **turns green and sticks its tongue out** for a while after eating
+  a rotten egg, then recovers. Measured in your moves rather than seconds, so
+  it lasts the same number of decisions at every speed. You get to watch
+  yourself regret it, rather than only seeing a number go down.
 
 ### Changed
 - A mouse now costs **2 length** instead of 1, so taking one is a real

@@ -255,6 +255,7 @@ let turnQueue;      // turns asked for but not made yet, soonest first
 let egg;            // the baseline food. There is always exactly one.
 let visitor;        // the second slot: a mouse or a rotten egg, or null
 let grow;           // squares still owed to the snake from something eaten
+let queasy;         // moves left of looking green, after a rotten egg
 let score;
 let phase;          // 'ready' | 'playing' | 'paused' | 'over'
 
@@ -286,6 +287,11 @@ const MOUSE_LIFE    = 45;   // PROVISIONAL, was 65. Needs playing. See UNR-82.
 const ROTTEN_LIFE   = 35;
 const WARNING_MOVES = 12;   // moves left when a visitor starts flashing
 
+// How long the snake looks ill after a rotten egg. Counted in YOUR MOVES
+// like everything else, so it lasts the same number of decisions at every
+// speed and doesn't tick away while the game is paused.
+const QUEASY_MOVES  = 14;
+
 // localStorage is the browser's tiny notepad - it survives a refresh.
 // Renaming the game shouldn't cost you your record, so we still read the
 // old key if the new one isn't there yet.
@@ -302,6 +308,7 @@ function reset() {
   turnQueue     = [];
   score         = 0;
   grow          = 0;
+  queasy        = 0;
   visitor       = null;
   scoreEl.textContent = score;
   placeEgg();
@@ -368,6 +375,8 @@ function update() {
   // The mouse is on a countdown, measured in your moves rather than in
   // seconds. That keeps it just as catchable at top speed as at level 1,
   // and means it doesn't quietly escape while the game is paused.
+  if (queasy > 0) queasy -= 1;
+
   if (visitor) {
     visitor.life -= 1;
     if (visitor.life <= 0) visitor = null;   // it got bored, or it went off
@@ -405,6 +414,7 @@ function update() {
       grow += MOUSE_GROWTH;     // the cost: worth five, but you carry two
     } else {
       addScore(ROTTEN_POINTS, 'rotten');
+      queasy = QUEASY_MOVES;    // and you have to watch yourself regret it
       // Deliberately no length change. Taking length OFF would be a
       // *relief* late in a run, which is the opposite of a punishment.
     }
@@ -538,15 +548,17 @@ function drawRottenEgg() {
   // before you've consciously identified what it is.
   for (let i = 0; i < 3; i++) {
     const phase = ((Date.now() / 1100) + i / 3) % 1;
-    const rise  = 4 + phase * 9;
+    const rise  = 5.5 + phase * 9;
     const wob   = Math.sin(phase * 5 + i * 2) * 2.2;
     ctx.fillStyle = `rgba(178, 214, 92, ${0.42 * (1 - phase)})`;
     circle(cx + wob, cy - rise, 1.6 + phase * 2.6);
   }
 
-  // A soft halo, so the shell itself lifts off the dark board.
-  ctx.fillStyle = 'rgba(163, 201, 74, 0.13)';
-  circle(cx, cy + 1, 9);
+  // A soft halo, so the shell itself lifts off the dark board. Kept tight:
+  // a wide one becomes the thing your eye measures and makes the shell
+  // look smaller than the egg it is supposed to rhyme with.
+  ctx.fillStyle = 'rgba(163, 201, 74, 0.11)';
+  circle(cx, cy + 1, 7.5);
 
   ctx.save();
   ctx.translate(cx, cy + 1);
@@ -560,9 +572,12 @@ function drawRottenEgg() {
   // Acid green rather than the muted olive this started as. It has to be
   // clearly visible against a very dark board - a hazard you cannot see
   // is not a hazard, it is bad luck.
+  // Slightly larger than a good egg. The tilt foreshortens it, so drawn
+  // at matching numbers it reads as the smaller of the two, which is
+  // backwards for the thing you are meant to notice and avoid.
   ctx.fillStyle = '#a8c341';
   ctx.beginPath();
-  ctx.ellipse(0, 0, 5.0, 6.2, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 0, 5.9, 7.2, 0, 0, Math.PI * 2);
   ctx.fill();
 
   // Dull, dark rim. The egg's gold rim is what says "worth eating", so
@@ -573,19 +588,19 @@ function drawRottenEgg() {
 
   // Mottling, so it reads as spoiled rather than simply green.
   ctx.fillStyle = 'rgba(78, 92, 30, 0.55)';
-  circle(-1.8, 1.9, 1.5);
-  circle(1.9, 3.1, 1.0);
+  circle(-2.1, 2.2, 1.7);
+  circle(2.2, 3.6, 1.2);
 
   // A crack across the shell. Shallow on purpose: the egg silhouette has
   // to survive, or it stops borrowing the vocabulary the player already
   // knows and becomes just another blob to learn.
   ctx.strokeStyle = '#2f3614';
   ctx.beginPath();
-  ctx.moveTo(-4.6, -1.4);
-  ctx.lineTo(-1.9, -3.3);
-  ctx.lineTo(-0.1, -1.1);
-  ctx.lineTo(2.1,  -3.6);
-  ctx.lineTo(4.4,  -1.7);
+  ctx.moveTo(-5.4, -1.6);
+  ctx.lineTo(-2.2, -3.9);
+  ctx.lineTo(-0.1, -1.3);
+  ctx.lineTo(2.5,  -4.2);
+  ctx.lineTo(5.2,  -2.0);
   ctx.lineWidth = 1.4;
   ctx.lineJoin  = 'round';
   ctx.stroke();
@@ -593,9 +608,9 @@ function drawRottenEgg() {
   // A bite missing from the rim, so the outline itself is broken.
   ctx.fillStyle = '#131316';
   ctx.beginPath();
-  ctx.moveTo(1.6, -5.4);
-  ctx.lineTo(4.2, -4.0);
-  ctx.lineTo(4.9, -6.2);
+  ctx.moveTo(1.9, -6.3);
+  ctx.lineTo(4.9, -4.7);
+  ctx.lineTo(5.7, -7.3);
   ctx.closePath();
   ctx.fill();
 
@@ -693,7 +708,7 @@ function drawHead() {
 
   // Deliberately duller than the head, so the two read as separate things
   // rather than one white blob.
-  ctx.fillStyle = '#cec6b2';
+  ctx.fillStyle = mixColour([206, 198, 178], SICK_GREEN, queasiness() * 0.85);
   ctx.beginPath();
   ctx.ellipse(0, 0, 7.5, 13, 0, 0, Math.PI * 2);   // 7.5 deep, 13 wide
   ctx.fill();
@@ -714,13 +729,13 @@ function drawHead() {
        (egg.x === ahead.x && egg.y === ahead.y)
     || (visitor && visitor.kind === 'mouse'
         && visitor.x === ahead.x && visitor.y === ahead.y);
-  if (phase === 'playing' && (treatAhead || Date.now() % 2600 < 280)) {
+  if (phase === 'playing' && (treatAhead || queasy > 0 || Date.now() % 2600 < 280)) {
     drawTongue(cx, cy, fwd, side);
   }
 
   // The head sits small and bright on top of the hood, the way a real
   // cobra's does.
-  ctx.fillStyle = '#f8f4ea';
+  ctx.fillStyle = mixColour([248, 244, 234], SICK_GREEN, queasiness() * 0.85);
   roundedSquare(head.x * CELL + 3, head.y * CELL + 3, CELL - 6, 6);
 
   // Two eyes, set forward of centre, one on each cheek.
@@ -797,6 +812,16 @@ function strokeLine(x1, y1, x2, y2, colour, width) {
 function drawCross(x, y) {
   strokeLine(x - 2, y - 2, x + 2, y + 2, '#09090b', 1.6);
   strokeLine(x + 2, y - 2, x - 2, y + 2, '#09090b', 1.6);
+}
+
+// What a snake that has just eaten something it regrets looks like.
+const SICK_GREEN = [138, 190, 64];
+
+// 1 immediately after a rotten egg, fading to 0 as it wears off. Used to
+// tint the head, so you watch yourself regret it rather than just seeing
+// a number go down.
+function queasiness() {
+  return queasy / QUEASY_MOVES;
 }
 
 // Blend two colours together. t=0 gives the first, t=1 gives the second,

@@ -111,13 +111,14 @@ globalThis.game = {
   get egg()           { return egg },           set egg(v)           { egg = v },
   get visitor()       { return visitor },       set visitor(v)       { visitor = v },
   get grow()          { return grow },          set grow(v)          { grow = v },
+  get queasy()        { return queasy },        set queasy(v)        { queasy = v },
   get score()         { return score },         set score(v)         { score = v },
   get phase()         { return phase },         set phase(v)         { phase = v },
   COLS, ROWS, CELL, VERSION,
   EGG_POINTS, MOUSE_POINTS, ROTTEN_POINTS, EGG_GROWTH, MOUSE_GROWTH,
-  MOUSE_LIFE, ROTTEN_LIFE, WARNING_MOVES,
+  MOUSE_LIFE, ROTTEN_LIFE, WARNING_MOVES, QUEASY_MOVES,
   START_DELAY, SPEED_UP, FASTEST, TURN_QUEUE_MAX,
-  update, reset, isOccupied, stepDelay, mixColour, KEYS, addScore
+  update, reset, isOccupied, stepDelay, mixColour, KEYS, addScore, queasiness
 };`;
 
 vm.createContext(sandbox);
@@ -355,6 +356,28 @@ describe('the food roster', () => {
     game.update();
     game.update();
     is(game.snake.length, before, 'length');
+  });
+
+  test('a rotten egg turns the snake green for a while', () => {
+    freshGame({ visitor: {kind: 'rotten', x: 6, y: 5, life: 30, facing: 1} });
+    is(game.queasy, 0, 'not queasy to begin with');
+    game.update();
+    is(game.queasy, game.QUEASY_MOVES, 'queasy straight after');
+    is(game.queasiness(), 1, 'fully green');
+  });
+
+  test('being green wears off over your moves, not over seconds', () => {
+    freshGame({ visitor: {kind: 'rotten', x: 6, y: 5, life: 30, facing: 1} });
+    game.update();                                  // eats it
+    for (let i = 0; i < game.QUEASY_MOVES; i++) game.update();
+    is(game.queasy, 0, 'recovered');
+    is(game.queasiness(), 0, 'back to normal');
+  });
+
+  test('a mouse does not make the snake ill', () => {
+    freshGame({ visitor: {kind: 'mouse', x: 6, y: 5, life: 30, facing: 1} });
+    game.update();
+    is(game.queasy, 0, 'queasy');
   });
 
   test('the score never goes below zero', () => {
