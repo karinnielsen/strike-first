@@ -701,9 +701,7 @@ function draw() {
     }
   }
 
-  // The egg, with a gentle pulse driven by the clock.
-  const pulse = 1 + Math.sin(Date.now() / 200) * 0.10;
-  drawEgg(egg.x * CELL + CELL / 2, egg.y * CELL + CELL / 2, pulse);
+  drawEgg(egg.x * CELL + CELL / 2, egg.y * CELL + CELL / 2);
 
   if (visitor) {
     // Flash when it's nearly out of time, so you get fair warning either
@@ -720,152 +718,363 @@ function draw() {
 }
 
 
+// =====================================================================
+//  PIXEL SPRITES - the board artwork
+// =====================================================================
+// Karate Kid is 1984, and the board is a grid of 20px cells. Vector
+// artwork was tried first and did not survive that size: the detail that
+// made it good is exactly what twenty pixels cannot hold. Pixel art is
+// the discipline invented for this constraint rather than one fighting
+// it, so the smallness stops being a problem and becomes the style.
+//
+// Each sprite is a palette and a grid of characters. '.' is always
+// transparent. One art pixel is drawn as a 2x2 block, which is what
+// makes it read as pixel art rather than as a small picture.
+//
+// This is the whole artwork, inline, in about five kilobytes - smaller
+// than any image of it would be, and it diffs and edits by hand.
+// Originals in design/pixel-sprites/.
+const ART = 2;   // screen pixels per art pixel
+
+const PIXEL = {
+  egg: {
+    palette: { '.': null, 'r': '#c9a227', 's': '#f4e8cf', 'h': '#ece6da' },
+    rows: [
+      '..........',
+      '....rr....',
+      '...rssr...',
+      '...rhsr...',
+      '..rhsssr..',
+      '..rssssr..',
+      '..rssssr..',
+      '...rssr...',
+      '....rr....',
+      '..........'
+    ]
+  },
+
+  rottenEgg: {
+    palette: { '.': null, 'r': '#454f1c', 's': '#a8c341', 'h': '#b2d65c', 'c': '#2f3614' },
+    rows: [
+      '..rrr.....',
+      '.rhssrr...',
+      'rhcssssr..',
+      'rhhcssssr.',
+      'rsshcssssr',
+      'rsscsssssr',
+      '.rssccsssr',
+      '.rsssscssr',
+      '..rsssssr.',
+      '...rrrrr..'
+    ]
+  },
+
+  mouse: {
+    palette: { '.': null, 'f': '#b89a7e', 's': '#8a7461', 'p': '#d9938a', 'e': '#09090b', 'h': '#f4e8cf' },
+    rows: [
+      '..........',
+      '....ff....',
+      '...fppf...',
+      '...fppff..',
+      '..sfffhef.',
+      '..sffffffe',
+      's.sfffffh.',
+      's..sffsss.',
+      '.ss.s..s..',
+      '..........'
+    ]
+  },
+
+  body: {
+    palette: { '.': null, 'b': '#e8e2d6' },
+    rows: [
+      '..........',
+      '..bbbbbb..',
+      '.bbbbbbbb.',
+      '.bbbbbbbb.',
+      '.bbbbbbbb.',
+      '.bbbbbbbb.',
+      '.bbbbbbbb.',
+      '.bbbbbbbb.',
+      '..bbbbbb..',
+      '..........'
+    ]
+  },
+
+  tail: {
+    palette: { '.': null, 'b': '#e8e2d6' },
+    rows: [
+      '..........',
+      '......bb..',
+      '....bbbbb.',
+      '..bbbbbbb.',
+      '.bbbbbbbb.',
+      '.bbbbbbbb.',
+      '..bbbbbbb.',
+      '....bbbbb.',
+      '......bb..',
+      '..........'
+    ]
+  },
+
+  head: {
+    palette: { '.': null, 'b': '#f8f4ea', 's': '#cec6b2', 'g': '#e8b53a', 'e': '#09090b', 'r': '#d3262f' },
+    canvas: 18, pivot: [9, 9],
+    'hood': [
+        '..................',
+        '..................',
+        '..................',
+        '.......sss........',
+        '......sssss.......',
+        '.....sssssss......',
+        '.....sssssss......',
+        '.....ssssss.......',
+        '.....ssssss.......',
+        '.....ssssss.......',
+        '.....ssssss.......',
+        '.....ssssss.......',
+        '.....sssssss......',
+        '.....sssssss......',
+        '......sssss.......',
+        '.......sss........',
+        '..................',
+        '..................'
+      ],
+    'markings': [
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '.......rr.........',
+        '......rr..........',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '......rr..........',
+        '.......rr.........',
+        '..................',
+        '..................',
+        '..................'
+      ],
+    'tongue': [
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '................rr',
+        '............rrrrr.',
+        '................rr',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................'
+      ],
+    'head': [
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '.......bbbb.......',
+        '......bbbbbb......',
+        '......bbbbbbb.....',
+        '......bbbbbbb.....',
+        '......bbbbbbb.....',
+        '......bbbbbb......',
+        '.......bbbb.......',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................'
+      ],
+    'eyes-open': [
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '.........ge.......',
+        '..................',
+        '..................',
+        '.........ge.......',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................'
+      ],
+    'eyes-blink': [
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '.........ee.......',
+        '..................',
+        '..................',
+        '.........ee.......',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................'
+      ],
+    'eyes-defeated': [
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '.........e.e......',
+        '..........e.......',
+        '.........e.e......',
+        '..................',
+        '.........e.e......',
+        '..........e.......',
+        '.........e.e......',
+        '..................',
+        '..................',
+        '..................',
+        '..................',
+        '..................'
+      ]
+  }
+};
+
+// Merge each row into horizontal runs of one colour, once, at load.
+//
+// Drawn naively this is one fillRect per art pixel: a body segment alone
+// is sixty-four of them, and a long snake at sixty frames a second is
+// tens of thousands. Runs collapse a segment to nine rectangles. Same
+// picture, a fraction of the work.
+function buildRuns(rows, palette) {
+  const runs = [];
+  rows.forEach((row, y) => {
+    let x = 0;
+    while (x < row.length) {
+      const ch = row[x];
+      if (!palette[ch]) { x++; continue; }        // transparent
+      let w = 1;
+      while (x + w < row.length && row[x + w] === ch) w++;
+      runs.push({ x, y, w, ch });
+      x += w;
+    }
+  });
+  return runs;
+}
+
+for (const name of ['egg', 'rottenEgg', 'mouse', 'body', 'tail']) {
+  PIXEL[name].runs = buildRuns(PIXEL[name].rows, PIXEL[name].palette);
+}
+PIXEL.head.runs = {};
+for (const part of ['hood', 'markings', 'tongue', 'head',
+                    'eyes-open', 'eyes-blink', 'eyes-defeated']) {
+  PIXEL.head.runs[part] = buildRuns(PIXEL.head[part], PIXEL.head.palette);
+}
+
+// Paint runs with their top-left art pixel at (ox, oy) in screen pixels.
+// `recolour` lets the body and tail be repainted at runtime - they are
+// masks, not fixed artwork, because one segment wears the belt.
+function paintRuns(runs, palette, ox, oy, recolour) {
+  for (const r of runs) {
+    ctx.fillStyle = recolour ? recolour(r.ch) : palette[r.ch];
+    ctx.fillRect(ox + r.x * ART, oy + r.y * ART, r.w * ART, ART);
+  }
+}
+
+// Centre a 10x10 sprite on a cell. Everything lands on whole art pixels,
+// which is the point: half a pixel is what makes pixel art look broken.
+function drawPixelSprite(sprite, cx, cy, recolour) {
+  const half = sprite.rows.length * ART / 2;
+  paintRuns(sprite.runs, sprite.palette, cx - half, cy - half, recolour);
+}
+
+
 // ---- the egg ----------------------------------------------------------
-// Cobras raid nests; they don't eat fruit. The warm rim matters: the snake
-// is bone-white, and a plain pale oval next to it is one shape too many.
-function drawEgg(cx, cy, pulse) {
-  ctx.fillStyle = '#f4e8cf';
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, 5.1 * pulse, 6.4 * pulse, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.strokeStyle = '#c9a227';
-  ctx.lineWidth   = 1.1;
-  ctx.stroke();
-
-  ctx.fillStyle = 'rgba(255,255,255,0.75)';
-  ctx.beginPath();
-  ctx.ellipse(cx - 1.6, cy - 2.3, 1.3, 1.9, -0.4, 0, Math.PI * 2);
-  ctx.fill();
+// Cobras raid nests; they don't eat fruit. The warm shell and the gold rim
+// are load-bearing: the snake is bone and is most of what moves on this
+// board, so the baseline food must never read as a piece of it.
+//
+// THE PULSE IS A COLOUR, NOT A SIZE. It used to breathe by scaling, and
+// scaling a pixel grid by anything but a whole number is what makes pixel
+// art look broken. So the rim warms and cools instead - the egg still
+// reads as alive, and every pixel stays on the grid.
+function drawEgg(cx, cy) {
+  const warm = (Math.sin(Date.now() / 340) + 1) / 2;
+  drawPixelSprite(PIXEL.egg, cx, cy, ch =>
+    ch === 'r' ? mixColour([201, 162, 39], [232, 181, 58], warm)
+               : PIXEL.egg.palette[ch]);
 }
 
 
 // ---- the rotten egg ---------------------------------------------------
-// The hazard. It reuses the egg's vocabulary on purpose - you already know
-// an egg is good, so an egg that looks WRONG needs no explaining.
+// The hazard, reusing the egg's vocabulary on purpose: you already know an
+// egg is good, so an egg that looks WRONG needs no explaining.
 //
-// The difference has to be the silhouette, not just the colour. A shape
-// reads in the corner of your eye at 20 pixels; a hue does not, and a
-// player with colour blindness never sees it at all. So the shell is
-// broken open along the top rather than merely being a different green.
+// The difference survives without colour. The shell is tipped over and
+// cracked, and a good egg stands upright, so the silhouette alone says
+// something is off before you have registered the green. Both are baked
+// into the artwork - do not rotate it, there is no angle that keeps a
+// pixel grid square except a quarter turn.
 function drawRottenEgg() {
   const cx = visitor.x * CELL + CELL / 2;
   const cy = visitor.y * CELL + CELL / 2;
 
-  // A stream of fumes coming off it. Three puffs on staggered phases, each
-  // rising, swelling and fading, so it reads as a continuous emission
-  // rather than three blobs. Drawn first so the shell sits on top.
-  //
-  // This is the bit that makes it findable. On a near-black board a dull
-  // shape disappears; movement does not, and it catches the eye well
-  // before you've consciously identified what it is.
+  // Fumes coming off it, on whole art pixels so they belong to the same
+  // grid as everything else. This stays as code rather than artwork
+  // because it is the bit that makes the thing FINDABLE: on a near-black
+  // board a dull shape disappears, but movement does not, and it catches
+  // the eye before you have consciously identified what it is.
   for (let i = 0; i < 3; i++) {
     const phase = ((Date.now() / 1100) + i / 3) % 1;
-    const rise  = 5.5 + phase * 9;
-    const wob   = Math.sin(phase * 5 + i * 2) * 2.2;
-    ctx.fillStyle = `rgba(178, 214, 92, ${0.42 * (1 - phase)})`;
-    circle(cx + wob, cy - rise, 1.6 + phase * 2.6);
+    const rise  = Math.round((6 + phase * 9) / ART) * ART;
+    const wob   = Math.round(Math.sin(phase * 5 + i * 2) * 2) * ART;
+    const size  = (phase < 0.5 ? 2 : 1) * ART;
+    ctx.fillStyle = `rgba(178, 214, 92, ${0.5 * (1 - phase)})`;
+    ctx.fillRect(cx + wob - size / 2, cy - rise, size, size);
   }
 
-  // A soft halo, so the shell itself lifts off the dark board. Kept tight:
-  // a wide one becomes the thing your eye measures and makes the shell
-  // look smaller than the egg it is supposed to rhyme with.
-  ctx.fillStyle = 'rgba(163, 201, 74, 0.11)';
-  circle(cx, cy + 1, 7.5);
-
-  ctx.save();
-  ctx.translate(cx, cy + 1);
-
-  // Tipped over. A good egg stands upright, so the tilt alone tells you
-  // something is wrong before you've registered the colour or the crack.
-  // It's also the one cue that can't be confused with the mouse, which
-  // shares this slot and is the only other thing that appears here.
-  ctx.rotate(-0.5);
-
-  // Acid green rather than the muted olive this started as. It has to be
-  // clearly visible against a very dark board - a hazard you cannot see
-  // is not a hazard, it is bad luck.
-  // Slightly larger than a good egg. The tilt foreshortens it, so drawn
-  // at matching numbers it reads as the smaller of the two, which is
-  // backwards for the thing you are meant to notice and avoid.
-  ctx.fillStyle = '#a8c341';
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 5.9, 7.2, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Dull, dark rim. The egg's gold rim is what says "worth eating", so
-  // this must not have one - that contrast does as much work as the shape.
-  ctx.strokeStyle = '#454f1c';
-  ctx.lineWidth   = 1.2;
-  ctx.stroke();
-
-  // Mottling, so it reads as spoiled rather than simply green.
-  ctx.fillStyle = 'rgba(78, 92, 30, 0.55)';
-  circle(-2.1, 2.2, 1.7);
-  circle(2.2, 3.6, 1.2);
-
-  // A crack across the shell. Shallow on purpose: the egg silhouette has
-  // to survive, or it stops borrowing the vocabulary the player already
-  // knows and becomes just another blob to learn.
-  ctx.strokeStyle = '#2f3614';
-  ctx.beginPath();
-  ctx.moveTo(-5.4, -1.6);
-  ctx.lineTo(-2.2, -3.9);
-  ctx.lineTo(-0.1, -1.3);
-  ctx.lineTo(2.5,  -4.2);
-  ctx.lineTo(5.2,  -2.0);
-  ctx.lineWidth = 1.4;
-  ctx.lineJoin  = 'round';
-  ctx.stroke();
-
-  // A bite missing from the rim, so the outline itself is broken.
-  ctx.fillStyle = '#131316';
-  ctx.beginPath();
-  ctx.moveTo(1.9, -6.3);
-  ctx.lineTo(4.9, -4.7);
-  ctx.lineTo(5.7, -7.3);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.restore();
+  drawPixelSprite(PIXEL.rottenEgg, cx, cy);
 }
 
 
 // ---- the mouse --------------------------------------------------------
+// The temptation. Warmer than the egg on purpose - it is worth five times
+// as much, so it should catch the eye - and it faces the way it travels.
 function drawMouse() {
   const cx = visitor.x * CELL + CELL / 2;
   const cy = visitor.y * CELL + CELL / 2;
-  const f  = visitor.facing;        // +1 faces right, -1 faces left
 
-  // Tail, curling out behind it.
-  ctx.strokeStyle = '#8a7461';
-  ctx.lineWidth   = 1.6;
-  ctx.lineCap     = 'round';
-  ctx.beginPath();
-  ctx.moveTo(cx - f * 5.5, cy + 0.5);
-  ctx.quadraticCurveTo(cx - f * 10, cy + 4, cx - f * 5, cy + 7.5);
-  ctx.stroke();
-
-  // Ear, drawn before the head so it peeks out from behind it.
-  ctx.fillStyle = '#b89a7e';
-  circle(cx + f * 1.4, cy - 4.4, 3.2);
-  ctx.fillStyle = '#d9938a';
-  circle(cx + f * 1.4, cy - 4.4, 1.5);
-
-  // Body, then the head on top of it. Deliberately warmer than the egg -
-  // it's worth five times as much, so it should catch the eye.
-  ctx.fillStyle = '#a58a70';
-  ctx.beginPath();
-  ctx.ellipse(cx - f * 1, cy + 1, 6.3, 5, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#b89a7e';
-  circle(cx + f * 4, cy - 0.6, 4);
-
-  // Eye and nose.
-  ctx.fillStyle = '#09090b';
-  circle(cx + f * 5.1, cy - 1.6, 1);
-  ctx.fillStyle = '#d9938a';
-  circle(cx + f * 7.4, cy + 0.6, 1.3);
+  // The artwork faces right, so facing left is a mirror. Mirroring about
+  // the cell centre keeps every pixel on the grid; mirroring about the
+  // artwork's own bounds would not.
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(visitor.facing, 1);
+  drawPixelSprite(PIXEL.mouse, 0, 0);
+  ctx.restore();
 }
 
 
@@ -874,38 +1083,33 @@ function drawMouse() {
 function drawSnake() {
   for (let i = snake.length - 1; i >= 1; i--) {
     // t runs from 0 (just behind the head) to 1 (the very tip of the tail).
-    // Everything below is just "make it smaller and darker as t grows",
-    // which is what turns a row of identical blocks into a real tail.
     const t = i / (snake.length - 1);
 
-    const size  = (CELL - 2) - t * 7;   // segments shrink toward the tip
-    const inset = (CELL - size) / 2;    // keeps each one centred in its square
+    const cx = snake[i].x * CELL + CELL / 2;
+    const cy = snake[i].y * CELL + CELL / 2;
 
-    // The very last segment gets fully rounded off, so the tail ends in a
-    // point rather than stopping dead with a square edge.
-    const radius = (i === snake.length - 1) ? size / 2 : size / 3;
-
-    // Bone white at the shoulders, fading to a dusty grey at the tip -
-    // except for the one segment wearing the belt, which is the rank you
-    // hold. A belt is a band around a body, so it needs no explaining.
-    //
-    // At white belt the band is bone, so it blends into the shoulders and
-    // there is visibly no belt yet. That is correct: the first coloured
-    // band you ever see is the moment you were promoted off white.
-    //
-    // The band deliberately does NOT drain when the snake is unwell. Rank
-    // and condition are separate facts on separate surfaces: the whole
-    // body says how you are, the one band says who you are, and being
-    // sick has never cost anybody their belt.
-    ctx.fillStyle = (i === BELT_SEGMENT)
+    // THE BELT. A single band, never the head - the head is already the
+    // busiest object in the game. At white belt the band is bone and
+    // blends in, which is correct: you visibly have no belt until you
+    // earn one, and the first coloured band you ever see is the moment
+    // you were promoted off white.
+    const colour = (i === BELT_SEGMENT)
       ? BELTS[beltFor(best) - 1].colour
       : bodyColour(t, queasiness());
-    roundedSquare(
-      snake[i].x * CELL + inset,
-      snake[i].y * CELL + inset,
-      size,
-      radius
-    );
+
+    // The tip is a pointed sprite rather than another block, turned to
+    // trail whichever way the body actually runs.
+    if (i === snake.length - 1 && snake.length > 1) {
+      const prev = snake[i - 1];
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(Math.atan2(snake[i].y - prev.y, snake[i].x - prev.x) + Math.PI);
+      drawPixelSprite(PIXEL.tail, 0, 0, () => colour);
+      ctx.restore();
+      continue;
+    }
+
+    drawPixelSprite(PIXEL.body, cx, cy, () => colour);
   }
 
   drawHead();
@@ -916,141 +1120,78 @@ function drawSnake() {
 function drawHead() {
   const head = snake[0];
 
-  // The whole head is painted around cx/cy, so shifting them shudders the
-  // hood, eyes, markings and tongue together as one thing.
+  // THE SHUDDER IS QUANTISED TO WHOLE ART PIXELS. Moving a pixel grid by
+  // a fraction of a pixel is what makes pixel art look like a smudge, and
+  // a 2px jolt reads harder than a smooth wobble anyway.
   //
-  // Skipped entirely when the player has asked for reduced motion. A
-  // shiver is exactly the kind of small high-frequency movement that
-  // makes people with vestibular sensitivity feel ill, and giving someone
-  // motion sickness to convey nausea is a poor trade. They still get the
-  // tongue, which stays out the whole time you are queasy.
-  const shake = REDUCED_MOTION.matches
+  // Skipped entirely under reduced motion. A small high-frequency shiver
+  // is exactly the thing that makes people with vestibular sensitivity
+  // feel ill, and giving somebody motion sickness to convey nausea is a
+  // poor trade. They still get the tongue, which stays out while queasy.
+  const raw = REDUCED_MOTION.matches
     ? { x: 0, y: 0 }
     : queasyShake(queasiness(), Date.now());
+  const shake = {
+    x: Math.round(raw.x / ART) * ART,
+    y: Math.round(raw.y / ART) * ART
+  };
 
   const cx = head.x * CELL + CELL / 2 + shake.x;
   const cy = head.y * CELL + CELL / 2 + shake.y;
 
-  // "fwd" is the way we're heading. "side" is that turned 90 degrees, so
-  // it points out of the snake's cheeks. With those two we can place
-  // features correctly no matter which way the snake is facing.
-  const fwd  = direction;
-  const side = { x: -direction.y, y: direction.x };
+  const fwd = direction;
 
-  // THE HOOD. Rotating the whole canvas is much easier than working out
-  // the maths for a flared ellipse pointing in four different directions:
-  // we spin the paper, draw it facing right, then spin the paper back.
-  const angle = Math.atan2(fwd.y, fwd.x);
+  // The artwork faces right, and the head only ever faces four ways - so
+  // a quarter turn is all that is ever needed, and a quarter turn of a
+  // pixel grid is lossless. This is the one rotation pixel art allows.
   ctx.save();
-  ctx.translate(cx - fwd.x * 4, cy - fwd.y * 4);
-  ctx.rotate(angle);
+  ctx.translate(cx, cy);
+  ctx.rotate(Math.atan2(fwd.y, fwd.x));
 
-  // Deliberately duller than the head, so the two read as separate things
-  // rather than one white blob.
-  ctx.fillStyle = mixColour([206, 198, 178], SICK_GREEN, queasiness() * 0.85);
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 7.5, 13, 0, 0, Math.PI * 2);   // 7.5 deep, 13 wide
-  ctx.fill();
+  const size = PIXEL.head.canvas * ART;
+  const ox = -size / 2, oy = -size / 2;
+  const sick = queasiness();
 
-  // The spectacle markings, sitting right out on the flare where the head
-  // can't cover them.
-  ctx.fillStyle = '#d3262f';
-  circle(-1.5,  8.5, 2.6);
-  circle(-1.5, -8.5, 2.6);
+  // Fleshy parts green when the snake has eaten something rotten. The
+  // markings, eyes and tongue never take the tint - a sick snake should
+  // look sick, not repainted.
+  const tint = ch => (sick > 0 && (ch === 'b' || ch === 's'))
+    ? mixColour(hexToRgb(PIXEL.head.palette[ch]), SICK_GREEN, sick * 0.85)
+    : PIXEL.head.palette[ch];
 
-  ctx.restore();
+  const paint = part =>
+    paintRuns(PIXEL.head.runs[part], PIXEL.head.palette, ox, oy, tint);
 
-  // Tongue flicks every couple of seconds - and stays out the whole time
-  // there's something worth eating directly ahead, because the snake gets
-  // excited. Not for a rotten egg. It doesn't want that one either.
+  paint('hood');
+  paint('markings');
+
+  // The tongue flicks every couple of seconds, and stays out the whole
+  // time there is something worth eating directly ahead, because the
+  // snake gets excited. Not for a rotten egg. It doesn't want that one.
   const ahead = { x: head.x + fwd.x, y: head.y + fwd.y };
   const treatAhead =
        (egg.x === ahead.x && egg.y === ahead.y)
     || (visitor && visitor.kind === 'mouse'
         && visitor.x === ahead.x && visitor.y === ahead.y);
   if (phase === 'playing' && (treatAhead || queasy > 0 || Date.now() % 2600 < 280)) {
-    drawTongue(cx, cy, fwd, side);
+    paint('tongue');
   }
 
-  // The head sits small and bright on top of the hood, the way a real
-  // cobra's does.
-  ctx.fillStyle = mixColour([248, 244, 234], SICK_GREEN, queasiness() * 0.85);
-  roundedSquare(head.x * CELL + 3, head.y * CELL + 3, CELL - 6, 6);
+  paint('head');
 
-  // Two eyes, set forward of centre, one on each cheek.
-  for (const s of [1, -1]) {
-    const ex = cx + fwd.x * 1.8 + side.x * 3.2 * s;
-    const ey = cy + fwd.y * 1.8 + side.y * 3.2 * s;
+  // The eyes are three things wearing the same socket: open, shut for a
+  // moment, or crossed out because you crashed. Defeat beats the blink.
+  if (phase === 'over')             paint('eyes-defeated');
+  else if (Date.now() % 4200 < 130) paint('eyes-blink');
+  else                              paint('eyes-open');
 
-    if (phase === 'over') {          // crashed: classic cartoon X eyes
-      drawCross(ex, ey);
-      continue;
-    }
-
-    if (Date.now() % 4200 < 130) {   // a quick blink every four seconds
-      strokeLine(ex - fwd.x * 1.9, ey - fwd.y * 1.9,
-                 ex + fwd.x * 1.9, ey + fwd.y * 1.9, '#09090b', 1.4);
-      continue;
-    }
-
-    // Gold eyes - white wouldn't show against a bone-white head.
-    ctx.fillStyle = '#e8b53a';
-    circle(ex, ey, 2.2);
-
-    // Pupil nudged forward, so the snake looks where it's going.
-    ctx.fillStyle = '#09090b';
-    circle(ex + fwd.x * 0.8, ey + fwd.y * 0.8, 1.05);
-  }
+  ctx.restore();
 }
 
-function drawTongue(cx, cy, fwd, side) {
-  const baseX = cx + fwd.x * (CELL / 2 - 2);
-  const baseY = cy + fwd.y * (CELL / 2 - 2);
-  const tipX  = baseX + fwd.x * 6;
-  const tipY  = baseY + fwd.y * 6;
-
-  ctx.strokeStyle = '#d3262f';
-  ctx.lineWidth   = 2;
-  ctx.lineCap     = 'round';
-  ctx.beginPath();
-  ctx.moveTo(baseX, baseY);
-  ctx.lineTo(tipX, tipY);
-  // the two prongs of the fork
-  ctx.moveTo(tipX, tipY);
-  ctx.lineTo(tipX + fwd.x * 3 + side.x * 2.5, tipY + fwd.y * 3 + side.y * 2.5);
-  ctx.moveTo(tipX, tipY);
-  ctx.lineTo(tipX + fwd.x * 3 - side.x * 2.5, tipY + fwd.y * 3 - side.y * 2.5);
-  ctx.stroke();
-}
-
-
-// ---- small drawing helpers, so the code above stays readable ----------
-function roundedSquare(x, y, size, radius) {
-  ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(x, y, size, size, radius);
-  else               ctx.rect(x, y, size, size);
-  ctx.fill();
-}
-
-function circle(x, y, r) {
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-function strokeLine(x1, y1, x2, y2, colour, width) {
-  ctx.strokeStyle = colour;
-  ctx.lineWidth   = width;
-  ctx.lineCap     = 'round';
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  ctx.stroke();
-}
-
-function drawCross(x, y) {
-  strokeLine(x - 2, y - 2, x + 2, y + 2, '#09090b', 1.6);
-  strokeLine(x + 2, y - 2, x - 2, y + 2, '#09090b', 1.6);
+// '#rrggbb' to [r, g, b], so authored fills blend with the same mixColour
+// the rest of the drawing uses.
+function hexToRgb(hex) {
+  return [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
 }
 
 // What a snake that has just eaten something it regrets looks like.
