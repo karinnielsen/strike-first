@@ -204,6 +204,105 @@ runtime and any baked-in shading will fight it.
 player's rank. So the body block must be a single recolourable shape. A block
 with two tones in it cannot wear a belt.
 
+## 7a. EXPERIMENT: pixel art for the board
+
+**Status: being tried, 8 September. Not yet decided.** If this wins it replaces
+section 7 entirely for board assets. Section 7 still governs page assets like
+the crest either way.
+
+### Why
+
+The game is a 1984 reference and the board is a 21 x 21 grid of 20px cells.
+Vector artwork was integrated and, even scaled up, the rewards still did not
+read at cell size — the detail that makes the artwork good is exactly what
+twenty pixels cannot hold. Pixel art is the discipline invented for that
+constraint rather than one fighting it.
+
+The vector attempt is preserved on the branch `assets/vector-sprites` so the
+two can be compared rather than remembered.
+
+### Resolution — the decision everything else follows from
+
+**Author at 10 x 10. It is rendered at 2x into the 20px cell.**
+
+One art pixel becomes a 2 x 2 block on screen. This is the whole point: at
+20 x 20 with one art pixel per screen pixel it is not pixel art, it is a small
+picture with the same legibility problem we already have. Chunky pixels are
+what make it read, and they are what the era actually looked like.
+
+Ten by ten is not much room. That is the constraint doing its job — it forces
+silhouette and one or two internal details, which is all that ever survived
+anyway.
+
+### Format — it still has to inline
+
+The game is one self-contained HTML file with no build step and no asset
+pipeline, so **PNG sprite sheets are unusable**. Deliver each sprite as a
+palette and a grid of characters:
+
+```js
+egg: {
+  palette: { '.': null, 's': '#f4e8cf', 'r': '#c9a227', 'h': '#ffffff' },
+  rows: [
+    '...rr...',
+    '..rssr..',
+    '.rshssr.',
+    ...
+  ]
+}
+```
+
+* `.` is transparent, always
+* One character per colour, chosen to hint at what it is
+* Rows are equal length, and there are as many rows as columns
+* This diffs cleanly in git, is readable by a human, is editable by hand, and
+  is smaller than any image
+
+### Colour
+
+**Four to six colours per sprite, including transparent.** Pixel art reads by
+restraint; a gradient dithered across ten shades at this size is mud.
+
+The palette in section 3 still applies, and so does the rule about raising a
+new hue — with one clarification learned the hard way: **also raise an existing
+palette colour being used for a new meaning.** Gold means rank and reward here,
+so gold used for something else is a change worth flagging even though the hex
+is already in the file.
+
+### What each sprite needs
+
+| Sprite | Notes |
+| --- | --- |
+| Egg | Must not read as a snake segment. The snake is bone and is most of what moves; contrast against the background is necessary and not sufficient |
+| Rotten egg | **The largest thing on the board.** Keeps a non-colour cue — the tilt and the crack — so it reads as wrong without relying on green |
+| Mouse | Must not be confusable with either egg. Faces the way it travels; it is mirrored in code, so draw it facing right only |
+| Snake head | See below |
+| Snake body | One block, single colour, recoloured at runtime. One segment wears the belt |
+| Snake tail | The pointed tip. Rotated in code to trail the body |
+
+### The snake head
+
+**Rotation is free here.** The head only ever faces four directions, and a 90°
+rotation of a pixel grid is lossless — so draw it **facing right only** and the
+code will turn it. Four separate sprites are not needed.
+
+The head still needs to arrive as **separable parts**, for the same reasons as
+before: the eyes blink, become crosses on defeat, and the tongue flicks and
+holds out while queasy. Deliver `head`, `hood`, `eyes-open`, `eyes-blink`,
+`eyes-defeated`, `tongue`, `markings` as separate grids sharing one coordinate
+space.
+
+The hood may exceed the cell. It always has — it is 26px wide today, and a
+cobra that fits neatly inside its own square does not look like a cobra. Say
+what box you have drawn it in and the code will scale to match.
+
+### Motion
+
+The head shudders after a rotten egg. **That shudder will be quantised to whole
+art pixels** rather than moving smoothly, because sub-pixel movement destroys a
+pixel grid. Nothing to do about it in the artwork; noted so the movement is not
+a surprise.
+
 ## 8. Per-asset requirements
 
 Design direction is supplied separately. These are the functional targets.
