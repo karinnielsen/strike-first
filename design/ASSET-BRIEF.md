@@ -26,14 +26,13 @@ Repository: `karinnielsen/strike-first` on GitHub, default branch `main`.
 | Version history | `CHANGELOG.md` |
 | Roadmap, design principles, open questions | The Linear project, linked from `CLAUDE.md` |
 
-**The repository is private.** A URL to it will not resolve for an external
-tool, and neither will a raw file link. Paste the contents of this spec directly
-into whatever is doing the drawing; the paths above are for a person or an agent
-that already has the repo checked out.
+**The repository is private,** so a link to it resolves only for someone who has
+been granted access. If the tool doing the drawing has repo access, work from
+the files directly. If it does not, paste the contents of this spec in instead —
+a raw file URL will not load for it.
 
-If you need to confirm a colour or a dimension rather than trusting this
-document, `index.html` is the source of truth — this spec is a copy and can go
-stale.
+If you can read the repo, `index.html` is the source of truth for any colour or
+dimension. This spec is a copy of those values and can go stale.
 
 ---
 
@@ -142,7 +141,70 @@ Every asset is checked before it ships:
 * No two elements of the same asset distinguished by hue alone
 * Complete as a static image; motion may be disabled by the OS preference
 
-## 7. Per-asset requirements
+## 7. Assets drawn on the board are different
+
+**Read this before drawing anything that appears inside the 420 x 420 play
+area.** It overrides parts of section 1.
+
+The board is an HTML `<canvas>`, painted with drawing commands. It is not
+inline SVG and nothing in it is a DOM element. An SVG file cannot simply be
+placed there.
+
+What works is `Path2D`, which accepts SVG **path data** directly:
+
+```js
+const EGG = new Path2D('M10 3 C13 3 15 6 15 9 ...');
+ctx.fillStyle = '#f4e8cf';
+ctx.fill(EGG);
+```
+
+So a board asset is useful to us if, and only if, it survives being reduced to
+a short list of path strings, each filled with one flat colour.
+
+### Extra requirements for board assets
+
+| Requirement | Why |
+| -- | -- |
+| **`viewBox="0 0 20 20"`**, artwork centred, drawn to fill it | One grid cell is exactly 20 x 20 px |
+| **Flat fills only.** No gradients, no filters, no blend modes, no opacity on a gradient stop | `Path2D` carries geometry only. Fills are set in code, one at a time |
+| **Each colour is its own `<path>`** with a plain `fill="#rrggbb"` | Every distinct fill becomes one `fillStyle` + one `fill()` in code |
+| **Under 12 paths per asset**, fewer is better | Each path is a draw call, sixty times a second |
+| **No `<use>`, `<defs>`, `<mask>`, `<clipPath>`, `<text>`, `<image>`** | None of it survives the trip into `Path2D` |
+| **Strokes converted to filled outlines** | Canvas strokes a path differently; a filled shape is unambiguous |
+| Absolute path commands preferred | Easier to read and adjust by hand afterwards |
+
+**Test it at 20 x 20 px before sending it.** Not zoomed. At that size a shape
+gets a silhouette and about one internal detail. Anything more is noise that
+costs draw calls and legibility.
+
+### The snake is not a picture
+
+The snake is drawn as a row of separate squares, and almost everything about it
+changes at runtime. It cannot be delivered as a single illustration.
+
+**The head** is redrawn every frame and must be supplied as parts:
+
+* It **rotates** to face four directions. Draw it facing **right**, with the
+  pivot at the centre of the cell
+* The **eyes blink**, and become crosses on defeat
+* The **tongue** flicks in and out, and stays out while the snake is queasy
+* The **hood** flares behind the head
+* It **shudders** when the snake has eaten something rotten
+
+So supply the head as separately named paths — `head`, `hood`, `eye-left`,
+`eye-right`, `tongue`, `markings` — not one merged shape. Anything fused into
+the head outline cannot be animated and will be thrown away.
+
+**The body segments** shrink and darken from the shoulders to the tail tip,
+and that ramp is computed in code. Supply one body block and one tail-tip
+block as plain shapes with a single flat fill each; the fill is replaced at
+runtime and any baked-in shading will fight it.
+
+**One body segment carries the belt**, in a colour that changes with the
+player's rank. So the body block must be a single recolourable shape. A block
+with two tones in it cannot wear a belt.
+
+## 8. Per-asset requirements
 
 Design direction is supplied separately. These are the functional targets.
 
@@ -163,7 +225,18 @@ Design direction is supplied separately. These are the functional targets.
 
 * Undated and least defined; requirements above apply, specifics to follow
 
-## 8. Deliverables
+### Board sprites — egg, rotten egg, mouse, snake head, snake body
+
+* **Section 7 applies to all of these** — they are canvas assets, not DOM SVG
+* `viewBox="0 0 20 20"`, flat fills, one path per colour
+* The egg and the rotten egg should **rhyme**: same silhouette family, so the
+  rotten one reads as a bad version of a thing you know rather than a new
+  object. The current rotten egg is tipped over and cracked, which is what
+  tells you it is wrong before the colour does — keep a non-colour signal
+* The mouse must not be confusable with either egg at 20px
+* The snake head and body: see "The snake is not a picture" above
+
+## 9. Deliverables
 
 1. The optimised `.svg` — ids prefixed, text outlined, no external references
 2. A PNG preview at intended display size; for board assets, a second at 20 × 20px
