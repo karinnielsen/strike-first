@@ -39,6 +39,13 @@ For a game, read the version parts as:
   ever being covered. Honours the reduced-motion preference.
 
 ### Changed
+- **The unwell snake is drained, not tinted.** Eating a rotten egg used to turn
+  the snake green — and green is the third belt, so the feedback collided with
+  rank and disappeared entirely at that one rank. Now the body drains toward a
+  cool ash: nothing is added, colour is taken away, so it reads identically at
+  all seven ranks and can never impersonate a belt. The whole body carries it
+  rather than just the head, so it's far harder to miss. The belt band itself
+  doesn't drain — being sick has never cost anybody their rank.
 - **Your best score now updates the moment you pass it**, rather than when you
   die. That's what lets a promotion land mid-run, which is the whole point of
   it — you find out while you're still trying not to die, not afterwards.

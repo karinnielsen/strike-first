@@ -121,6 +121,7 @@ globalThis.game = {
   update, reset, isOccupied, stepDelay, mixColour, KEYS, addScore, queasiness,
   levelFor, reachableSquare,
   BELTS, beltFor, promotionFor,
+  ASHEN, BONE_BODY, DUSTY_TAIL, blend, bodyColour, BELT_SEGMENT,
   get best() { return best }, set best(v) { best = v }
 };`;
 
@@ -660,6 +661,50 @@ describe('rank moves mid-run', () => {
     game.addScore(-3, 'rotten');
     is(game.best, 40, 'best');
     is(game.beltFor(game.best), 3, 'rank');
+  });
+});
+
+
+// 'rgb(1,2,3)' back into [1, 2, 3], so the colour rules can be asserted.
+function channelsOf(colour) {
+  return colour.match(/\d+/g).map(Number);
+}
+
+
+describe('the unwell snake', () => {
+  test('a well snake is bone at the shoulders', () => {
+    is(game.bodyColour(0, 0), 'rgb(' + game.BONE_BODY.join(',') + ')', 'colour');
+  });
+
+  test('a well snake is dusty at the tip', () => {
+    is(game.bodyColour(1, 0), 'rgb(' + game.DUSTY_TAIL.join(',') + ')', 'colour');
+  });
+
+  // The rule the whole issue exists for. Condition is shown by taking
+  // colour away, never by adding a hue, because every hue is a belt.
+  test('being unwell drains colour rather than adding any', () => {
+    const rgb    = channelsOf(game.bodyColour(0, 1));
+    const spread = Math.max(...rgb) - Math.min(...rgb);
+    is(spread < 12, true, 'near-neutral (spread was ' + spread + ')');
+  });
+
+  // The actual bug: the old sick tint was green, green is the third belt,
+  // and a green-belt player got no signal at all.
+  test('an unwell snake is never green', () => {
+    const [r, g, b] = channelsOf(game.bodyColour(0, 1));
+    is(g > r && g > b, false, 'green-dominant');
+  });
+
+  test('being unwell darkens the snake, so it reads on a dark board', () => {
+    const well = channelsOf(game.bodyColour(0, 0)).reduce((a, c) => a + c, 0);
+    const sick = channelsOf(game.bodyColour(0, 1)).reduce((a, c) => a + c, 0);
+    is(sick < well, true, 'darker when unwell');
+  });
+
+  // Rank and condition live on different surfaces, so one cannot erase
+  // the other. Being sick has never cost anybody their belt.
+  test('the belt band is not a body segment, so it never drains', () => {
+    is(game.BELT_SEGMENT > 0, true, 'the band is never the head');
   });
 });
 
