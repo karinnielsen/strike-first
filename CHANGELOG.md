@@ -12,6 +12,16 @@ For a game, read the version parts as:
 
 ## [Unreleased]
 
+### Planned
+See the [project roadmap](https://linear.app/unrulylabs/project/strike-first-3ec05fe538aa)
+for what's coming and in what order. It moves faster than this file.
+
+## [0.2.0] — 2026-09-08
+
+The core loop. Three foods filling three roles, never more than two on the
+board, and a speed ramp you can see. The scoring dynamic is settled, which is
+what belts get built on next.
+
 ### Added
 - **Eggs** replace apples as the baseline food. Cobras raid nests; they don't
   eat fruit. Same rule, same behaviour, different sprite, so nothing to relearn.
@@ -36,7 +46,7 @@ For a game, read the version parts as:
   things to read on the board now instead of two, and the old opening was too
   brisk for that.
 - A mouse now costs **2 length** instead of 1, so taking one is a real
-  decision rather than pure upside. Provisional, needs playtesting.
+  decision rather than pure upside. Confirmed by play before release.
 - **Visitors only appear somewhere you could actually reach them.** Whether
   you catch a mouse is now about whether it's worth the length and the risk
   of boxing yourself in, not about whether it happened to spawn across the
@@ -52,10 +62,6 @@ For a game, read the version parts as:
   no longer loses the second press. Previously a turn was checked against the
   direction you were travelling rather than the one it would actually follow,
   so rounding a corner quickly threw the second press away as a U-turn.
-
-### Planned
-See the [project roadmap](https://linear.app/unrulylabs/project/strike-first-3ec05fe538aa)
-for what's coming and in what order. It moves faster than this file.
 
 ## [0.1.0] — 2026-09-07
 

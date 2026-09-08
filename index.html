@@ -234,7 +234,7 @@ const ROWS = canvas.height / CELL;    // 21 rows down
 // Handy references to the bits of HTML we update as the game runs.
 // Single source of truth for the version. Bump this, add a CHANGELOG entry
 // and tag the commit - those three go together, always.
-const VERSION = '0.1.0';
+const VERSION = '0.2.0';
 document.getElementById('version').textContent = 'v' + VERSION;
 
 const scoreEl   = document.getElementById('score');
@@ -275,8 +275,10 @@ const MOUSE_POINTS  = 5;
 const ROTTEN_POINTS = -3;   // worth three eggs, so it stings without ruining a run
 
 const EGG_GROWTH    = 1;
-const MOUSE_GROWTH  = 2;    // PROVISIONAL - the whole point is that a mouse
-                            // costs you something. Needs playing. See UNR-83.
+const MOUSE_GROWTH  = 2;    // Settled by play on 8 September. The whole point
+                            // is that a mouse costs you something: five points
+                            // for two squares is a real decision late in a run
+                            // rather than pure upside. See UNR-83.
 
 // How often a visitor turns up, and which kind it is when it does.
 const VISITOR_CHANCE = 0.4;  // roughly two eggs in five bring something along
