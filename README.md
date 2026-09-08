@@ -52,6 +52,20 @@ across the board is 40 moves, and a mouse gives you 65.
 - "No Mercy" as a mode you unlock by rank
 - Sound
 
+## Tests
+
+```bash
+node test.js
+```
+
+No framework and no dependencies, same as the game. The harness reads
+`index.html`, pulls the inline script out and runs it against a stubbed
+browser, so the game stays a single file with nothing to install.
+
+Covers the grid, the speed curve, collisions, growth, scoring, the mouse
+countdown and the input rules. One test deliberately documents a known
+defect rather than a correct behaviour, and says so.
+
 ## Versioning
 
 The version lives in three places and they move together:

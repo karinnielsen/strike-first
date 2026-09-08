@@ -25,20 +25,24 @@ said explicitly that she prefers being asked.
 Workspace **Unruly labs** (`UNR`). Project: **Strike First** —
 <https://linear.app/unrulylabs/project/strike-first-3ec05fe538aa>
 
-- **Ask before changing any Linear configuration.** Labels, workflow states,
-  project structure, views. This includes *applying* existing labels to issues,
-  not just creating new ones.
+- **Ask before changing Linear configuration.** Workflow states, project
+  structure, views. Creating a *new* label counts. *Applying* existing labels to
+  issues does not — use them freely.
 - **Everything unimplemented lives in the `Idea` status.** It's a backlog-type
   state ordered before `Backlog`. Issues reach `Backlog` and then `Todo` only as
   a deliberate decision — otherwise the backlog becomes a graveyard.
 - **Always assign new issues to Karin.** She is the only member of the team, so
   an unassigned issue is never correct. Set `assignee: "me"` on creation.
 - **The label set is deliberately small and complete:** Feature, Improvement,
-  Bug, Chore, Design, Delight, plus Money (revenue-related) cutting across them.
-  Don't add labels.
+  Bug, Chore, Design, Delight, plus Money (revenue-related) cutting across
+  them. Apply them freely; ask before creating a new one.
 - **Projects here are whole products, not features.** One workspace, several
   products, so the usual mapping shifts down a rung: Project = a product,
   Issue = a feature.
+- **Milestones are the plan.** The project description in Linear carries the
+  goals, the design principles, the sequencing and why it's in that order. It's
+  the source of truth for *what we're building and when*; this file covers *how
+  to work on it*. Read both.
 
 ## Design principles for the game
 
@@ -60,6 +64,31 @@ the rule can't be broken by whoever adds the next food type.
 
 **Update and draw stay separate.** `update()` decides what is true; `draw()`
 only shows it. Never mix them.
+
+**Respect the original rules of Snake by default.** Deviating is allowed but has
+to be argued for. Someone who knows Snake shouldn't have to relearn it.
+
+**Karate references respect the real world,** specifically Tang Soo Do. The belt
+ladder is white, orange, green, brown, red, Cho Dan Bo (blue), then *midnight
+blue* rather than black — black symbolises an end, and learning never stops.
+Note red sits near the top, which collides with the red-means-loss rule above.
+
+**Cobra behaviour is modelled on real cobras.** What they actually eat and do.
+Realism is a source of mechanics, not decoration.
+
+**Less is more.** Challenge Karin when she goes too far. She's asked for this
+explicitly. But it governs what *ships*, not what gets written down. The `Idea`
+status exists so ideas can be captured without committing to them, so a big
+backlog isn't scope creep. Promoting things out of `Idea` without a reason is.
+
+**Go close to the series.** Recognisable names, factions and look are the point.
+The risk to a free, non-commercial fan project is low and the realistic worst
+case is a takedown, not a lawsuit. Two things keep it that way: stay
+non-commercial, and don't ship the actual soundtrack — write original music in
+the same register instead, which also keeps the single-file property.
+
+The full set, including the ones about recognisable references and how sound is
+used, lives in the Linear project description.
 
 ## Versioning
 
@@ -83,8 +112,43 @@ python3 -m http.server 8770
 
 Then <http://localhost:8770/>.
 
+There are tests too, and they need no setup:
+
+```bash
+node test.js
+```
+
+They cover the pure-ish logic: the speed curve, collisions, growth, scoring,
+the mouse countdown and the input rules. They can't tell you whether the game
+is *fun* — that still needs playing. New logic should arrive as functions that
+take arguments and return answers, because those need no harness at all.
+
 Running means *playing* it — click through the start screen and drive it with
 real key events, not by calling internals directly.
+
+## Say when another tool is the right one
+
+Don't grind at something badly when a different tool does it properly. Name the
+tool and hand it over. Karin has asked for this explicitly.
+
+Known weak spots, worst first:
+
+- **Detailed artwork.** Can't draw. The cobra crest proved it twice. Crests,
+  character portraits and any illustration want an image generator or a vector
+  editor, then dropping in as a file. See UNR-86, UNR-114, UNR-115.
+- **Judging whether it's fun.** Can drive the game with real key events and
+  confirm it *works*, but has no sense of whether it *feels* good. Balance,
+  difficulty and how a reward lands need human playtesting. This is the reason
+  several issues say "decided from play, not arithmetic".
+- **Composing music.** Can write Web Audio oscillator code and get pleasant
+  short effects. A theme that actually lands is a different skill — a music
+  generator or a DAW.
+- **Motion feel.** Can write the animation. Judging whether the timing feels
+  right wants a human eye or a reference to match.
+
+Things worth doing *here* rather than elsewhere: contrast and colour-blindness
+checks (Chrome DevTools emulates vision deficiencies), factual research before
+writing specifics into a spec, and anything structural in the code.
 
 ## Gotchas that have already cost time
 
@@ -100,6 +164,12 @@ ports, machines or to a published URL. That's expected, not a bug.
 **Don't hand-code detailed SVG illustrations.** A cobra crest was attempted
 twice as inline paths and rejected both times. Detailed artwork wants to be
 drawn in a vector editor and dropped in as a file. See UNR-86.
+
+**Naming a branch after an issue closes that issue when the branch merges.**
+The Linear integration matches `unr-90-...` to UNR-90 and marks it Done on
+merge.
+For a PR that only partly addresses an issue, use a branch name that doesn't
+reference it.
 
 **Balance lives in named constants** at the top of the script. Change those
 rather than scattering numbers through the code.
