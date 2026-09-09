@@ -338,7 +338,7 @@
   </header>
 
   <div class="stage" id="stage">
-    <canvas id="game" width="420" height="420"></canvas>
+    <canvas id="game" width="630" height="630"></canvas>
 
     <div class="overlay" id="overlay">
       <h2 id="overlay-title">Strike hard. No mercy.</h2>
@@ -362,7 +362,7 @@ const ctx    = canvas.getContext('2d');
 
 // The whole game happens on a grid of squares, not on free pixels.
 // That makes collisions easy: two things collide if their x/y match.
-const CELL = 20;                      // one grid square = 20 pixels
+const CELL = 30;                      // one grid square = 30 pixels
 const COLS = canvas.width  / CELL;    // 21 columns across
 const ROWS = canvas.height / CELL;    // 21 rows down
 
@@ -720,23 +720,187 @@ function draw() {
 }
 
 
+// =====================================================================
+//  SPRITES - the drawn artwork, as Path2D
+// =====================================================================
+// Commissioned rather than hand-coded, because detailed artwork is the one
+// thing this project has repeatedly got wrong when drawing it in code.
+//
+// The board is a canvas, so an SVG file cannot be placed on it. Path2D is
+// the way in: it takes SVG path data directly. Each shape is built ONCE
+// here rather than per frame, because these are painted sixty times a
+// second and reparsing a path string that often is pure waste.
+//
+// Every path is authored in a 20x20 box, which is one grid cell, so
+// drawing one means translating to the cell and filling. See
+// design/ASSET-BRIEF.md section 7, and design/board-sprites/ for the
+// original files.
+// HOW BIG THINGS ARE ON THE BOARD.
+//
+// Each sprite carries its own scale and its own true centre, because the
+// artwork is not centred in its 20x20 box - the mouse sits slightly left,
+// the rotten egg slightly low - and scaling about the box centre rather
+// than the artwork's centre makes that drift worse the bigger it gets.
+//
+// The rewards were drawn at roughly half a cell, which was fine when they
+// were three coloured blobs and is not fine now there is artwork to read.
+// A food should carry about the same visual weight as a snake segment,
+// which is 18px. These overflow the cell slightly and that is correct -
+// so does the snake's own hood.
+//
+// The ROTTEN egg is deliberately the largest thing on the board. The tilt
+// foreshortens it, so at matching numbers it reads as the smaller of the
+// two, which is backwards for the thing you are meant to notice and avoid.
+const SPRITE = {
+  egg: [
+    { fill: '#f4e8cf', d: 'M10 3.6C7.5 3.6 4.9 8.7 4.9 11.1C4.9 14.2 7 16.4 10 16.4C13 16.4 15.1 14.2 15.1 11.1C15.1 8.7 12.5 3.6 10 3.6Z' },
+    { fill: 'rgba(255,255,255,0.55)', d: 'M9.7 5.3C8.5 5.5 6.8 8.5 6.5 10.6C6.4 11.3 6.8 11.7 7.2 11.3C7.7 10.8 7.6 9.7 8.3 8.2C8.8 7 9.7 6 9.7 5.3Z' }
+  ],
+
+  // The tilt is BAKED into these coordinates, about (10,11). Do not rotate
+  // them again - a good egg stands upright, and the lean is what says this
+  // one is wrong before you have registered the colour or the crack.
+  rottenEgg: [
+    { fill: '#a8c341', d: 'M6.5481 4.6814C4.0909 6.0238 3.8634 12.0734 5.3017 14.7062C7.0756 17.9532 10.3803 18.9966 13.4519 17.3186C16.5234 15.6406 17.431 12.296 15.6572 9.049C14.2189 6.4162 9.0054 3.339 6.5481 4.6814Z' },
+    { fill: '#91a839', d: 'M10.8426 5.8677C14.1563 8.3875 15.7076 12.8957 13.6266 15.9697C12.5662 17.5746 10.5631 17.8712 9.1745 17.8322C10.5794 18.3181 12.0477 18.0857 13.4519 17.3186C16.5234 15.6406 17.431 12.296 15.6572 9.049C14.8421 7.5571 12.8221 6.1538 10.8426 5.8677Z' },
+    { fill: '#c5d781', d: 'M6.7805 6.1497C5.6722 7.6668 5.5389 11.386 6.5539 13.4524C7.056 12.4943 6.1524 9.7974 6.7805 6.1497Z' },
+    { fill: '#2a2a30', d: 'M5.0124 11.6737 7.7016 11.1731 8.2079 10.3268 10.4351 11.2751 11.8371 10.8168 12.1078 12.3554 15.4045 13.1752 11.8287 12.6788 11.527 11.3964 10.386 11.7691 8.3598 10.8135 7.8901 11.4347 5.0124 11.6737ZM10.5111 11.5184 10.2309 12.6742 11.2469 13.9082 9.9644 12.7287 10.2812 11.4731 10.5111 11.5184Z' }
+  ],
+
+  // Five paths, not the ten that were delivered. The other five - pupils,
+  // muzzle, expression, nose and a body highlight - were rendered at cell
+  // size next to this version and made the mouse HARDER to read: they
+  // collapse into a grey smudge across the face rather than reading as a
+  // face. One of them draws curves a quarter of a pixel wide.
+  //
+  // A shape at 20 pixels gets a silhouette and about one internal detail.
+  // Five extra draw calls a frame that make the thing less legible are a
+  // cost twice over.
+  mouse: [
+    { fill: '#8a7461', d: 'M5.0281 13.1759L4.2685 13.1278L3.5677 13.236L2.9761 13.4921L2.5098 13.8748L2.1822 14.3518L1.9966 14.8875L1.949 15.4505L2.0343 16.015L2.2489 16.5571L2.5909 17.0523L3.0571 17.4738L3.6292 17.7892L4.06 17.9129L4.4561 17.9633L4.8387 17.9542L5.2024 17.8893L5.5417 17.773L5.8516 17.6096L6.1275 17.4037L6.3646 17.1597L6.5582 16.8821L6.7031 16.5756L6.7938 16.2457L6.8233 15.9383A0.425 0.425 0 0 0 5.9767 15.8617L5.9574 16.0946L5.9062 16.28L5.823 16.4554L5.7095 16.6181L5.5672 16.7644L5.3984 16.8904L5.2053 16.9923L4.9902 17.0662L4.755 17.1083L4.5013 17.1145L4.2305 17.0802L3.9708 17.0108L3.5474 16.7795L3.2286 16.4903L2.998 16.1554L2.8546 15.7924L2.7985 15.4213L2.8284 15.0625L2.9411 14.7347L3.1346 14.4511L3.4145 14.2204L3.7962 14.0547L4.2978 13.9773L4.9719 14.0241A0.425 0.425 0 0 0 5.0281 13.1759ZM7 15.5Q6.1 16.4 6.7 16.9L9.4 16.9L9.1 15.3M12.1 14.7L13.2 16.3L15.2 16.2Q15.5 15.8 14.1 15.2L13.6 13.9' },
+    { fill: '#a58a70', d: 'M3.5 12.2C3.4 9.2 5.7 7.7 8 8C10.7 8.1 13.6 10.7 13.7 12.9C13.8 15.1 11.1 16.5 8.2 16.4C5.5 16.4 3.6 15.1 3.5 12.2Z' },
+    { fill: '#b89a7e', d: 'M8.7 9C6.4 8.2 5.7 5.8 6.1 3.8C6.4 2.2 8 2.8 9 4.4C10 6.1 10.6 8.1 8.7 9ZM13.3 8.3C12.1 6.6 13.3 3.4 15.2 2.9C16.8 2.5 17.3 4.3 16.7 6.4C16.2 8.2 14.8 9.6 13.3 8.3ZM8.7 7.6C9.6 6.25 12.1 6.05 13.7 7.2C14.8 7.95 14.65 9.1 15.7 10.15C16.3 10.85 15.65 12.15 14.7 12.65L12.35 13.5C11.35 13.65 10.3 12.55 9.25 11.95C8.05 11.1 7.8 9.05 8.7 7.6Z' },
+    { fill: '#d9938a', d: 'M8.5 7.8C7 7.1 6.4 5.1 6.8 3.9C7.6 3.8 9.2 6.8 8.5 7.8ZM14.2 7.9C13.7 6.6 14.3 4.1 15.4 3.7C16.5 3.8 15.8 7.1 14.2 7.9Z' },
+    { fill: '#ece6da', d: 'M9.42 8.65A1.03 1.38 0 1 0 11.48 8.65A1.03 1.38 0 1 0 9.42 8.65ZM12.75 8.6A0.8 1.12 0 1 0 14.35 8.6A0.8 1.12 0 1 0 12.75 8.6Z' }
+  ],
+
+  // THE COBRA'S HEAD, in four groups so the eyes can change state without
+  // redrawing anything else. Paint order is preserved: everything in
+  // `headBefore`, then whichever eyes apply, then `headAfter` on top.
+  //
+  // The supplied tongue path is deliberately unused. The game's own
+  // tongue flicks, holds out for a treat directly ahead and stays out
+  // while queasy, and a static filled outline cannot do any of that.
+  headBefore: [
+    { fill: '#cec6b2', tint: true, d: 'M6.6667 2.7778C10 2.7778 11.9444 5.5556 11.9444 8.3333V11.6667C11.9444 14.4444 10 17.2222 6.6667 17.2222C4.6667 17.2222 3.6111 13.8889 3.6111 10C3.6111 6.1111 4.6667 2.7778 6.6667 2.7778Z' },
+    { fill: '#d3262f', d: 'M5.6667 4.4444C7.3889 3.9444 9.0556 5.1667 9.8333 6.5556L8.5 6.1667C7.7222 5.4444 6.8889 5.2778 5.6667 5.6111V4.4444ZM5.6667 15.5556C7.3889 16.0556 9.0556 14.8333 9.8333 13.4444L8.5 13.8333C7.7222 14.5556 6.8889 14.7222 5.6667 14.3889V15.5556Z' },
+    { fill: '#e8e2d6', tint: true, d: 'M6.1111 7.9444C7.3333 6.9444 8.6111 6.1111 10 6.1111C11.1111 6.1111 11.9444 7.3889 13.0556 8.1111L13.8889 8.6111V11.3889L13.0556 11.8889C11.9444 12.6111 11.1111 13.8889 10 13.8889C8.6111 13.8889 7.3333 13.0556 6.1111 12.0556C6.7778 10.8333 6.7778 9.1667 6.1111 7.9444Z' },
+    { fill: '#7c766c', d: 'M8.7222 7.7222 10.9444 7.5 12 8.5556 10.3889 8.8889 8.7222 7.7222ZM8.7222 12.2778 10.9444 12.5 12 11.4444 10.3889 11.1111 8.7222 12.2778Z' }
+  ],
+  headEyesOpen: [
+    { fill: '#e8b53a', d: 'M9.3333 7.8889 10.7222 7.7778 11.3333 8.3611 10.4444 8.5833 9.3333 7.8889Z' },
+    { fill: '#e8b53a', d: 'M9.3333 12.1111 10.7222 12.2222 11.3333 11.6389 10.4444 11.4167 9.3333 12.1111Z' },
+    { fill: '#09090b', d: 'M10.3833 8.1667C10.3833 8.3814 10.5475 8.5556 10.75 8.5556C10.9525 8.5556 11.1167 8.3814 11.1167 8.1667C11.1167 7.9519 10.9525 7.7778 10.75 7.7778C10.5475 7.7778 10.3833 7.9519 10.3833 8.1667Z' },
+    { fill: '#09090b', d: 'M10.3833 11.8333C10.3833 12.0481 10.5475 12.2222 10.75 12.2222C10.9525 12.2222 11.1167 12.0481 11.1167 11.8333C11.1167 11.6186 10.9525 11.4444 10.75 11.4444C10.5475 11.4444 10.3833 11.6186 10.3833 11.8333Z' }
+  ],
+  headEyesBlink: [
+    { fill: '#09090b', d: 'M9.6944 8.5556H11.8056C12.0203 8.5556 12.1944 8.3814 12.1944 8.1667C12.1944 7.9519 12.0203 7.7778 11.8056 7.7778L9.6944 7.7778C9.4797 7.7778 9.3056 7.9519 9.3056 8.1667C9.3056 8.3814 9.4797 8.5556 9.6944 8.5556Z' },
+    { fill: '#09090b', d: 'M9.6944 12.2222H11.8056C12.0203 12.2222 12.1944 12.0481 12.1944 11.8333C12.1944 11.6186 12.0203 11.4444 11.8056 11.4444H9.6944C9.4797 11.4444 9.3056 11.6186 9.3056 11.8333C9.3056 12.0481 9.4797 12.2222 9.6944 12.2222Z' }
+  ],
+  headEyesDefeated: [
+    { fill: '#09090b', d: 'M9.3246 7.3698 11.5468 9.5921C11.7204 9.7656 12.0018 9.7656 12.1754 9.5921C12.349 9.4185 12.349 9.1371 12.1754 8.9635L9.9532 6.7413C9.7796 6.5677 9.4982 6.5677 9.3246 6.7413C9.151 6.9148 9.151 7.1963 9.3246 7.3698ZM11.5468 6.7413 9.3246 8.9635C9.151 9.1371 9.151 9.4185 9.3246 9.5921C9.4982 9.7656 9.7796 9.7656 9.9532 9.5921L12.1754 7.3698C12.349 7.1963 12.349 6.9148 12.1754 6.7413C12.0018 6.5677 11.7204 6.5677 11.5468 6.7413Z' },
+    { fill: '#09090b', d: 'M9.3246 11.0365 11.5468 13.2587C11.7204 13.4323 12.0018 13.4323 12.1754 13.2587C12.349 13.0852 12.349 12.8037 12.1754 12.6302L9.9532 10.4079C9.7796 10.2344 9.4982 10.2344 9.3246 10.4079C9.151 10.5815 9.151 10.8629 9.3246 11.0365ZM11.5468 10.4079 9.3246 12.6302C9.151 12.8037 9.151 13.0852 9.3246 13.2587C9.4982 13.4323 9.7796 13.4323 9.9532 13.2587L12.1754 11.0365C12.349 10.8629 12.349 10.5815 12.1754 10.4079C12.0018 10.2344 11.7204 10.2344 11.5468 10.4079Z' }
+  ],
+  headAfter: [
+    { fill: '#7c766c', d: 'M12.6721 9.0034 13.1166 9.1978C13.1795 9.2243 13.2521 9.1953 13.2794 9.1327C13.3068 9.0701 13.2789 8.9972 13.2168 8.9688L12.7723 8.7744C12.7094 8.748 12.6368 8.777 12.6095 8.8395C12.5821 8.9021 12.61 8.9751 12.6721 9.0034ZM12.7723 11.2256 13.2168 11.0312C13.2789 11.0028 13.3068 10.9299 13.2794 10.8673C13.2521 10.8047 13.1795 10.7757 13.1166 10.8022L12.6721 10.9966C12.61 11.0249 12.5821 11.0979 12.6095 11.1605C12.6368 11.223 12.7094 11.252 12.7723 11.2256Z' },
+    { fill: '#ece6da', tint: true, d: 'M7.8333 10Q10.2222 9.3889 12.2222 10Q10.2222 10.6111 7.8333 10Z' }
+  ],
+
+  // The tail tip, pointed rather than merely rounded off. Drawn pointing
+  // LEFT, so it is rotated to trail behind whichever way the body runs.
+  tail: [
+    { fill: '#7c766c', d: 'M10 4.5A5.5 5.5 0 0 1 10 15.5C8.2 15.5 7 12.1 4.8 10.5Q4.2 10 4.8 9.5C7 7.9 8.2 4.5 10 4.5Z' }
+  ]
+};
+
+// How much bigger than the authored artwork each one is drawn, and where
+// its true centre sits inside the 20x20 box. Balance lives in constants.
+// THE HEAD IS THE EXCEPTION TO ONE CELL, AND ALWAYS HAS BEEN.
+//
+// The hood is 26px wide and the tongue reaches well past the head. They
+// have never fitted inside a 20px square and they are not meant to - a
+// cobra that fits neatly in its own cell does not look like a cobra.
+//
+// So the head artwork is authored inside a 20x20 box, normalised by
+// 1/1.8, and scaled back up here. Drawing it unscaled shrinks the head to
+// something meek. See design/ASSET-BRIEF.md section 7.
+// The artwork and the hand-drawn effects were all authored for a 20px
+// cell. This is what lets the cell size change without every number in
+// the drawing code being wrong.
+//
+// Getting this wrong is not subtle but it is easy: scaling the sprites
+// and forgetting the effects hid the rotten egg's fumes completely
+// inside a shell that had grown around them.
+const CELL_SCALE = CELL / 20;
+
+const HEAD_SCALE = 1.8;
+
+// How wide the tail artwork actually is inside its box, which is not the
+// box. Measured, not guessed.
+const TAIL_ART_WIDTH = 11.3;
+
+const SPRITE_SIZE = {
+  egg:       { scale: 1.35, cx: 10.0, cy: 10.0 },
+  rottenEgg: { scale: 1.45, cx: 10.5, cy: 11.2 },
+  mouse:     { scale: 1.25, cx:  9.4, cy: 10.4 }
+};
+
+// Turn the authored paths into Path2D once, at load. These are painted
+// sixty times a second and reparsing a path string that often is waste.
+for (const name of Object.keys(SPRITE)) {
+  for (const layer of SPRITE[name]) layer.path = new Path2D(layer.d);
+}
+
+// Paint a sprite centred on a cell. `extra` multiplies the sprite's own
+// scale, which is how the egg's pulse rides on top of its base size.
+function drawSprite(name, cx, cy, extra) {
+  const size = SPRITE_SIZE[name];
+  const k = size.scale * (extra || 1) * CELL_SCALE;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(k, k);
+  ctx.translate(-size.cx, -size.cy);
+  for (const layer of SPRITE[name]) {
+    ctx.fillStyle = layer.fill;
+    ctx.fill(layer.path);
+  }
+  ctx.restore();
+}
+
+
 // ---- the egg ----------------------------------------------------------
-// Cobras raid nests; they don't eat fruit. The warm rim matters: the snake
-// is bone-white, and a plain pale oval next to it is one shape too many.
+// Cobras raid nests; they don't eat fruit.
+//
+// THE WARM SHELL AND THE GOLD RIM ARE LOAD-BEARING. The drawn artwork
+// arrived filled with bone - the exact colour of the snake - and at cell
+// size the egg became indistinguishable from a body segment. The snake is
+// most of what moves on this board, so the baseline food must never read
+// as a piece of it. The shape is the artwork's; the colour is not.
 function drawEgg(cx, cy, pulse) {
-  ctx.fillStyle = '#f4e8cf';
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, 5.1 * pulse, 6.4 * pulse, 0, 0, Math.PI * 2);
-  ctx.fill();
+  drawSprite('egg', cx, cy, pulse);
 
+  // The rim, which is what says "worth eating" - the rotten egg
+  // deliberately has a dull dark one instead, and that contrast does as
+  // much work as the shape difference.
+  const k = SPRITE_SIZE.egg.scale * pulse * CELL_SCALE;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(k, k);
+  ctx.translate(-SPRITE_SIZE.egg.cx, -SPRITE_SIZE.egg.cy);
   ctx.strokeStyle = '#c9a227';
-  ctx.lineWidth   = 1.1;
-  ctx.stroke();
-
-  ctx.fillStyle = 'rgba(255,255,255,0.75)';
-  ctx.beginPath();
-  ctx.ellipse(cx - 1.6, cy - 2.3, 1.3, 1.9, -0.4, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.lineWidth   = 1.1 / k;   // constant on screen, whatever the scale
+  ctx.stroke(SPRITE.egg[0].path);
+  ctx.restore();
 }
 
 
@@ -744,10 +908,10 @@ function drawEgg(cx, cy, pulse) {
 // The hazard. It reuses the egg's vocabulary on purpose - you already know
 // an egg is good, so an egg that looks WRONG needs no explaining.
 //
-// The difference has to be the silhouette, not just the colour. A shape
-// reads in the corner of your eye at 20 pixels; a hue does not, and a
-// player with colour blindness never sees it at all. So the shell is
-// broken open along the top rather than merely being a different green.
+// The difference has to survive without colour. The shell is tipped over
+// and cracked open, and a good egg stands upright, so the silhouette
+// alone tells you something is wrong before you have registered the hue.
+// A player who cannot see the green still sees a broken, leaning egg.
 function drawRottenEgg() {
   const cx = visitor.x * CELL + CELL / 2;
   const cy = visitor.y * CELL + CELL / 2;
@@ -756,116 +920,51 @@ function drawRottenEgg() {
   // rising, swelling and fading, so it reads as a continuous emission
   // rather than three blobs. Drawn first so the shell sits on top.
   //
-  // This is the bit that makes it findable. On a near-black board a dull
-  // shape disappears; movement does not, and it catches the eye well
-  // before you've consciously identified what it is.
+  // This stays as code rather than becoming artwork. It is the bit that
+  // makes the thing FINDABLE: on a near-black board a dull shape
+  // disappears, but movement does not, and it catches the eye well before
+  // you have consciously identified what it is. A static contour cannot
+  // do that job.
   for (let i = 0; i < 3; i++) {
     const phase = ((Date.now() / 1100) + i / 3) % 1;
-    const rise  = 5.5 + phase * 9;
-    const wob   = Math.sin(phase * 5 + i * 2) * 2.2;
+    const rise  = (5.5 + phase * 9)   * CELL_SCALE;
+    const wob   = Math.sin(phase * 5 + i * 2) * 2.2 * CELL_SCALE;
     ctx.fillStyle = `rgba(178, 214, 92, ${0.42 * (1 - phase)})`;
-    circle(cx + wob, cy - rise, 1.6 + phase * 2.6);
+    circle(cx + wob, cy - rise, (1.6 + phase * 2.6) * CELL_SCALE);
   }
 
   // A soft halo, so the shell itself lifts off the dark board. Kept tight:
   // a wide one becomes the thing your eye measures and makes the shell
   // look smaller than the egg it is supposed to rhyme with.
   ctx.fillStyle = 'rgba(163, 201, 74, 0.11)';
-  circle(cx, cy + 1, 7.5);
+  circle(cx, cy + CELL_SCALE, 7.5 * CELL_SCALE);
 
-  ctx.save();
-  ctx.translate(cx, cy + 1);
-
-  // Tipped over. A good egg stands upright, so the tilt alone tells you
-  // something is wrong before you've registered the colour or the crack.
-  // It's also the one cue that can't be confused with the mouse, which
-  // shares this slot and is the only other thing that appears here.
-  ctx.rotate(-0.5);
-
-  // Acid green rather than the muted olive this started as. It has to be
-  // clearly visible against a very dark board - a hazard you cannot see
-  // is not a hazard, it is bad luck.
-  // Slightly larger than a good egg. The tilt foreshortens it, so drawn
-  // at matching numbers it reads as the smaller of the two, which is
-  // backwards for the thing you are meant to notice and avoid.
-  ctx.fillStyle = '#a8c341';
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 5.9, 7.2, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Dull, dark rim. The egg's gold rim is what says "worth eating", so
-  // this must not have one - that contrast does as much work as the shape.
-  ctx.strokeStyle = '#454f1c';
-  ctx.lineWidth   = 1.2;
-  ctx.stroke();
-
-  // Mottling, so it reads as spoiled rather than simply green.
-  ctx.fillStyle = 'rgba(78, 92, 30, 0.55)';
-  circle(-2.1, 2.2, 1.7);
-  circle(2.2, 3.6, 1.2);
-
-  // A crack across the shell. Shallow on purpose: the egg silhouette has
-  // to survive, or it stops borrowing the vocabulary the player already
-  // knows and becomes just another blob to learn.
-  ctx.strokeStyle = '#2f3614';
-  ctx.beginPath();
-  ctx.moveTo(-5.4, -1.6);
-  ctx.lineTo(-2.2, -3.9);
-  ctx.lineTo(-0.1, -1.3);
-  ctx.lineTo(2.5,  -4.2);
-  ctx.lineTo(5.2,  -2.0);
-  ctx.lineWidth = 1.4;
-  ctx.lineJoin  = 'round';
-  ctx.stroke();
-
-  // A bite missing from the rim, so the outline itself is broken.
-  ctx.fillStyle = '#131316';
-  ctx.beginPath();
-  ctx.moveTo(1.9, -6.3);
-  ctx.lineTo(4.9, -4.7);
-  ctx.lineTo(5.7, -7.3);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.restore();
+  // The tilt is already baked into these coordinates. Rotating here would
+  // apply it twice.
+  drawSprite('rottenEgg', cx, cy);
 }
 
 
 // ---- the mouse --------------------------------------------------------
+// The temptation. Warmer than the egg on purpose - it is worth five times
+// as much, so it should catch the eye - and it faces the way it is going.
 function drawMouse() {
   const cx = visitor.x * CELL + CELL / 2;
   const cy = visitor.y * CELL + CELL / 2;
-  const f  = visitor.facing;        // +1 faces right, -1 faces left
 
-  // Tail, curling out behind it.
-  ctx.strokeStyle = '#8a7461';
-  ctx.lineWidth   = 1.6;
-  ctx.lineCap     = 'round';
-  ctx.beginPath();
-  ctx.moveTo(cx - f * 5.5, cy + 0.5);
-  ctx.quadraticCurveTo(cx - f * 10, cy + 4, cx - f * 5, cy + 7.5);
-  ctx.stroke();
-
-  // Ear, drawn before the head so it peeks out from behind it.
-  ctx.fillStyle = '#b89a7e';
-  circle(cx + f * 1.4, cy - 4.4, 3.2);
-  ctx.fillStyle = '#d9938a';
-  circle(cx + f * 1.4, cy - 4.4, 1.5);
-
-  // Body, then the head on top of it. Deliberately warmer than the egg -
-  // it's worth five times as much, so it should catch the eye.
-  ctx.fillStyle = '#a58a70';
-  ctx.beginPath();
-  ctx.ellipse(cx - f * 1, cy + 1, 6.3, 5, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#b89a7e';
-  circle(cx + f * 4, cy - 0.6, 4);
-
-  // Eye and nose.
-  ctx.fillStyle = '#09090b';
-  circle(cx + f * 5.1, cy - 1.6, 1);
-  ctx.fillStyle = '#d9938a';
-  circle(cx + f * 7.4, cy + 0.6, 1.3);
+  // The artwork is drawn facing right, so facing left is a mirror about
+  // the centre of the cell rather than a second set of paths.
+  const size = SPRITE_SIZE.mouse;
+  ctx.save();
+  ctx.translate(cx, cy);
+  const m = size.scale * CELL_SCALE;
+  ctx.scale(m * visitor.facing, m);   // facing -1 mirrors it
+  ctx.translate(-size.cx, -size.cy);
+  for (const layer of SPRITE.mouse) {
+    ctx.fillStyle = layer.fill;
+    ctx.fill(layer.path);
+  }
+  ctx.restore();
 }
 
 
@@ -881,9 +980,14 @@ function drawSnake() {
     const size  = (CELL - 2) - t * 7;   // segments shrink toward the tip
     const inset = (CELL - size) / 2;    // keeps each one centred in its square
 
-    // The very last segment gets fully rounded off, so the tail ends in a
-    // point rather than stopping dead with a square edge.
-    const radius = (i === snake.length - 1) ? size / 2 : size / 3;
+    const radius = size / 3;
+
+    // The very tip is a drawn point rather than a rounded square, and it
+    // trails whichever way the body actually runs.
+    if (i === snake.length - 1 && snake.length > 1) {
+      drawTailTip(i, size);
+      continue;
+    }
 
     // Bone white at the shoulders, fading to a dusty grey at the tip -
     // except for the one segment wearing the belt, which is the rank you
@@ -911,6 +1015,32 @@ function drawSnake() {
   drawHead();
 }
 
+// The pointed tip. The artwork points LEFT, so it is turned to face away
+// from the segment in front of it - the tail should trail the body rather
+// than always pointing the same way regardless of where the snake went.
+function drawTailTip(i, size) {
+  const tip  = snake[i];
+  const prev = snake[i - 1];
+
+  // From the segment ahead of the tip, back to the tip itself. That is
+  // the direction the tail is pointing.
+  const angle = Math.atan2(tip.y - prev.y, tip.x - prev.x);
+
+  // The artwork is about 11 units across inside its 20px box, so scaling
+  // by the box would have drawn it two thirds the size it should be. This
+  // scales against the ARTWORK, and finishes a little proud of the last
+  // full segment so the tail ends in a point rather than a pip.
+  const k = (size + 2) / TAIL_ART_WIDTH;
+  ctx.save();
+  ctx.translate(tip.x * CELL + CELL / 2, tip.y * CELL + CELL / 2);
+  ctx.rotate(angle + Math.PI);      // artwork points left; turn it to trail
+  ctx.scale(k, k);
+  ctx.translate(-10, -10);
+  ctx.fillStyle = bodyColour(1, queasiness());
+  ctx.fill(SPRITE.tail[0].path);
+  ctx.restore();
+}
+
 // The head is where all the personality lives: it faces the way you're
 // travelling, blinks, flicks its tongue, and gets X eyes when you crash.
 function drawHead() {
@@ -932,37 +1062,37 @@ function drawHead() {
   const cy = head.y * CELL + CELL / 2 + shake.y;
 
   // "fwd" is the way we're heading. "side" is that turned 90 degrees, so
-  // it points out of the snake's cheeks. With those two we can place
-  // features correctly no matter which way the snake is facing.
+  // it points out of the snake's cheeks.
   const fwd  = direction;
   const side = { x: -direction.y, y: direction.x };
 
-  // THE HOOD. Rotating the whole canvas is much easier than working out
-  // the maths for a flared ellipse pointing in four different directions:
-  // we spin the paper, draw it facing right, then spin the paper back.
-  const angle = Math.atan2(fwd.y, fwd.x);
+  // Rotating the whole canvas is far easier than working out the maths
+  // for artwork pointing in four different directions: we spin the paper,
+  // draw the head facing right, then spin the paper back.
   ctx.save();
-  ctx.translate(cx - fwd.x * 4, cy - fwd.y * 4);
-  ctx.rotate(angle);
+  ctx.translate(cx, cy);
+  ctx.rotate(Math.atan2(fwd.y, fwd.x));
+  ctx.scale(HEAD_SCALE * CELL_SCALE, HEAD_SCALE * CELL_SCALE);
+  ctx.translate(-10, -10);
 
-  // Deliberately duller than the head, so the two read as separate things
-  // rather than one white blob.
-  ctx.fillStyle = mixColour([206, 198, 178], SICK_GREEN, queasiness() * 0.85);
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 7.5, 13, 0, 0, Math.PI * 2);   // 7.5 deep, 13 wide
-  ctx.fill();
+  paintHead(SPRITE.headBefore);
 
-  // The spectacle markings, sitting right out on the flare where the head
-  // can't cover them.
-  ctx.fillStyle = '#d3262f';
-  circle(-1.5,  8.5, 2.6);
-  circle(-1.5, -8.5, 2.6);
+  // The eyes are three different things wearing the same socket: open,
+  // shut for a moment, or crossed out because you crashed.
+  if (phase === 'over')                paintHead(SPRITE.headEyesDefeated);
+  else if (Date.now() % 4200 < 130)    paintHead(SPRITE.headEyesBlink);
+  else                                 paintHead(SPRITE.headEyesOpen);
 
+  paintHead(SPRITE.headAfter);
   ctx.restore();
 
   // Tongue flicks every couple of seconds - and stays out the whole time
   // there's something worth eating directly ahead, because the snake gets
   // excited. Not for a rotten egg. It doesn't want that one either.
+  //
+  // Drawn in the game's own coordinates rather than as artwork, because
+  // it has to animate. The supplied tongue path is a static outline and
+  // cannot flick.
   const ahead = { x: head.x + fwd.x, y: head.y + fwd.y };
   const treatAhead =
        (egg.x === ahead.x && egg.y === ahead.y)
@@ -971,36 +1101,25 @@ function drawHead() {
   if (phase === 'playing' && (treatAhead || queasy > 0 || Date.now() % 2600 < 280)) {
     drawTongue(cx, cy, fwd, side);
   }
+}
 
-  // The head sits small and bright on top of the hood, the way a real
-  // cobra's does.
-  ctx.fillStyle = mixColour([248, 244, 234], SICK_GREEN, queasiness() * 0.85);
-  roundedSquare(head.x * CELL + 3, head.y * CELL + 3, CELL - 6, 6);
-
-  // Two eyes, set forward of centre, one on each cheek.
-  for (const s of [1, -1]) {
-    const ex = cx + fwd.x * 1.8 + side.x * 3.2 * s;
-    const ey = cy + fwd.y * 1.8 + side.y * 3.2 * s;
-
-    if (phase === 'over') {          // crashed: classic cartoon X eyes
-      drawCross(ex, ey);
-      continue;
-    }
-
-    if (Date.now() % 4200 < 130) {   // a quick blink every four seconds
-      strokeLine(ex - fwd.x * 1.9, ey - fwd.y * 1.9,
-                 ex + fwd.x * 1.9, ey + fwd.y * 1.9, '#09090b', 1.4);
-      continue;
-    }
-
-    // Gold eyes - white wouldn't show against a bone-white head.
-    ctx.fillStyle = '#e8b53a';
-    circle(ex, ey, 2.2);
-
-    // Pupil nudged forward, so the snake looks where it's going.
-    ctx.fillStyle = '#09090b';
-    circle(ex + fwd.x * 0.8, ey + fwd.y * 0.8, 1.05);
+// Fill a group of head paths, greening the fleshy ones if the snake has
+// eaten something rotten. The markings, eyes and nostrils never take the
+// tint - a sick snake should look sick, not repainted.
+function paintHead(layers) {
+  const sick = queasiness();
+  for (const layer of layers) {
+    ctx.fillStyle = (layer.tint && sick > 0)
+      ? mixColour(hexToRgb(layer.fill), SICK_GREEN, sick * 0.85)
+      : layer.fill;
+    ctx.fill(layer.path);
   }
+}
+
+// '#rrggbb' to [r, g, b], so authored fills can be blended with the same
+// mixColour the rest of the drawing uses.
+function hexToRgb(hex) {
+  return [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
 }
 
 function drawTongue(cx, cy, fwd, side) {

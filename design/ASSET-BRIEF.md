@@ -177,6 +177,32 @@ a short list of path strings, each filled with one flat colour.
 gets a silhouette and about one internal detail. Anything more is noise that
 costs draw calls and legibility.
 
+**Delete any path that does not change what you see at 20px.** This is not a
+size budget, it is a legibility rule: fine detail does not merely fail to
+render, it muddies the silhouette that does. If removing a path improves the
+read, it was never detail. The first delivered mouse had ten paths and read
+better with five.
+
+**Check every board object against the SNAKE, not only the background.** The
+snake is most of what moves on the board and it is bone white. The first
+delivered egg was filled with the exact bone the snake uses and became
+indistinguishable from a body segment at cell size. Contrast against `#131316`
+is necessary and not sufficient.
+
+### The head is the exception to 20 x 20
+
+The snake's hood is 26px wide and its tongue reaches 18px ahead of the head
+centre. They have never fitted inside one cell and they are not going to.
+
+So head artwork is authored in a 20px box and **normalised by 1/1.8 about the
+pivot `(10,10)`**, then scaled back up at draw time: `translate(cx, cy)`,
+rotate for direction, `scale(1.8, 1.8)`, `translate(-10, -10)`. That restores
+a 14 x 14px head with a 15 x 26px hood.
+
+Rendering the head as a plain 20px sprite shrinks it and is wrong. This
+adapter exists because the 20px rule and the approved head dimensions
+genuinely conflict, and the head is the thing that wins.
+
 ### The snake is not a picture
 
 The snake is drawn as a row of separate squares, and almost everything about it
