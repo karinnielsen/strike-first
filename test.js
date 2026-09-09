@@ -50,8 +50,8 @@ function makeElement() {
     textContent: '',
     className: '',
     offsetWidth: 0,
-    width: 420,          // 420 / CELL(20) = 21 columns, same as the real page
-    height: 420,
+    width: 630,          // 630 / CELL(30) = 21 columns, same as the real page
+    height: 630,
     style: { setProperty() {}, removeProperty() {}, getPropertyValue: () => '' },
     classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
     appendChild() {},

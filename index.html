@@ -338,7 +338,7 @@
   </header>
 
   <div class="stage" id="stage">
-    <canvas id="game" width="420" height="420"></canvas>
+    <canvas id="game" width="630" height="630"></canvas>
 
     <div class="overlay" id="overlay">
       <h2 id="overlay-title">Strike hard. No mercy.</h2>
@@ -362,7 +362,7 @@ const ctx    = canvas.getContext('2d');
 
 // The whole game happens on a grid of squares, not on free pixels.
 // That makes collisions easy: two things collide if their x/y match.
-const CELL = 20;                      // one grid square = 20 pixels
+const CELL = 30;                      // one grid square = 30 pixels
 const COLS = canvas.width  / CELL;    // 21 columns across
 const ROWS = canvas.height / CELL;    // 21 rows down
 
@@ -834,6 +834,15 @@ const SPRITE = {
 // So the head artwork is authored inside a 20x20 box, normalised by
 // 1/1.8, and scaled back up here. Drawing it unscaled shrinks the head to
 // something meek. See design/ASSET-BRIEF.md section 7.
+// The artwork and the hand-drawn effects were all authored for a 20px
+// cell. This is what lets the cell size change without every number in
+// the drawing code being wrong.
+//
+// Getting this wrong is not subtle but it is easy: scaling the sprites
+// and forgetting the effects hid the rotten egg's fumes completely
+// inside a shell that had grown around them.
+const CELL_SCALE = CELL / 20;
+
 const HEAD_SCALE = 1.8;
 
 // How wide the tail artwork actually is inside its box, which is not the
@@ -856,7 +865,7 @@ for (const name of Object.keys(SPRITE)) {
 // scale, which is how the egg's pulse rides on top of its base size.
 function drawSprite(name, cx, cy, extra) {
   const size = SPRITE_SIZE[name];
-  const k = size.scale * (extra || 1);
+  const k = size.scale * (extra || 1) * CELL_SCALE;
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(k, k);
@@ -883,7 +892,7 @@ function drawEgg(cx, cy, pulse) {
   // The rim, which is what says "worth eating" - the rotten egg
   // deliberately has a dull dark one instead, and that contrast does as
   // much work as the shape difference.
-  const k = SPRITE_SIZE.egg.scale * pulse;
+  const k = SPRITE_SIZE.egg.scale * pulse * CELL_SCALE;
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(k, k);
@@ -918,17 +927,17 @@ function drawRottenEgg() {
   // do that job.
   for (let i = 0; i < 3; i++) {
     const phase = ((Date.now() / 1100) + i / 3) % 1;
-    const rise  = 5.5 + phase * 9;
-    const wob   = Math.sin(phase * 5 + i * 2) * 2.2;
+    const rise  = (5.5 + phase * 9)   * CELL_SCALE;
+    const wob   = Math.sin(phase * 5 + i * 2) * 2.2 * CELL_SCALE;
     ctx.fillStyle = `rgba(178, 214, 92, ${0.42 * (1 - phase)})`;
-    circle(cx + wob, cy - rise, 1.6 + phase * 2.6);
+    circle(cx + wob, cy - rise, (1.6 + phase * 2.6) * CELL_SCALE);
   }
 
   // A soft halo, so the shell itself lifts off the dark board. Kept tight:
   // a wide one becomes the thing your eye measures and makes the shell
   // look smaller than the egg it is supposed to rhyme with.
   ctx.fillStyle = 'rgba(163, 201, 74, 0.11)';
-  circle(cx, cy + 1, 7.5);
+  circle(cx, cy + CELL_SCALE, 7.5 * CELL_SCALE);
 
   // The tilt is already baked into these coordinates. Rotating here would
   // apply it twice.
@@ -948,7 +957,8 @@ function drawMouse() {
   const size = SPRITE_SIZE.mouse;
   ctx.save();
   ctx.translate(cx, cy);
-  ctx.scale(size.scale * visitor.facing, size.scale);   // facing -1 mirrors it
+  const m = size.scale * CELL_SCALE;
+  ctx.scale(m * visitor.facing, m);   // facing -1 mirrors it
   ctx.translate(-size.cx, -size.cy);
   for (const layer of SPRITE.mouse) {
     ctx.fillStyle = layer.fill;
@@ -1062,7 +1072,7 @@ function drawHead() {
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(Math.atan2(fwd.y, fwd.x));
-  ctx.scale(HEAD_SCALE, HEAD_SCALE);
+  ctx.scale(HEAD_SCALE * CELL_SCALE, HEAD_SCALE * CELL_SCALE);
   ctx.translate(-10, -10);
 
   paintHead(SPRITE.headBefore);
