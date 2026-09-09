@@ -13,6 +13,12 @@ For a game, read the version parts as:
 ## [Unreleased]
 
 ### Added
+- **Drawn artwork on the board.** The egg, the rotten egg, the mouse and the
+  cobra's head are commissioned illustration rather than shapes hand-coded into
+  canvas, and the snake finishes in a pointed tail that trails the body.
+- **The board is drawn half as large again** — 30px cells instead of 20px, on
+  the same 21×21 grid. Nothing about the game changes: same distances, same
+  speed curve, same difficulty. At 20px the artwork simply could not be read.
 - **The primary button looks like a button on a cabinet.** A solid slab edge
   under it, no blur, borrowing the language the wordmark already uses; it
   travels down onto that shadow when you press it, the way a real key does; and
