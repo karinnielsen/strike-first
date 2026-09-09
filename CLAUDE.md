@@ -111,6 +111,10 @@ and fixes.
 
 ## Running it
 
+The board is **21 x 21 cells at 30px**, so a 630px canvas. The grid is the
+game; the cell size is only how large it is drawn. Changing `CELL` changes
+nothing about how it plays.
+
 No build step. Serve the folder and open the file:
 
 ```bash
@@ -132,6 +136,27 @@ take arguments and return answers, because those need no harness at all.
 
 Running means *playing* it — click through the start screen and drive it with
 real key events, not by calling internals directly.
+
+## Show two versions rather than describing the difference
+
+When a change is visual, or a matter of feel, **build both and put them side by
+side**. It is the fastest way to settle a question that prose cannot, and Karin
+has asked for it to happen more often.
+
+`design/demo/` has the tooling: an autopilot that plays the game by itself, so
+she can inspect without being distracted by playing, and notes on building a
+comparison. Three rules that came out of using it:
+
+* **Judge at actual size.** Magnified views flatter detail that dissolves at
+  real size.
+* **Change one variable.** Comparing artwork and cell size at once tells you
+  nothing about either.
+* **Never scale two versions to fit side by side** if they differ in size —
+  that erases the thing being compared.
+
+Keep the losing version on a branch. `assets/pixel-sprites` is a complete
+pixel-art alternative to the board artwork that shipped, including a better egg
+than the one on `main`.
 
 ## Say when another tool is the right one
 
@@ -207,3 +232,25 @@ doesn't reference it; and after a direct merge, close the issue yourself.
 
 **Balance lives in named constants** at the top of the script. Change those
 rather than scattering numbers through the code.
+
+**Everything in the drawing code was authored for a 20px cell.** Cells are
+30px now, and `CELL_SCALE` is what bridges that. Anything hand-drawn in canvas
+coordinates — the rotten egg's fumes, its halo — must multiply by it, not just
+the artwork. Getting this wrong looks exactly like a feature having been
+deleted: the fumes were scaled while the shell was not, so the shell grew
+around them and hid them completely.
+
+**The test harness's fake canvas has to match the real page.** It is 630px so
+that `630 / CELL(30)` gives 21 columns. A harness that disagrees with the page
+about the size of the grid is worse than no harness.
+
+**Board art is drawn into a canvas, not the DOM.** An SVG file cannot be placed
+on it. `Path2D` takes SVG path data directly, which is the way in — so board
+artwork is only usable if it reduces to a short list of path strings, each with
+one flat fill. The crest is different: that one is a DOM element and can be a
+normal inline SVG. `design/ASSET-BRIEF.md` §7 covers this.
+
+**Detail below about two pixels wide does not exist at cell size.** It does not
+merely fail to render, it muddies the silhouette that does. A delivered mouse
+had ten paths and read *better* with five. If removing a path improves the
+read, it was never detail.
