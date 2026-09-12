@@ -67,7 +67,11 @@ timers running while paused.
 **Red means losing points. Nothing else.** The sign picks the colour in code, so
 the rule can't be broken by whoever adds the next food type.
 
-**One loud voice.** The brush display face belongs to the wordmark alone.
+**One loud voice.** The wordmark is the only thing allowed to shout, and
+everything else in the game keeps the monospace. As of v0.3.1 that voice is
+*drawn* rather than set — the crest's lettering is outlined into the artwork
+and there is no display face in the page at all. Reaching for one again would
+be adding a second voice, not restoring the first.
 
 **Update and draw stay separate.** `update()` decides what is true; `draw()`
 only shows it. Never mix them.
@@ -109,6 +113,18 @@ Read the numbers in game terms: **major** when it plays differently enough to be
 a new thing, **minor** for a new mechanic or mode, **patch** for balance, art
 and fixes.
 
+**Artwork is a patch, however much of it there is.** This used to be ambiguous:
+`CHANGELOG.md` said minor meant "new mechanic, mode or content", which made a
+pile of commissioned artwork arguable either way. Settled 12 September — the
+two files now say the same thing. v0.3.1 replaced the wordmark with a drawn
+crest, retired gold for electric yellow across the whole palette and made the
+board artwork legible, and it was still a patch, because nothing played
+differently afterwards. The test is what the player has to *do*.
+
+A corollary worth knowing: the milestones in Linear each name the version they
+ship as, all the way to v1.0.0. Spending a minor early means renumbering every
+milestone behind it, so reach for a patch when the rule allows one.
+
 ## Running it
 
 The board is **21 x 21 cells at 30px**, so a 630px canvas. The grid is the
@@ -123,7 +139,9 @@ python3 -m http.server 8770
 
 Then <http://localhost:8770/>.
 
-There are tests too, and they need no setup:
+There are tests too, and they need no setup beyond **Node 15 or newer** —
+`test.js` uses `||=`, so an older Node dies with a bare `SyntaxError` that
+looks nothing like a version problem:
 
 ```bash
 node test.js

@@ -7,8 +7,12 @@ and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 For a game, read the version parts as:
 
 - **major** — the game plays differently enough to be a new thing
-- **minor** — new mechanic, mode or content
+- **minor** — a new mechanic or mode
 - **patch** — balance tuning, art, copy, bug fixes
+
+Artwork is a patch, however much of it there is. The test is what the player
+has to *do*, not how much changed. Settled 12 September, when v0.3.1 shipped a
+new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
