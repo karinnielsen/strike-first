@@ -889,11 +889,28 @@ describe('sprites', () => {
 });
 
 
+// Four things move together, always: the VERSION constant, the CHANGELOG,
+// the README's Current version line, and an annotated tag. Three of those
+// are files, so three of them can be checked here.
+//
+// The tag deliberately is not. VERSION is bumped in the commit BEFORE the
+// tag exists, so asserting it would fail every time in exactly the window
+// where you are trying to cut a release.
+//
+// The README line is the reason this group exists at all: it said v0.1.0
+// until 12 September, through two releases that changed it, while the
+// other three never drifted once.
 describe('version', () => {
   test('matches the changelog', () => {
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     const latest = changelog.match(/## \[(\d+\.\d+\.\d+)\]/);
     is(game.VERSION, latest && latest[1], 'version');
+  });
+
+  test('matches the README', () => {
+    const readme = fs.readFileSync(path.join(__dirname, 'README.md'), 'utf8');
+    const stated = readme.match(/Current version: \*\*v(\d+\.\d+\.\d+)\*\*/);
+    is(game.VERSION, stated && stated[1], 'version');
   });
 });
 

@@ -169,7 +169,8 @@ Then <http://localhost:8770/>.
 
 There are tests too, and they need no setup beyond **Node 15 or newer** —
 `test.js` uses `||=`, so an older Node dies with a bare `SyntaxError` that
-looks nothing like a version problem:
+looks nothing like a version problem. Node is installed here via **nvm**, not
+Homebrew, and lives in `~/.nvm` rather than `/usr/local`:
 
 ```bash
 node test.js
@@ -256,6 +257,17 @@ not the problem in a five-file repo, so nothing to gain from ignore rules.
   a morning of screenshots into the afternoon.
 
 ## Gotchas that have already cost time
+
+**Homebrew builds from source on this machine, and that is a trap.** macOS 13
+Ventura on Intel is past Homebrew's bottle support, so any formula without a
+prebuilt binary compiles. `brew install node` spent an hour dragging in cmake,
+go, ninja, python and llvm and then died on a `ChecksumMismatchError` without
+ever reaching Node. Node came from **nvm** instead — a prebuilt binary, done in
+seconds. For anything large, reach for a prebuilt route before brew, and don't
+read a long brew build as normal progress.
+
+Also beware that piping brew through `tail` swallows its exit status: the
+failed build reported exit code 0 and looked like a success.
 
 **The 68px gap below the wordmark is load-bearing.** The floating `+N` rises
 24px out of the score counter and collides with the title without it. It is
