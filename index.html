@@ -346,8 +346,9 @@ const COLS = canvas.width  / CELL;    // 21 columns across
 const ROWS = canvas.height / CELL;    // 21 rows down
 
 // Handy references to the bits of HTML we update as the game runs.
-// Single source of truth for the version. Bump this, add a CHANGELOG entry
-// and tag the commit - those three go together, always.
+// Single source of truth for the version. Bump this, add a CHANGELOG entry,
+// update the Current version line in README.md, and tag the commit - those
+// four go together, always.
 const VERSION = '0.3.1';
 document.getElementById('version').textContent = 'v' + VERSION;
 

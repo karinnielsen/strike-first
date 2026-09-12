@@ -103,11 +103,18 @@ used, lives in the Linear project description.
 
 ## Versioning
 
-Three things move together, always:
+Four things move together, always:
 
 1. the `VERSION` constant at the top of the script in `index.html`
 2. a new entry in `CHANGELOG.md`
-3. an annotated git tag, e.g. `git tag -a v0.2.0 -m "..."`
+3. the **Current version** line in `README.md`
+4. an annotated git tag, e.g. `git tag -a v0.2.0 -m "..."`
+
+The README line is the newest of the four, and it is in the list precisely
+because it was the one that broke. It read v0.1.0 until 12 September, through
+two releases that changed it. The other three never drifted once — the
+invariant is what kept them honest — so the fix was to put the fourth thing
+*inside* the invariant rather than to try to remember harder.
 
 Read the numbers in game terms: **major** when it plays differently enough to be
 a new thing, **minor** for a new mechanic or mode, **patch** for balance, art
@@ -124,6 +131,27 @@ differently afterwards. The test is what the player has to *do*.
 A corollary worth knowing: the milestones in Linear each name the version they
 ship as, all the way to v1.0.0. Spending a minor early means renumbering every
 milestone behind it, so reach for a patch when the rule allows one.
+
+## Keep the README true as you go
+
+The version line is the mechanical half. The rest of the README rots a
+different way: it describes the game, and the game keeps changing.
+
+**A change a player can see carries its README update in the same commit.** A
+food, a control, a rank, a mode, the board — if a player would notice it, the
+README is part of that diff, not a job for later. Internals don't count: a
+renamed token, a refactor or a comment changes nothing the README claims.
+
+Same commit rather than at release, because that is the one moment someone
+definitely knows what changed. By release time they don't. That is how the
+README came to describe *apples* when the game had served eggs since v0.2.0,
+and to list belt ranks under "Next" as white-through-black three days after
+belts shipped ending in midnight blue.
+
+Release is the backstop, not the mechanism. And deliberately **not** every
+merge: this project commits straight to main, so per-merge would mean per-
+commit, and a check that is almost always a no-op gets rubber-stamped until it
+stops being a check at all.
 
 ## Running it
 

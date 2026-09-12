@@ -113,12 +113,13 @@ Needs Node 15 or newer.
 
 ## Versioning
 
-The version lives in three places and they move together:
+The version lives in four places and they move together:
 
 1. the `VERSION` constant at the top of the script in `index.html`,
    which renders in the footer
 2. a new entry in `CHANGELOG.md`
-3. an annotated git tag, e.g. `git tag -a v0.3.1 -m "..."`
+3. the **Current version** line at the top of this file
+4. an annotated git tag, e.g. `git tag -a v0.3.1 -m "..."`
 
 Read the numbers in game terms:
 
