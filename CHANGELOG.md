@@ -27,6 +27,17 @@ For a game, read the version parts as:
   backwards for the one thing the screen is asking you to do.
 - The button finally has a **visible focus ring**. Keyboard users were getting
   whatever the browser decided.
+- **The cobra crest.** The wordmark is a drawn lockup now — the hood above and
+  through the words, the lettering outlined into the artwork rather than set in
+  a display face. It is the first thing on the page and it says what the game
+  is before you have read a word.
+
+### Removed
+- **The last thing this page fetched.** The display face existed for exactly
+  one line of CSS, the title, and the crest's lettering is drawn — so the
+  webfont and its three `<link>` tags are gone with it. The game now requests
+  nothing at all: "one self-contained HTML file, no dependencies" is literally
+  true rather than nearly true.
 
 ### Planned
 See the [project roadmap](https://linear.app/unrulylabs/project/strike-first-3ec05fe538aa)
