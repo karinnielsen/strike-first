@@ -12,6 +12,16 @@ For a game, read the version parts as:
 
 ## [Unreleased]
 
+### Planned
+See the [project roadmap](https://linear.app/unrulylabs/project/strike-first-3ec05fe538aa)
+for what's coming and in what order. It moves faster than this file.
+
+## [0.3.1] — 2026-09-12
+
+The game gets its face. A drawn cobra crest where the typed wordmark was,
+and one yellow doing the work two were doing before. Nothing plays
+differently — this is all art.
+
 ### Added
 - **Drawn artwork on the board.** The egg, the rotten egg, the mouse and the
   cobra's head are commissioned illustration rather than shapes hand-coded into
@@ -46,10 +56,6 @@ For a game, read the version parts as:
   webfont and its three `<link>` tags are gone with it. The game now requests
   nothing at all: "one self-contained HTML file, no dependencies" is literally
   true rather than nearly true.
-
-### Planned
-See the [project roadmap](https://linear.app/unrulylabs/project/strike-first-3ec05fe538aa)
-for what's coming and in what order. It moves faster than this file.
 
 ## [0.3.0] — 2026-09-08
 

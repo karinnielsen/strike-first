@@ -3,7 +3,7 @@
 A browser Snake game with a karate-dojo theme. One HTML file, no build step,
 no dependencies, nothing to install — open it and play.
 
-Current version: **v0.1.0** — see [CHANGELOG.md](CHANGELOG.md).
+Current version: **v0.3.1** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Play
 
@@ -18,7 +18,7 @@ Open `index.html` in any browser.
 - **Apples** — 1 point. There's always exactly one on the board.
 - **Mice** — 5 points. Appear after roughly two apples in five, and scurry off
   if you take too long. They flash when they're about to bolt.
-- **Floating score feedback** — a small `+1` for an apple, a big gold `+5` for a
+- **Floating score feedback** — a small `+1` for an apple, a big electric-yellow `+5` for a
   mouse. The size difference is the point: you see the value before you read it.
 - The snake speeds up as your score climbs, and your best score is remembered.
 
