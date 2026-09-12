@@ -11,11 +11,13 @@
     --line:   #2a2a30;
     --text:   #ece6da;   /* bone                       */
     --dim:    #7b7480;
-    --gold:   #e8b53a;   /* rank, reward, the big hits */
+    --yellow: #ffff00;   /* the dojo's own yellow: reward, and the
+                            one thing the screen is asking you to do.
+                            Rank is --belt and has never been this. */
     --red:    #d3262f;   /* blood, and losses only     */
     --brand:  #ee3524;   /* the wordmark, hotter than the gameplay red */
     --bone:   #e8e2d6;   /* the cobra                  */
-    --gold-deep: #7a5810; /* the shadow side of gold    */
+    --yellow-deep: #7a7a00; /* the shadow side of it    */
   }
 
   * { box-sizing: border-box; }
@@ -126,9 +128,9 @@
     animation: float-up 900ms ease-out forwards;
   }
 
-  /* A mouse is worth five times an egg, so its +5 arrives bigger and
-     gold. The size difference IS the message. */
-  .score-pop.big { font-size: 21px; color: var(--gold); }
+  /* A mouse is worth five times an egg, so its +5 arrives bigger and in
+     the dojo's yellow. The size difference IS the message. */
+  .score-pop.big { font-size: 21px; color: var(--yellow); }
 
   /* Red is reserved for LOSING points, and nothing else - so the moment we
      add something that costs you, it reads as bad without explanation. */
@@ -172,7 +174,7 @@
   }
 
   .overlay.hidden { display: none; }
-  .overlay h2 { margin: 0; font-size: 22px; letter-spacing: 3px; color: var(--gold); }
+  .overlay h2 { margin: 0; font-size: 22px; letter-spacing: 3px; color: var(--yellow); }
   .overlay p  { margin: 0; font-size: 13px; color: var(--dim); }
 
 
@@ -194,30 +196,30 @@
                               which is backwards - this is the thing to do */
     letter-spacing: 0.4px;
     color: var(--bg);
-    background: var(--gold);
+    background: var(--yellow);
     border: 0;
     border-radius: 6px;
     cursor: pointer;
 
     /* Two shadows doing different jobs: the first is the slab's own edge,
        hard and unblurred. The second is the bloom the pulse animates. */
-    box-shadow: 0 6px 0 var(--gold-deep), 0 0 9px 1px rgba(232, 181, 58, 0.13);
+    box-shadow: 0 6px 0 var(--yellow-deep), 0 0 9px 1px rgba(255, 255, 0, 0.13);
     animation: cta-call 2.8s ease-in-out infinite;
   }
 
-  button:hover { background: #f5cd6b; }
+  button:hover { background: #ffff66; }
 
   /* Travels down onto its own shadow, the way a real key does. This is the
      part that makes it feel like a button rather than a link, and the
      pulse stops while you are pressing so the two never fight. */
   button:active {
     transform: translateY(6px);
-    box-shadow: 0 0 0 var(--gold-deep);
+    box-shadow: 0 0 0 var(--yellow-deep);
     animation: none;
   }
 
   /* Keyboard users were getting whatever the browser decided. Bone rather
-     than gold, so the ring reads as separate from the button it is on. */
+     than yellow, so the ring reads as separate from the button it is on. */
   button:focus-visible {
     outline: 2px solid var(--text);
     outline-offset: 3px;
@@ -232,8 +234,8 @@
      - drop it from one keyframe and the button loses its edge halfway
      through the cycle. */
   @keyframes cta-call {
-    0%, 100% { box-shadow: 0 6px 0 var(--gold-deep), 0 0  9px 1px rgba(232, 181, 58, 0.13); }
-    50%      { box-shadow: 0 6px 0 var(--gold-deep), 0 0 24px 4px rgba(232, 181, 58, 0.42); }
+    0%, 100% { box-shadow: 0 6px 0 var(--yellow-deep), 0 0  9px 1px rgba(255, 255, 0, 0.13); }
+    50%      { box-shadow: 0 6px 0 var(--yellow-deep), 0 0 24px 4px rgba(255, 255, 0, 0.42); }
   }
 
   .hint {
@@ -1154,7 +1156,7 @@ function drawCross(x, y) {
 //
 // The original sick green was rejected because green is the third belt,
 // so being unwell collided with rank. Then ash was rejected because a
-// grey snake is a dull snake and the game is black-and-gold for a reason.
+// grey snake is a dull snake and the game is black-and-yellow for a reason.
 //
 // The green is back, and the first objection turns out not to hold any
 // more. It was written when the WHOLE snake was going to carry the belt

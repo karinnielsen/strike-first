@@ -32,6 +32,14 @@ For a game, read the version parts as:
   a display face. It is the first thing on the page and it says what the game
   is before you have read a word.
 
+### Changed
+- **Electric yellow is the system yellow.** The dojo has one colour instead of
+  two: the yellow on the cobra is the same yellow as the primary button, the
+  overlay title and the `+5`. The old gold was a generic arcade gold sitting
+  next to a very specific one, and carrying two yellows where only one meant
+  anything was one too many. Rank is untouched — a belt has always worn its
+  own colour, and none of the seven is yellow.
+
 ### Removed
 - **The last thing this page fetched.** The display face existed for exactly
   one line of CSS, the title, and the crest's lettering is drawn — so the
