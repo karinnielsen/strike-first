@@ -85,6 +85,7 @@ const sandbox = {
   // The game ends by calling loop(), which re-arms itself with setTimeout.
   // Swallowing the timer stops it spinning forever inside the test run.
   setTimeout: () => 0,
+  clearTimeout: () => {},
   requestAnimationFrame: () => 0,
   cancelAnimationFrame: () => {},
   performance: { now: () => 0 },
@@ -144,6 +145,7 @@ globalThis.game = {
   TONGUE_DOUBLE, TONGUE_PAUSE_MIN, TONGUE_PAUSE_MAX, tongueFlickPlan,
   TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt,
   DEFEAT_LINES, defeatLine, defeatPool, fillLine,
+  START_BOW, BOW_MS, bowPose, bowSegment, bowElapsed,
   DEFEAT_MS, DEFEAT_HOLD_MS, defeatRecoil, defeatDrain, defeatJolt, defeatBow, canRestart,
   get defeat() { return defeat },
   SPRITE, SPRITE_SIZE, drawSprite,
@@ -1084,7 +1086,7 @@ describe('sound', () => {
   test('starting a game without Web Audio still starts it', () => {
     game.audioCtx = null;
     game.startGame();
-    is(game.phase, 'playing', 'phase');
+    is(game.phase, game.START_BOW === 'none' ? 'playing' : 'bowing', 'phase');
   });
 
   test('each food plays its own sound', () => {
@@ -1145,6 +1147,49 @@ describe('sound', () => {
     is(JSON.stringify(game.snake), snake, 'snake');
     is(game.turnQueue, [], 'no turn queued');
     pressKey('m');
+  });
+});
+
+
+describe('the opening bow', () => {
+  function bowing() {
+    game.startGame();
+    game.phase = 'bowing';                    // whatever START_BOW is set to
+  }
+
+  test('the snake does not move while it bows', () => {
+    bowing();
+    const snake = JSON.stringify(game.snake);
+    pressKey('m'); pressKey('m');
+    is(JSON.stringify(game.snake), snake, 'snake');
+    is(game.phase, 'bowing', 'phase');
+  });
+
+  test('a direction cuts the bow and is the first move, taken at once', () => {
+    bowing();
+    const head = game.snake[0];
+    pressKey('ArrowUp');
+    is(game.phase, 'playing', 'phase');
+    is(game.snake[0], {x: head.x, y: head.y - 1}, 'head');
+  });
+
+  test('space does not restart a bow in progress', () => {
+    bowing();
+    pressKey(' ');
+    is(game.phase, 'bowing', 'phase');
+  });
+
+  test('every candidate starts and ends standing', () => {
+    for (const style of ['none', 'mirror', 'ripple', 'strike']) {
+      is(game.bowPose(0, style, false), {scale: 1, back: 0}, style + ' at 0');
+      is(game.bowPose(game.BOW_MS, style, false), {scale: 1, back: 0}, style + ' at end');
+      is(game.bowSegment(game.BOW_MS, 1, style, false), 1, style + ' tail at end');
+    }
+  });
+
+  test('reduced motion keeps the head still', () => {
+    is(game.bowPose(250, 'strike', true), {scale: 1, back: 0}, 'pose');
+    is(game.bowSegment(250, 0.5, 'ripple', true), 1, 'segment');
   });
 });
 

@@ -1511,7 +1511,8 @@ function drawSnake() {
     // which is what turns a row of identical blocks into a real tail.
     const t = i / (snake.length - 1);
 
-    const size  = (CELL - 2) - t * 7;   // segments shrink toward the tip
+    const size  = ((CELL - 2) - t * 7)  // segments shrink toward the tip
+                * bowSegment(bowElapsed(), t, START_BOW, REDUCED_MOTION.matches);
     const inset = (CELL - size) / 2;    // keeps each one centred in its square
 
     const radius = size / 3;
@@ -1599,8 +1600,10 @@ function drawHead() {
 
   // After a crash the head is knocked back off whatever it hit.
   const ms   = defeatElapsed();
-  const back = defeatRecoil(ms, REDUCED_MOTION.matches) * CELL;
-  const bow  = defeatBow(ms, REDUCED_MOTION.matches);
+  // Before a run, the opening bow.
+  const pose = bowPose(bowElapsed(), START_BOW, REDUCED_MOTION.matches);
+  const back = (defeatRecoil(ms, REDUCED_MOTION.matches) + pose.back) * CELL;
+  const bow  = defeatBow(ms, REDUCED_MOTION.matches) * pose.scale;
 
   const cx = head.x * CELL + CELL / 2 + shake.x - fwd.x * back;
   const cy = head.y * CELL + CELL / 2 + shake.y - fwd.y * back;
@@ -1619,7 +1622,8 @@ function drawHead() {
   // The eyes are three different things wearing the same socket: open,
   // shut for a moment, or crossed out because you crashed.
   if (defeat)                          paintDefeatedEyes();
-  else if (Date.now() % 4200 < 130)    paintHead(SPRITE.headEyesBlink);
+  // No blink while bowing: in Tang Soo Do the eyes stay on your opponent.
+  else if (phase !== 'bowing' && Date.now() % 4200 < 130) paintHead(SPRITE.headEyesBlink);
   else                                 paintHead(SPRITE.headEyesOpen);
 
   paintHead(SPRITE.headAfter);
@@ -1816,6 +1820,50 @@ function deadColour(rgbString, drain) {
   return mixColour(rgbString.match(/\d+/g).map(Number), DEAD_ASH, drain);
 }
 
+// ---- the bow, drawn ---------------------------------------------------
+// Every run opens with a bow, the way every lost one closes with one. In
+// Tang Soo Do you bow entering the dojo, and a bout is bowed into and out
+// of. The snake does not move until it is over, so it never costs reaction
+// time, and a direction pressed during it cuts it short and becomes the
+// first move. See UNR-103.
+//
+// Candidates, compared side by side:
+//   'none'   - today: no bow, the run just starts
+//   'mirror' - the defeat's bow played forward: the head dips and rises
+//   'ripple' - the dip runs from the head down to the tail, the body bowing
+//              as one; the defeat's drain runs the other way
+//   'strike' - a quick dip, then the head draws back and the first step
+//              snaps it forward: Strike First
+const START_BOW = 'strike';
+const BOW_MS    = 520;
+const BOW_COIL  = 0.3;    // cells the head draws back before the strike
+
+// Down, a hold, and back up again: 0 standing, 1 at the bottom.
+function dip(ms, downMs, holdMs, upMs) {
+  return easeOut(ms / downMs) - easeOut((ms - downMs - holdMs) / upMs);
+}
+
+// The head's pose `ms` into the bow: a scale (smaller is nearer the mat,
+// seen from above) and how far it sits back, in cells.
+function bowPose(ms, style, reduced) {
+  if (reduced || !(ms < BOW_MS)) return { scale: 1, back: 0 };
+  const depth = 1 - DEFEAT_BOW;
+  if (style === 'mirror') return { scale: 1 - depth * dip(ms, 200, 100, 200), back: 0 };
+  if (style === 'ripple') return { scale: 1 - depth * dip(ms, 120, 20, 120),  back: 0 };
+  if (style === 'strike') {
+    return { scale: 1 - depth * dip(ms, 160, 40, 140),
+             back:  BOW_COIL * easeOut((ms - 300) / 160) };
+  }
+  return { scale: 1, back: 0 };
+}
+
+// A body segment's scale. Only the ripple moves the body; t is 0 behind
+// the head and 1 at the tip.
+function bowSegment(ms, t, style, reduced) {
+  if (reduced || style !== 'ripple' || !(ms < BOW_MS)) return 1;
+  return 1 - (1 - DEFEAT_BOW) * dip(ms - 40 - t * 220, 120, 20, 120);
+}
+
 // The flash at the point of contact: short yellow rays bursting from the
 // edge the head hit, gone in a fifth of a second. For a bite, the segment
 // that was bitten blinks twice as well, so you can see where you were.
@@ -1899,14 +1947,21 @@ function mixColour(from, to, t) {
 // Every game ever made is some version of: update, draw, wait, repeat.
 // The loop runs forever; update() only actually runs while we're playing,
 // which is what makes pausing and the menus work.
+let loopTimer = 0;
+
 function loop() {
+  // Cleared first, so calling loop() directly to start a run on the beat
+  // restarts the heartbeat rather than running a second one beside it.
+  clearTimeout(loopTimer);
+  // A hidden tab stops animation frames, so the bow can end here too.
+  if (phase === 'bowing' && bowElapsed() >= BOW_MS) phase = 'playing';
   if (phase === 'playing') update();
   // A hidden tab stops animation frames; this makes sure the verdict
   // still arrives rather than waiting for the tab to come back.
   if (phase === 'dying' && defeatElapsed() >= DEFEAT_MS) showVerdict();
   draw();
   watchCrest();
-  setTimeout(loop, stepDelay());
+  loopTimer = setTimeout(loop, stepDelay());
 }
 
 // The tiers themselves are LEVELS, with the rest of the balance in section 2.
@@ -2024,7 +2079,7 @@ document.addEventListener('keydown', (event) => {
   if (key === ' ') {
     if (phase === 'playing' || phase === 'paused') {
       toggleMercy();
-    } else if (canRestart()) {
+    } else if (phase !== 'bowing' && canRestart()) {
       startGame();
     }
     return;
@@ -2064,6 +2119,14 @@ showSound();
 // Every turn, from a key or a swipe, goes through here, so both obey the
 // same rules and a swipe can never do something a key press couldn't.
 function queueTurn(turn) {
+  // A direction during the bow cuts it short and is the first move, taken
+  // now: impatience costs nothing, and the key is not thrown away.
+  if (phase === 'bowing') {
+    phase = 'playing';
+    queueTurn(turn);
+    loop();
+    return;
+  }
   if (phase !== 'playing') return;
 
   // Check the turn against the direction it will ACTUALLY follow: the last
@@ -2319,8 +2382,35 @@ function showBestBelt() {
 function startGame() {
   audio();    // always a click or a key, so the browser will allow it
   reset();
-  phase = 'playing';
   overlay.classList.add('hidden');
+  if (START_BOW === 'none' || REDUCED_MOTION.matches) {
+    phase = 'playing';
+    return;
+  }
+  phase = 'bowing';
+  bowStart = performance.now();
+  requestAnimationFrame(bowFrame);
+}
+
+// ---- the opening bow ----
+// Like the defeat, the bow needs every frame and the loop draws only once
+// a step, so it drives its own. When it ends the first step is taken on the
+// spot and the heartbeat starts from there, so the snake's first move is
+// never early or late by part of a step.
+let bowStart = 0;
+
+function bowElapsed() {
+  return phase === 'bowing' ? performance.now() - bowStart : Infinity;
+}
+
+function bowFrame() {
+  if (phase !== 'bowing') return;            // cut short by a direction
+  if (bowElapsed() >= BOW_MS) {
+    phase = 'playing';
+    return loop();
+  }
+  draw();
+  requestAnimationFrame(bowFrame);
 }
 
 playBtn.addEventListener('click', () => {

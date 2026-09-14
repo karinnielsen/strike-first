@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strike First — bow options</title>
+<style>
+  body {
+    margin: 0; padding: 32px;
+    background: #09090b; color: #ece6da;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  h1 { font-size: 13px; letter-spacing: 3px; color: #ffff00; margin: 0 0 10px; font-weight: 400; }
+  p.lede { font-size: 12px; color: #7b7480; line-height: 1.6; margin: 0 0 18px; max-width: 760px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 24px; }
+  .controls label { font-size: 11px; color: #7b7480; display: flex; gap: 8px; align-items: center; }
+  button.act {
+    font: inherit; font-size: 12px; cursor: pointer;
+    background: transparent; color: #ece6da;
+    border: 1px solid #2a2a30; border-radius: 4px; padding: 7px 12px;
+  }
+  button.act:hover { border-color: #ffff00; color: #ffff00; }
+  /* Actual size, never scaled to fit: the row scrolls instead. */
+  .grid { display: grid; grid-template-columns: repeat(2, 680px); gap: 24px; }
+  h2 { font-size: 12px; letter-spacing: 2px; font-weight: 400; margin: 0 0 4px; text-transform: uppercase; }
+  .brief { font-size: 11px; color: #7b7480; margin: 0 0 10px; min-height: 2.8em; line-height: 1.4; }
+  iframe { width: 680px; height: 1000px; border: 1px solid #2a2a30; border-radius: 4px; background: #09090b; }
+</style>
+</head>
+<body>
+<h1>THE OPENING BOW — FOUR CANDIDATES</h1>
+<p class="lede">
+  Each frame is the real game from <code>index.html</code> with only
+  <code>START_BOW</code> changed, at actual size. Buttons send the same real
+  input to all four at once, so they bow in step. Judge at real speed, and
+  judge the fiftieth one, not the first.
+</p>
+<div class="controls">
+  <button class="act" id="enter">Enter the dojo (from the start screen)</button>
+  <button class="act" id="again">Restart all (r)</button>
+  <label><input type="checkbox" id="repeat"> restart every 2.5s</label>
+</div>
+<div class="grid" id="grid"></div>
+
+<script>
+const CANDIDATES = [
+  ['none',   'None — today', 'No bow. The run just starts, and the first step lands somewhere inside the first beat.'],
+  ['mirror', 'Mirror',       'The defeat’s bow played forward: the head dips to the mat and rises. Half a second.'],
+  ['ripple', 'Ripple',       'The dip runs from the head down to the tail, the whole body bowing. The defeat’s drain runs the other way.'],
+  ['strike', 'Strike',       'A quick dip, then the head draws back and the first step snaps it forward. Strike First.'],
+];
+
+const frames = [];
+let source;
+
+async function build() {
+  source = await (await fetch('../index.html', { cache: 'no-store' })).text();
+  const grid = document.getElementById('grid');
+  for (const [style, name, brief] of CANDIDATES) {
+    const cell = document.createElement('div');
+    cell.innerHTML = `<h2>${name}</h2><p class="brief">${brief}</p>`;
+    const frame = document.createElement('iframe');
+    frame.dataset.style = style;
+    cell.appendChild(frame);
+    grid.appendChild(cell);
+    frames.push(frame);
+  }
+  loadAll();
+}
+
+function loadAll() {
+  return Promise.all(frames.map(frame => new Promise(done => {
+    const html = source
+      .replace('<head>', '<head><base href="../">')
+      .replace(/const START_BOW = '[a-z]+';/, `const START_BOW = '${frame.dataset.style}';`);
+    frame.onload = done;
+    frame.srcdoc = html;
+  })));
+}
+
+function key(frame, k) {
+  const win = frame.contentWindow;
+  win.document.dispatchEvent(new win.KeyboardEvent('keydown', { key: k, bubbles: true }));
+}
+
+document.getElementById('enter').onclick = async () => {
+  await loadAll();
+  setTimeout(() => frames.forEach(f => f.contentDocument.getElementById('play-btn').click()), 900);
+};
+document.getElementById('again').onclick = () => frames.forEach(f => key(f, 'r'));
+
+let timer = 0;
+document.getElementById('repeat').onchange = (e) => {
+  clearInterval(timer);
+  if (e.target.checked) timer = setInterval(() => frames.forEach(f => key(f, 'r')), 2500);
+};
+
+build();
+</script>
+</body>
+</html>
