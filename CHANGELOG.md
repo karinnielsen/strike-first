@@ -16,6 +16,14 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+### Added
+- **An opening bow.** Every run opens with a bow, the way every lost one
+  closes with one: the snake dips its head, draws back, and its first step
+  snaps forward as a strike. Half a second. The snake does not move until it
+  is over, so it never costs reaction time, and a direction pressed during it
+  cuts it short and is taken as the first move at once. Reduced motion skips
+  it. Chosen from four candidates side by side, kept on `options/start-bow`.
+
 ## [0.4.3] — 2026-09-14
 
 Losing gets a moment. The snake's last mistake plays out on the board before

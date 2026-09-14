@@ -145,7 +145,7 @@ globalThis.game = {
   TONGUE_DOUBLE, TONGUE_PAUSE_MIN, TONGUE_PAUSE_MAX, tongueFlickPlan,
   TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt,
   DEFEAT_LINES, defeatLine, defeatPool, fillLine,
-  START_BOW, BOW_MS, bowPose, bowSegment, bowElapsed,
+  BOW_MS, bowPose, bowElapsed,
   DEFEAT_MS, DEFEAT_HOLD_MS, defeatRecoil, defeatDrain, defeatJolt, defeatBow, canRestart,
   get defeat() { return defeat },
   SPRITE, SPRITE_SIZE, drawSprite,
@@ -1086,7 +1086,7 @@ describe('sound', () => {
   test('starting a game without Web Audio still starts it', () => {
     game.audioCtx = null;
     game.startGame();
-    is(game.phase, game.START_BOW === 'none' ? 'playing' : 'bowing', 'phase');
+    is(game.phase, 'bowing', 'phase');
   });
 
   test('each food plays its own sound', () => {
@@ -1154,7 +1154,6 @@ describe('sound', () => {
 describe('the opening bow', () => {
   function bowing() {
     game.startGame();
-    game.phase = 'bowing';                    // whatever START_BOW is set to
   }
 
   test('the snake does not move while it bows', () => {
@@ -1179,17 +1178,18 @@ describe('the opening bow', () => {
     is(game.phase, 'bowing', 'phase');
   });
 
-  test('every candidate starts and ends standing', () => {
-    for (const style of ['none', 'mirror', 'ripple', 'strike']) {
-      is(game.bowPose(0, style, false), {scale: 1, back: 0}, style + ' at 0');
-      is(game.bowPose(game.BOW_MS, style, false), {scale: 1, back: 0}, style + ' at end');
-      is(game.bowSegment(game.BOW_MS, 1, style, false), 1, style + ' tail at end');
-    }
+  test('starts and ends standing, so neither end jumps', () => {
+    is(game.bowPose(0, false), {scale: 1, back: 0}, 'at 0');
+    is(game.bowPose(game.BOW_MS, false), {scale: 1, back: 0}, 'at end');
+  });
+
+  test('dips, then draws back for the strike', () => {
+    is(game.bowPose(180, false).scale < 1, true, 'dipped');
+    is(game.bowPose(game.BOW_MS - 20, false).back > 0.25, true, 'drawn back');
   });
 
   test('reduced motion keeps the head still', () => {
-    is(game.bowPose(250, 'strike', true), {scale: 1, back: 0}, 'pose');
-    is(game.bowSegment(250, 0.5, 'ripple', true), 1, 'segment');
+    is(game.bowPose(400, true), {scale: 1, back: 0}, 'pose');
   });
 });
 

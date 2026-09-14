@@ -1511,8 +1511,7 @@ function drawSnake() {
     // which is what turns a row of identical blocks into a real tail.
     const t = i / (snake.length - 1);
 
-    const size  = ((CELL - 2) - t * 7)  // segments shrink toward the tip
-                * bowSegment(bowElapsed(), t, START_BOW, REDUCED_MOTION.matches);
+    const size  = (CELL - 2) - t * 7;   // segments shrink toward the tip
     const inset = (CELL - size) / 2;    // keeps each one centred in its square
 
     const radius = size / 3;
@@ -1601,7 +1600,7 @@ function drawHead() {
   // After a crash the head is knocked back off whatever it hit.
   const ms   = defeatElapsed();
   // Before a run, the opening bow.
-  const pose = bowPose(bowElapsed(), START_BOW, REDUCED_MOTION.matches);
+  const pose = bowPose(bowElapsed(), REDUCED_MOTION.matches);
   const back = (defeatRecoil(ms, REDUCED_MOTION.matches) + pose.back) * CELL;
   const bow  = defeatBow(ms, REDUCED_MOTION.matches) * pose.scale;
 
@@ -1827,16 +1826,12 @@ function deadColour(rgbString, drain) {
 // time, and a direction pressed during it cuts it short and becomes the
 // first move. See UNR-103.
 //
-// Candidates, compared side by side:
-//   'none'   - today: no bow, the run just starts
-//   'mirror' - the defeat's bow played forward: the head dips and rises
-//   'ripple' - the dip runs from the head down to the tail, the body bowing
-//              as one; the defeat's drain runs the other way
-//   'strike' - a quick dip, then the head draws back and the first step
-//              snaps it forward: Strike First
-const START_BOW = 'strike';
-const BOW_MS    = 520;
-const BOW_COIL  = 0.3;    // cells the head draws back before the strike
+// A quick dip, then the head draws back and the first step snaps it
+// forward: Strike First. Chosen 14 September over no bow, the defeat's bow
+// played forward, and a dip rippling down the whole body. Those are kept
+// on the branch options/start-bow, with design/bow-options.html to compare.
+const BOW_MS   = 520;
+const BOW_COIL = 0.3;     // cells the head draws back before the strike
 
 // Down, a hold, and back up again: 0 standing, 1 at the bottom.
 function dip(ms, downMs, holdMs, upMs) {
@@ -1845,23 +1840,10 @@ function dip(ms, downMs, holdMs, upMs) {
 
 // The head's pose `ms` into the bow: a scale (smaller is nearer the mat,
 // seen from above) and how far it sits back, in cells.
-function bowPose(ms, style, reduced) {
+function bowPose(ms, reduced) {
   if (reduced || !(ms < BOW_MS)) return { scale: 1, back: 0 };
-  const depth = 1 - DEFEAT_BOW;
-  if (style === 'mirror') return { scale: 1 - depth * dip(ms, 200, 100, 200), back: 0 };
-  if (style === 'ripple') return { scale: 1 - depth * dip(ms, 120, 20, 120),  back: 0 };
-  if (style === 'strike') {
-    return { scale: 1 - depth * dip(ms, 160, 40, 140),
-             back:  BOW_COIL * easeOut((ms - 300) / 160) };
-  }
-  return { scale: 1, back: 0 };
-}
-
-// A body segment's scale. Only the ripple moves the body; t is 0 behind
-// the head and 1 at the tip.
-function bowSegment(ms, t, style, reduced) {
-  if (reduced || style !== 'ripple' || !(ms < BOW_MS)) return 1;
-  return 1 - (1 - DEFEAT_BOW) * dip(ms - 40 - t * 220, 120, 20, 120);
+  return { scale: 1 - (1 - DEFEAT_BOW) * dip(ms, 160, 40, 140),
+           back:  BOW_COIL * easeOut((ms - 300) / 160) };
 }
 
 // The flash at the point of contact: short yellow rays bursting from the
@@ -2383,7 +2365,7 @@ function startGame() {
   audio();    // always a click or a key, so the browser will allow it
   reset();
   overlay.classList.add('hidden');
-  if (START_BOW === 'none' || REDUCED_MOTION.matches) {
+  if (REDUCED_MOTION.matches) {
     phase = 'playing';
     return;
   }
