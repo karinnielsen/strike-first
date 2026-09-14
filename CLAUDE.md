@@ -64,8 +64,14 @@ seconds is trivial at high speed and brutal at low speed. `MOUSE_LIFE` counts
 *moves*, which keeps "can I reach it?" the same question all game and stops
 timers running while paused.
 
-**Red means losing points. Nothing else.** The sign picks the colour in code, so
-the rule can't be broken by whoever adds the next food type.
+**The belt band owns rank colour.** Rank is worn as a single band on the
+snake, and nothing else may take on a belt's colour there. The body's baseline
+is bone at every rank, which leaves it free to carry condition: it turns green
+while queasy, and at green belt the band briefly blends in — a trade accepted
+because condition is temporary and rank is also named in the header. The
+reasoning is in the comment above `SICK_GREEN`. This replaced an older rule,
+"red means losing points and nothing else", which the red belt made untenable;
+the minus popup still shows red, always beside its sign.
 
 **One loud voice.** The wordmark is the only thing allowed to shout, and
 everything else in the game keeps the monospace. As of v0.3.1 that voice is
@@ -82,7 +88,7 @@ to be argued for. Someone who knows Snake shouldn't have to relearn it.
 **Karate references respect the real world,** specifically Tang Soo Do. The belt
 ladder is white, orange, green, brown, red, Cho Dan Bo (blue), then *midnight
 blue* rather than black — black symbolises an end, and learning never stops.
-Note red sits near the top, which collides with the red-means-loss rule above.
+Red sits near the top, which is what forced the colour rule above.
 
 **Cobra behaviour is modelled on real cobras.** What they actually eat and do.
 Realism is a source of mechanics, not decoration.
@@ -162,15 +168,15 @@ nothing about how it plays.
 No build step. Serve the folder and open the file:
 
 ```bash
-python3 -m http.server 8770
+python3 -m http.server 8765
 ```
 
-Then <http://localhost:8770/>.
+Then <http://localhost:8765/>. The `snake` configuration in
+`.claude/launch.json` does the same thing.
 
 There are tests too, and they need no setup beyond **Node 15 or newer** —
 `test.js` uses `||=`, so an older Node dies with a bare `SyntaxError` that
-looks nothing like a version problem. Node is installed here via **nvm**, not
-Homebrew, and lives in `~/.nvm` rather than `/usr/local`:
+looks nothing like a version problem:
 
 ```bash
 node test.js
@@ -231,74 +237,10 @@ Things worth doing *here* rather than elsewhere: contrast and colour-blindness
 checks (Chrome DevTools emulates vision deficiencies), factual research before
 writing specifics into a spec, and anything structural in the code.
 
-## Keeping the session cheap
-
-Measured on 8 September: 70% of the cost was re-reading the conversation, once
-per turn, 600 times. What sat in that context: screenshots 34%, Linear echoes
-31%, my own writing 29%, shell 6%. **Reading files was 0.1%** — file volume is
-not the problem in a five-file repo, so nothing to gain from ignore rules.
-
-- **Screenshots are ~5k tokens each and get re-read every turn afterwards.**
-  Only take one to judge how something *looks*. To check whether something
-  *works*, read the page as text or assert in `test.js`. Use the `scale`
-  parameter when a rough look will do.
-- **Every Linear write echoes the whole issue back.** Compose the edit once
-  and save once, rather than saving then patching the wording twice. Prefer
-  `list_issues` with `fields` over `get_issue` when only a status is needed.
-- **Hand low-brow work to a cheaper subagent** — bulk search, sweeping a large
-  file for facts, mechanical verification across many places. *But size it
-  first:* spawning an agent costs more than the work when the work is one
-  command with three lines of output. Delegate when a task reads a lot to
-  produce a little. Don't delegate judgement, design, or anything where being
-  wrong is expensive and hard to spot.
-- **A fresh session is the biggest single saving.** This file and the Linear
-  project description exist so one can start cold without re-deriving
-  anything. Use them: end a long session and begin again rather than dragging
-  a morning of screenshots into the afternoon.
-
 ## Gotchas that have already cost time
 
-**The iPad simulator is slower than the game.** iPad Safari is tested in the
-iOS simulator (runtime installed 14 September; serve with the `snake` launch
-config and open `http://localhost:8765/`). Each tap or swipe the simulator tool
-sends arrives later than one game step lasts, so at real speed the snake hits
-the wall before a swipe lands, which looks exactly like broken input. Test
-swipes on a **temporary copy** that overrides `stepDelay()` to about 2500ms
-and writes `phase`, `direction`, `turnQueue` and `scrollY` into the version
-line, read it from screenshots, then delete the copy. The simulator's
-`inspect` doesn't work on Safari web content, so that readout is the only
-cheap way to see state.
-
-Two smaller traps with it. **Rotating needs Karin:** sending ⌘← to Simulator
-needs a macOS Accessibility permission, which is off limits, so ask her to
-rotate. And **opening a second URL adds a Safari tab bar**, pushing the page
-down about 35pt, so measure tap positions again.
-
-**A real iPad needs Apple's Python, not Homebrew's.** To play on the actual
-tablet, serve on the network and open the Mac's address from Safari:
-
-```bash
-/usr/bin/python3 -m http.server 8770 --bind 0.0.0.0
-```
-
-Then `http://<ipconfig getifaddr en0>:8770/`, typing the `http://`. Plain
-`python3` is Homebrew's, and the macOS firewall only allows `/usr/bin/python3`
-incoming connections. It doesn't refuse Homebrew's outright: it accepts each
-connection and kills it before the request arrives. So the iPad spins, the
-terminal fills with `OSError: [Errno 57] Socket is not connected` from the
-iPad's address, and it looks like a network or Safari problem when it's
-neither. Don't change the firewall; use the Python it already trusts.
-
-**Homebrew builds from source on this machine, and that is a trap.** macOS 13
-Ventura on Intel is past Homebrew's bottle support, so any formula without a
-prebuilt binary compiles. `brew install node` spent an hour dragging in cmake,
-go, ninja, python and llvm and then died on a `ChecksumMismatchError` without
-ever reaching Node. Node came from **nvm** instead — a prebuilt binary, done in
-seconds. For anything large, reach for a prebuilt route before brew, and don't
-read a long brew build as normal progress.
-
-Also beware that piping brew through `tail` swallows its exit status: the
-failed build reported exit code 0 and looked like a success.
+Notes specific to one machine — its toolchain, firewall and simulator — live
+in `CLAUDE.local.md`, which is gitignored and loads alongside this file.
 
 **The room above the score is load-bearing, and it lives in two places.** The
 floating `+N` rises 24px out of the score counter and collides with whatever
