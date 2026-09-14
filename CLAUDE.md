@@ -258,6 +258,22 @@ not the problem in a five-file repo, so nothing to gain from ignore rules.
 
 ## Gotchas that have already cost time
 
+**The iPad simulator is slower than the game.** iPad Safari is tested in the
+iOS simulator (runtime installed 14 September; serve with the `snake` launch
+config and open `http://localhost:8765/`). Each tap or swipe the simulator tool
+sends arrives later than one game step lasts, so at real speed the snake hits
+the wall before a swipe lands, which looks exactly like broken input. Test
+swipes on a **temporary copy** that overrides `stepDelay()` to about 2500ms
+and writes `phase`, `direction`, `turnQueue` and `scrollY` into the version
+line, read it from screenshots, then delete the copy. The simulator's
+`inspect` doesn't work on Safari web content, so that readout is the only
+cheap way to see state.
+
+Two smaller traps with it. **Rotating needs Karin:** sending ⌘← to Simulator
+needs a macOS Accessibility permission, which is off limits, so ask her to
+rotate. And **opening a second URL adds a Safari tab bar**, pushing the page
+down about 35pt, so measure tap positions again.
+
 **Homebrew builds from source on this machine, and that is a trap.** macOS 13
 Ventura on Intel is past Homebrew's bottle support, so any formula without a
 prebuilt binary compiles. `brew install node` spent an hour dragging in cmake,
