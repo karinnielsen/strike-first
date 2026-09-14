@@ -168,7 +168,14 @@ sees most, so they get their own rules.
 * **Blame the player, gently, and always with a way forward.** "Turn earlier.
   That is the entire lesson." The dojo is harsh, not cruel.
 * **They have to survive the twentieth run.** Either write enough of them, or
-  make them specific enough that the right one landing feels intentional.
+  make them specific enough that the right one landing feels intentional. The
+  same line never lands twice in a row.
+* **A near miss outranks a joke.** Falling a few points short of the hi-score,
+  or of the next belt on a new hi-score, gets a line that says by how much.
+  "Two points from your hi-score" is a better reason to press Again than
+  anything witty about the wall. Numbers are words: `two points`, `one point`.
+* **Nod to the series, never quote it.** "The wall swept your leg" is ours;
+  the leg sweep is theirs.
 
 ---
 
@@ -206,6 +213,6 @@ The complete inventory, so nothing drifts unnoticed.
 | `mercy` — the touch pause button's accessible name | Utility |
 | Belt names — header and promotion | — |
 
-Sixteen defeat lines live in `DEFEAT_LINES` in `index.html`, grouped by how you
-died. The house style above is asserted in `test.js` rather than trusted: a new
+Thirty-seven defeat lines live in `DEFEAT_LINES` in `index.html`, grouped by
+how you died and how close you came. The house style above is asserted in `test.js` rather than trusted: a new
 line that contracts, shouts, runs long or forgets its full stop fails the build.

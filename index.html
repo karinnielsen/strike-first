@@ -243,6 +243,11 @@
   .overlay h2 { margin: 0; font-size: 22px; letter-spacing: 3px; color: var(--yellow); }
   .overlay p  { margin: 0; font-size: 13px; color: var(--dim); }
 
+  /* Two groups, not four equal rows: the title and its line are one
+     thought, the button is what you do about it. An even gap all the way
+     down made the verdict and the call to action read as one lump. */
+  .overlay #play-btn { margin-top: 24px; }
+
   /* The sound switch sits under the call to action and must not compete
      with it: one slab on the overlay, and this is plain text beside it.
      It lives on the overlay rather than in the header because the header's
@@ -595,7 +600,9 @@ let grow;           // squares still owed to the snake from something eaten
 let queasy;         // moves left of looking green, after a rotten egg
 let bestAtStart;    // the record as it stood when this run began
 let score;
-let phase;          // 'ready' | 'playing' | 'paused' | 'over'
+let phase;          // 'ready' | 'playing' | 'paused' | 'dying' | 'over'
+let defeat;         // how the last run ended: {cause, at, time}, or null
+let lastDefeatLine; // so the same line never lands twice in a row
 
 // Three foods filling three roles, and no more. The EGG is the baseline:
 // always there, low value, no cost. The MOUSE is the temptation: worth
@@ -714,6 +721,7 @@ function reset() {
   bestAtStart   = best;
   queasy        = 0;
   visitor       = null;
+  defeat        = null;
   scoreEl.textContent = score;
   levelEl.textContent = levelFor(score);
   placeEgg();
@@ -811,12 +819,12 @@ function update() {
 
   // Did we hit a wall?
   if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) {
-    return gameOver('wall');
+    return gameOver('wall', head);
   }
 
   // Did we hit ourselves? .some() asks "is ANY body part on this square?"
   if (snake.some(part => part.x === head.x && part.y === head.y)) {
-    return gameOver('self');
+    return gameOver('self', head);
   }
 
   // Move: add the new head to the front of the list...
@@ -903,8 +911,54 @@ function addScore(points, kind) {
   setTimeout(() => pop.remove(), 900);
 }
 
-function gameOver(cause) {
+// THE DEFEAT SEQUENCE. About a second on the board before the verdict.
+//
+// People die in this game constantly, so the whole thing is a tax paid on
+// every run and has to earn it by run fifty. Three beats: the impact holds
+// still long enough to SEE the mistake, the snake reacts to how it died,
+// then the life drains out of it from the tail up and the verdict lands.
+//
+// Restart input is refused for the first moment, because the key you were
+// hammering when you died is still going down. After that, space, r or a
+// tap skips straight to a new run - the witty line is for people who want
+// to read it, not a toll.
+const DEFEAT_MS      = 1000;   // death to verdict
+const DEFEAT_LOCK_MS = 300;    // restart input ignored for this long
+const DEFEAT_HOLD_MS = 90;     // the hit-stop: nothing moves
+
+// Chosen 14 September from three candidates side by side: a still one with
+// no movement, one with the jolt and recoil, and this one, which adds the
+// bow. Karate ends a bout with a bow, and a snake that bows out of a fight
+// it lost is the one joke here that needs no words.
+
+function gameOver(cause, at) {
+  phase  = 'dying';
+  defeat = { cause, at, dir: direction, time: performance.now() };
+  playSound('defeat');
+  requestAnimationFrame(dyingFrame);
+}
+
+// The loop only draws once per step, which at level 1 is four frames a
+// second. The sequence needs every frame, so it drives its own.
+function dyingFrame() {
+  if (phase !== 'dying') return;             // skipped by a restart
+  if (defeatElapsed() >= DEFEAT_MS) return showVerdict();
+  draw();
+  requestAnimationFrame(dyingFrame);
+}
+
+function defeatElapsed() {
+  return defeat ? performance.now() - defeat.time : Infinity;
+}
+
+// Space, r and a tap all restart, but not while the sequence is locked.
+function canRestart() {
+  return phase !== 'dying' || defeatElapsed() >= DEFEAT_LOCK_MS;
+}
+
+function showVerdict() {
   phase = 'over';
+  draw();
 
   // `best` is not touched here any more. It moves the moment you pass it,
   // inside addScore(), which is what lets the promotion land while you are
@@ -919,12 +973,8 @@ function gameOver(cause) {
   // The score is not repeated here - it is still sitting in the header
   // where you have been watching it all run. This screen gets one thing
   // to say, so it may as well be worth reading.
-  showOverlay(
-    'DEFEATED',
-    defeatLine(cause, score, score > bestAtStart, Math.random()),
-    'Again'
-  );
-  playSound('defeat');
+  lastDefeatLine = defeatLine(defeat.cause, score, bestAtStart, Math.random(), lastDefeatLine);
+  showOverlay('DEFEATED', lastDefeatLine, 'Again');
 }
 
 
@@ -1171,6 +1221,12 @@ function draw() {
   ctx.fillStyle = '#131316';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // The defeat jolt moves the whole mat, so it is applied once, here.
+  const ms = defeatElapsed();
+  const jolt = defeatJolt(ms, defeat && defeat.dir, REDUCED_MOTION.matches);
+  ctx.save();
+  ctx.translate(jolt.x, jolt.y);
+
   // Faint dot in the middle of each grid square, just for looks.
   ctx.fillStyle = '#1e1e24';
   for (let x = 0; x < COLS; x++) {
@@ -1195,6 +1251,8 @@ function draw() {
   }
 
   drawSnake();
+  if (defeat) drawImpact(ms);
+  ctx.restore();
 }
 
 
@@ -1479,7 +1537,7 @@ function drawSnake() {
     // sick has never cost anybody their belt.
     ctx.fillStyle = (i === BELT_SEGMENT)
       ? BELTS[beltFor(best) - 1].colour
-      : bodyColour(t, queasiness());
+      : deadColour(bodyColour(t, queasiness()), defeatDrain(defeatElapsed(), t));
     roundedSquare(
       snake[i].x * CELL + inset,
       snake[i].y * CELL + inset,
@@ -1512,7 +1570,7 @@ function drawTailTip(i, size) {
   ctx.rotate(angle + Math.PI);      // artwork points left; turn it to trail
   ctx.scale(k, k);
   ctx.translate(-10, -10);
-  ctx.fillStyle = bodyColour(1, queasiness());
+  ctx.fillStyle = deadColour(bodyColour(1, queasiness()), defeatDrain(defeatElapsed(), 1));
   ctx.fill(SPRITE.tail[0].path);
   ctx.restore();
 }
@@ -1534,13 +1592,18 @@ function drawHead() {
     ? { x: 0, y: 0 }
     : queasyShake(queasiness(), Date.now());
 
-  const cx = head.x * CELL + CELL / 2 + shake.x;
-  const cy = head.y * CELL + CELL / 2 + shake.y;
-
   // "fwd" is the way we're heading. "side" is that turned 90 degrees, so
   // it points out of the snake's cheeks.
   const fwd  = direction;
   const side = { x: -direction.y, y: direction.x };
+
+  // After a crash the head is knocked back off whatever it hit.
+  const ms   = defeatElapsed();
+  const back = defeatRecoil(ms, REDUCED_MOTION.matches) * CELL;
+  const bow  = defeatBow(ms, REDUCED_MOTION.matches);
+
+  const cx = head.x * CELL + CELL / 2 + shake.x - fwd.x * back;
+  const cy = head.y * CELL + CELL / 2 + shake.y - fwd.y * back;
 
   // Rotating the whole canvas is far easier than working out the maths
   // for artwork pointing in four different directions: we spin the paper,
@@ -1548,14 +1611,14 @@ function drawHead() {
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(Math.atan2(fwd.y, fwd.x));
-  ctx.scale(HEAD_SCALE * CELL_SCALE, HEAD_SCALE * CELL_SCALE);
+  ctx.scale(HEAD_SCALE * CELL_SCALE * bow, HEAD_SCALE * CELL_SCALE * bow);
   ctx.translate(-10, -10);
 
   paintHead(SPRITE.headBefore);
 
   // The eyes are three different things wearing the same socket: open,
   // shut for a moment, or crossed out because you crashed.
-  if (phase === 'over')                paintHead(SPRITE.headEyesDefeated);
+  if (defeat)                          paintDefeatedEyes();
   else if (Date.now() % 4200 < 130)    paintHead(SPRITE.headEyesBlink);
   else                                 paintHead(SPRITE.headEyesOpen);
 
@@ -1577,6 +1640,26 @@ function drawHead() {
   if (phase === 'playing' && (treatAhead || queasy > 0 || Date.now() % 2600 < 280)) {
     drawTongue(cx, cy, fwd, side);
   }
+}
+
+// The crossed-out eyes, drawn smaller than the artwork delivered them. At
+// full size the two crosses read as a cartoon KO rather than a snake that
+// lost; three quarters keeps them legible without shouting. Each cross is
+// shrunk about its own eye, so it stays in the socket.
+const DEFEAT_EYE_SCALE = 0.72;
+const EYE_CENTRES = [[10.75, 8.1667], [10.75, 11.8333]];
+
+function paintDefeatedEyes() {
+  SPRITE.headEyesDefeated.forEach((layer, i) => {
+    const [ex, ey] = EYE_CENTRES[i];
+    ctx.save();
+    ctx.translate(ex, ey);
+    ctx.scale(DEFEAT_EYE_SCALE, DEFEAT_EYE_SCALE);
+    ctx.translate(-ex, -ey);
+    ctx.fillStyle = layer.fill;
+    ctx.fill(layer.path);
+    ctx.restore();
+  });
 }
 
 // Fill a group of head paths, greening the fleshy ones if the snake has
@@ -1680,6 +1763,92 @@ const DUSTY_TAIL = [124, 118, 108];   // dusty at the tip
 // The whole body carries it now, not just the head as it did originally.
 // That is the real reason the first version was easy to miss: one square
 // changing colour at the far end of a moving snake is nothing.
+// ---- the defeat, drawn ----------------------------------------------
+// All of these take the milliseconds since death and return a number, so
+// the whole sequence can be checked without a clock or a canvas.
+
+const DEAD_ASH      = [70, 68, 66];   // what is left once the life drains
+const DEFEAT_JOLT   = 5;              // px, the mat's thud at impact
+const DEFEAT_RECOIL = 0.28;           // cells the head is knocked back
+const DEFEAT_BOW    = 0.78;           // head size at the bottom of the bow
+
+function easeOut(t) { return 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3); }
+
+// The mat thuds along the line of travel - a knock in the direction you
+// were going reads as hitting something, a random shake reads as noise.
+// Three swings, dying away inside a quarter of a second.
+function defeatJolt(ms, dir, reduced) {
+  if (reduced || !dir || !(ms < 250)) return { x: 0, y: 0 };
+  const amp = DEFEAT_JOLT * (1 - ms / 250) * (Math.floor(ms / 40) % 2 ? -1 : 1);
+  return { x: dir.x * amp, y: dir.y * amp };
+}
+
+// How far the head sits back from the impact, in cells. Held at nothing
+// through the hit-stop so the contact is visible, then knocked back and
+// allowed to settle a little way off.
+function defeatRecoil(ms, reduced) {
+  if (reduced || !(ms < Infinity)) return 0;
+  if (ms < DEFEAT_HOLD_MS) return 0;
+  const out = easeOut((ms - DEFEAT_HOLD_MS) / 90);
+  const settle = easeOut((ms - 180) / 300);
+  return DEFEAT_RECOIL * (out - settle * 0.45);
+}
+
+// The bow: the head dips towards the mat and comes most of the way back,
+// just before the verdict. Karate ends a bout with one.
+function defeatBow(ms, reduced) {
+  if (reduced || !(ms < Infinity)) return 1;
+  const down = easeOut((ms - 520) / 180);
+  const up   = easeOut((ms - 780) / 200);
+  return 1 - (1 - DEFEAT_BOW) * (down - up * 0.6);
+}
+
+// 0 while alive, rising to 1 as a segment goes to ash. The drain starts at
+// the tip of the tail and runs up to the neck, so the head goes last.
+// t is 0 behind the head and 1 at the tip, as everywhere else.
+function defeatDrain(ms, t) {
+  if (!(ms < Infinity)) return 0;
+  return Math.min(1, Math.max(0, (ms - 300 - (1 - t) * 400) / 180)) * 0.75;
+}
+
+function deadColour(rgbString, drain) {
+  if (drain <= 0) return rgbString;
+  return mixColour(rgbString.match(/\d+/g).map(Number), DEAD_ASH, drain);
+}
+
+// The flash at the point of contact: short yellow rays bursting from the
+// edge the head hit, gone in a fifth of a second. For a bite, the segment
+// that was bitten blinks twice as well, so you can see where you were.
+function drawImpact(ms) {
+  const { at, dir, cause } = defeat;
+  const head = snake[0];
+  const px = (head.x + 0.5 + dir.x * 0.5) * CELL;
+  const py = (head.y + 0.5 + dir.y * 0.5) * CELL;
+
+  if (ms < 220) {
+    const k = ms / 220;
+    ctx.globalAlpha = 1 - k;
+    const back = Math.atan2(-dir.y, -dir.x);
+    // Rays spray out sideways from the contact, clear of the head that is
+    // sitting on it. Straight back would be hidden underneath the hood.
+    for (const deg of [-100, -60, 60, 100]) {
+      const a  = back + deg * Math.PI / 180;
+      const ux = Math.cos(a), uy = Math.sin(a);
+      const from = CELL * (0.45 + k * 0.3);
+      const to   = from + CELL * 0.3 * (1 - k * 0.5);
+      strokeLine(px + ux * from, py + uy * from, px + ux * to, py + uy * to,
+                 '#ffff00', 1.2 * CELL_SCALE);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  if (cause === 'self' && ms < 480 && Math.floor(ms / 120) % 2 === 0) {
+    ctx.strokeStyle = '#ffff00';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(at.x * CELL + 2, at.y * CELL + 2, CELL - 4, CELL - 4);
+  }
+}
+
 function bodyColour(t, sick) {
   return mixColour(blend(BONE_BODY, DUSTY_TAIL, t), SICK_GREEN, sick * 0.8);
 }
@@ -1732,6 +1901,9 @@ function mixColour(from, to, t) {
 // which is what makes pausing and the menus work.
 function loop() {
   if (phase === 'playing') update();
+  // A hidden tab stops animation frames; this makes sure the verdict
+  // still arrives rather than waiting for the tab to come back.
+  if (phase === 'dying' && defeatElapsed() >= DEFEAT_MS) showVerdict();
   draw();
   watchCrest();
   setTimeout(loop, stepDelay());
@@ -1846,13 +2018,13 @@ document.addEventListener('keydown', (event) => {
   // Stop arrows and space from scrolling the page underneath us.
   if (key in KEYS || key === ' ') event.preventDefault();
 
-  if (key === 'r') { startGame(); return; }
+  if (key === 'r') { if (canRestart()) startGame(); return; }
   if (key === 'm') { toggleSound(); return; }
 
   if (key === ' ') {
     if (phase === 'playing' || phase === 'paused') {
       toggleMercy();
-    } else {
+    } else if (canRestart()) {
       startGame();
     }
     return;
@@ -1938,6 +2110,9 @@ function swipeDirection(dx, dy, min) {
 let swipeFrom = null;
 
 stageEl.addEventListener('pointerdown', (event) => {
+  // A tap during the defeat skips it. Once the verdict is up, the Again
+  // button is the way back in, as it always was.
+  if (phase === 'dying') { if (canRestart()) startGame(); return; }
   if (event.pointerType === 'mouse') return;      // a mouse drag isn't a swipe
   swipeFrom = {id: event.pointerId, x: event.clientX, y: event.clientY};
 });
@@ -1982,46 +2157,125 @@ function showOverlay(title, text, buttonLabel) {
 //
 // Grouped by how you died, because a line that names your actual mistake
 // is worth three generic ones. The game already knows: it can only ever
-// be a wall or your own tail.
+// be a wall or your own tail. The nods to the series are written, never
+// quoted - "the wall swept your leg" is ours, the leg sweep is theirs.
 //
-// `record` outranks everything. Somebody who has just beaten their own
-// best deserves acknowledgement rather than a joke at their expense - the
-// dojo is harsh, not cruel.
+// Above the cause sit the runs worth more than a joke, in this order:
+//   nearBelt - a new hi-score that ended within reach of the next belt
+//   record   - any other new hi-score. Never sneer at somebody's best.
+//   nothing  - scored nothing at all
+//   tie      - exactly matched the hi-score
+//   nearBest - fell a few points short of it
+// The near misses are the strongest reason to press Again, which is why
+// they outrank being witty about the wall.
+//
+// {points} becomes "three points" or "one point", {Points} the same with
+// a capital, and {belt} the belt's name.
 const DEFEAT_LINES = {
   wall: [
     'The wall does not move. You do.',
     'Fear does not exist in this dojo. Walls do.',
     'You found the edge of the mat.',
     'Straight lines are not a strategy.',
-    'No mercy from the wall either.'
+    'No mercy from the wall either.',
+    'The wall swept your leg.',
+    'Bow to the wall. It won.',
+    'Eagle Fang would have flown over that.',
+    'The wall has been training longer.'
   ],
   self: [
     'You struck first. At yourself.',
     'The enemy was you. It usually is.',
     'A cobra that bites itself learns twice.',
     'Even a cobra cannot swallow all of itself.',
-    'Turn earlier. That is the entire lesson.'
+    'Turn earlier. That is the entire lesson.',
+    'Balance. Your tail was right there.',
+    'Only king cobras eat snakes. You are not one.',
+    'Knots are for belts, not bodies.',
+    'You picked the one opponent who knows your moves.'
   ],
   nothing: [
     'Not one thing. Not one.',
     'The dojo will pretend it did not see that.',
-    'This is a karate game, not a standing-still game.'
+    'This is a karate game, not a standing-still game.',
+    'Zero. Go and paint the fence.',
+    'A bonsai would have scored that.'
   ],
   record: [
     'Better than you have ever been. Still dead.',
-    'A record and a corpse.',
-    'You have never done that before. Do it again.'
+    'A hi-score and a corpse.',
+    'You have never done that before. Do it again.',
+    'The All Valley will hear about this.',
+    'Your sensei would nod. Once.'
+  ],
+  nearBelt: [
+    '{belt} belt was {points} away.',
+    'New hi-score. {belt} belt, {points} away.',
+    '{Points} short of {belt} belt.'
+  ],
+  tie: [
+    'You matched your hi-score. Matching is not beating.',
+    'Exactly your hi-score. The dojo wants one more.'
+  ],
+  nearBest: [
+    '{Points} from your hi-score. That close.',
+    'Your hi-score survives by {points}.',
+    '{Points} short. The hi-score noticed.',
+    '{Points} from your hi-score. Unacceptable.'
   ]
 };
 
+// How close counts as a near miss, in points. Absolute rather than a share
+// of the hi-score, because a point is an egg at every stage of the game:
+// three short means three eggs, whether the hi-score is 20 or 200.
+const NEAR_MISS = 3;
+
+// Below this hi-score there is nothing to nearly beat yet, and every early
+// run would be a near miss.
+const NEAR_MISS_FLOOR = 10;
+
+const NUMBER_WORDS = ['no', 'one', 'two', 'three', 'four', 'five',
+                      'six', 'seven', 'eight', 'nine', 'ten'];
+
+// Which pool a run's line comes from, and what fills its blanks. Pure.
+function defeatPool(cause, points, bestBefore) {
+  if (points > bestBefore) {
+    const next = BELTS.find(b => b.from > points);
+    if (next && next.from - points <= NEAR_MISS) {
+      return { pool: 'nearBelt', gap: next.from - points, belt: next.name };
+    }
+    return { pool: 'record' };
+  }
+  if (points === 0) return { pool: 'nothing' };
+  if (bestBefore >= NEAR_MISS_FLOOR && bestBefore - points <= NEAR_MISS) {
+    const gap = bestBefore - points;
+    return { pool: gap === 0 ? 'tie' : 'nearBest', gap };
+  }
+  return { pool: DEFEAT_LINES[cause] ? cause : 'wall' };
+}
+
+function fillLine(line, gap, belt) {
+  const n = (NUMBER_WORDS[gap] || String(gap)) + (gap === 1 ? ' point' : ' points');
+  return line
+    .replace('{Points}', n.charAt(0).toUpperCase() + n.slice(1))
+    .replace('{points}', n)
+    .replace('{belt}', belt);
+}
+
 // Pick the line. `roll` is a number from 0 up to 1 - passed in rather than
 // rolled in here, so this takes arguments and returns an answer and needs
-// no scaffolding to test.
-function defeatLine(cause, points, isRecord, roll) {
-  const pool = isRecord      ? DEFEAT_LINES.record
-             : points === 0  ? DEFEAT_LINES.nothing
-             : DEFEAT_LINES[cause] || DEFEAT_LINES.wall;
-  return pool[Math.min(pool.length - 1, Math.floor(roll * pool.length))];
+// no scaffolding to test. `last` is the line shown after the previous run:
+// hearing the same joke twice in a row is how a pool of nine feels like
+// a pool of one.
+function defeatLine(cause, points, bestBefore, roll, last) {
+  const pick = defeatPool(cause, points, bestBefore);
+  const pool = DEFEAT_LINES[pick.pool];
+  let i = Math.min(pool.length - 1, Math.floor(roll * pool.length));
+  let line = fillLine(pool[i], pick.gap, pick.belt);
+  if (line === last && pool.length > 1) {
+    line = fillLine(pool[(i + 1) % pool.length], pick.gap, pick.belt);
+  }
+  return line;
 }
 
 // You crossed a threshold you had never crossed. Rare - perhaps once in
