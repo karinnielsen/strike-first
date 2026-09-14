@@ -146,8 +146,11 @@ globalThis.game = {
   TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt,
   DEFEAT_LINES, defeatLine, defeatPool, fillLine,
   BOW_MS, bowPose, bowElapsed,
+  ARRIVAL_MS, ARRIVAL_CREST_MS, ARRIVAL_ENTRY, arrivalElapsed,
+  arrivalCrest, arrivalDot, arrivalShift, arrivalEgg, arrivalOverlay,
   DEFEAT_MS, DEFEAT_HOLD_MS, defeatRecoil, defeatDrain, defeatJolt, defeatBow, canRestart,
   get defeat() { return defeat },
+  get arrivalStart() { return arrivalStart }, set arrivalStart(v) { arrivalStart = v },
   SPRITE, SPRITE_SIZE, drawSprite,
   SOUNDS, startGame, toggleSound,
   get muted() { return muted }, set muted(v) { muted = v },
@@ -1190,6 +1193,58 @@ describe('the opening bow', () => {
 
   test('reduced motion keeps the head still', () => {
     is(game.bowPose(400, true), {scale: 1, back: 0}, 'pose');
+  });
+});
+
+
+describe('arrival', () => {
+  test('ends on the start screen, so a skip cannot break anything', () => {
+    const end = game.ARRIVAL_MS;
+    is(game.arrivalCrest(end), {opacity: 1, rise: 0}, 'crest');
+    is(game.arrivalDot(end, 0, 0), 1, 'dot');
+    is(game.arrivalShift(end), 0, 'shift');
+    is(game.arrivalEgg(end), 1, 'egg');
+    is(game.arrivalOverlay(end), 1, 'menu');
+  });
+
+  test('not arriving is the start screen too', () => {
+    is(game.arrivalCrest(Infinity), {opacity: 1, rise: 0}, 'crest');
+    is(game.arrivalOverlay(Infinity), 1, 'menu');
+    is(game.arrivalShift(Infinity), 0, 'shift');
+  });
+
+  test('opens on an empty mat', () => {
+    is(game.arrivalCrest(0).opacity, 0, 'crest');
+    is(game.arrivalDot(0, 10, 10), 0, 'dot');
+    is(game.arrivalEgg(0), 0, 'egg');
+    is(game.arrivalOverlay(0), 0, 'menu');
+  });
+
+  test('the snake starts wholly off the board', () => {
+    game.reset();
+    const tail = game.snake[game.snake.length - 1];
+    is(game.snake[0].x - game.arrivalShift(0) < 0, true, 'head off');
+    is(tail.x - game.arrivalShift(0) < 0, true, 'tail off');
+  });
+
+  test('the snake slides in a whole cell at a time', () => {
+    for (let ms = 0; ms < game.ARRIVAL_MS; ms += 17) {
+      is(Number.isInteger(game.arrivalShift(ms)), true, 'at ' + ms);
+    }
+  });
+
+  test('the grid lights from the spawn outward', () => {
+    is(game.arrivalDot(450, 10, 10) > game.arrivalDot(450, 0, 0), true, 'centre first');
+  });
+
+  test('a key ends arrival and still does its job', () => {
+    game.reset();
+    game.phase = 'ready';
+    game.arrivalStart = 0;
+    is(game.arrivalElapsed(), 0, 'arriving');
+    pressKey(' ');
+    is(game.arrivalElapsed(), Infinity, 'arrival over');
+    is(game.phase, 'bowing', 'space started the run');
   });
 });
 

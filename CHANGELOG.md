@@ -16,6 +16,20 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+## [0.4.5] — 2026-09-14
+
+The game arrives now, instead of simply being there. Nothing plays
+differently, so it is a patch.
+
+### Added
+- **Arrival.** Once per session, on page load: the crest settles and flicks
+  its tongue, the mat's grid lights outward from the spawn, and the snake
+  slides in from the left wall one cell at a time, then the egg and the menu.
+  1.4 seconds. It ends on the start screen exactly as it is without one, and
+  any key, click or tap jumps there first and then does what it would have
+  done anyway. Reduced motion skips it. Chosen from four candidates side by
+  side, kept on `options/arrival`.
+
 ## [0.4.4] — 2026-09-14
 
 Every run is a bout now, bowed into as well as out of. Nothing plays
@@ -322,7 +336,8 @@ First playable version.
   gradient.
 - **The version number** in the footer.
 
-[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.4.4...HEAD
+[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.4.5...HEAD
+[0.4.5]: https://github.com/karinnielsen/strike-first/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/karinnielsen/strike-first/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/karinnielsen/strike-first/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/karinnielsen/strike-first/compare/v0.4.1...v0.4.2
