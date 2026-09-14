@@ -274,6 +274,21 @@ needs a macOS Accessibility permission, which is off limits, so ask her to
 rotate. And **opening a second URL adds a Safari tab bar**, pushing the page
 down about 35pt, so measure tap positions again.
 
+**A real iPad needs Apple's Python, not Homebrew's.** To play on the actual
+tablet, serve on the network and open the Mac's address from Safari:
+
+```bash
+/usr/bin/python3 -m http.server 8770 --bind 0.0.0.0
+```
+
+Then `http://<ipconfig getifaddr en0>:8770/`, typing the `http://`. Plain
+`python3` is Homebrew's, and the macOS firewall only allows `/usr/bin/python3`
+incoming connections. It doesn't refuse Homebrew's outright: it accepts each
+connection and kills it before the request arrives. So the iPad spins, the
+terminal fills with `OSError: [Errno 57] Socket is not connected` from the
+iPad's address, and it looks like a network or Safari problem when it's
+neither. Don't change the firewall; use the Python it already trusts.
+
 **Homebrew builds from source on this machine, and that is a trap.** macOS 13
 Ventura on Intel is past Homebrew's bottle support, so any formula without a
 prebuilt binary compiles. `brew install node` spent an hour dragging in cmake,
