@@ -9,13 +9,14 @@ Snake, as a dojo. Eat eggs, chase mice, dodge rotten ones and earn your belt.
 One HTML file, no build step, no dependencies, and it fetches nothing — open it
 and play. Made for desktop and tablet.
 
-Current version: **v0.4.1** — see [CHANGELOG.md](CHANGELOG.md).
+Current version: **v0.4.2** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Play
 
 - **Arrow keys** or **WASD** to move
 - **Space** to pause — the game calls it mercy
 - **R** to restart
+- **M** to turn sound off or on
 
 On a tablet or any touch screen:
 
@@ -23,7 +24,8 @@ On a tablet or any touch screen:
   right-then-up in one unbroken stroke rounds a corner
 - **The ❚❚ button** under the crest for mercy — or at the foot of the scores,
   when they sit beside the board
-- Tap the button on the board to start, continue or go again
+- Tap the button on the board to start, continue or go again, and **sound on**
+  under it to mute
 
 The board is 21×21 squares, drawn at 30px a square. The grid is the game; the
 cell size is only how large it is drawn.
@@ -93,6 +95,9 @@ than shipped as audio files. A blip for an egg, a squeak and a ding for a
 mouse, a burp for a rotten egg, a quick run of chords for a promotion, and a
 long fall for defeat. A promotion replaces the sound of the food that earned
 it. Nothing plays until you start a game.
+
+Turn it off with **M**, or with the **sound on** button on the start, mercy
+and defeat screens. The game remembers the choice.
 
 ### The crest
 

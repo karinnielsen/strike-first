@@ -145,7 +145,8 @@ globalThis.game = {
   TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt,
   DEFEAT_LINES, defeatLine,
   SPRITE, SPRITE_SIZE, drawSprite,
-  SOUNDS, startGame,
+  SOUNDS, startGame, toggleSound,
+  get muted() { return muted }, set muted(v) { muted = v },
   get audioCtx() { return audioCtx }, set audioCtx(v) { audioCtx = v },
   get bestAtStart() { return bestAtStart }, set bestAtStart(v) { bestAtStart = v },
   get best() { return best }, set best(v) { best = v }
@@ -1042,6 +1043,36 @@ describe('sound', () => {
     game.direction = {x: -1, y: 0};
     is(listen(() => game.update()), ['defeat'], 'heard');
     game.audioCtx = null;
+  });
+
+  test('muted, nothing plays at all', () => {
+    freshGame();
+    game.audioCtx = {};
+    game.muted = true;
+    game.best = 1000;
+    is(listen(() => game.addScore(game.MOUSE_POINTS, 'mouse')), [], 'heard');
+    game.muted = false;
+    game.audioCtx = null;
+  });
+
+  test('M toggles sound, and the choice is saved for next time', () => {
+    game.muted = false;
+    pressKey('m');
+    is(game.muted, true, 'muted');
+    is(sandbox.localStorage.getItem('strikeFirstMuted'), '1', 'saved');
+    pressKey('M');
+    is(game.muted, false, 'unmuted');
+    is(sandbox.localStorage.getItem('strikeFirstMuted'), '0', 'saved');
+  });
+
+  test('toggling sound mid-run does not disturb play', () => {
+    freshGame();
+    const snake = JSON.stringify(game.snake);
+    pressKey('m');
+    is(game.phase, 'playing', 'phase');
+    is(JSON.stringify(game.snake), snake, 'snake');
+    is(game.turnQueue, [], 'no turn queued');
+    pressKey('m');
   });
 });
 
