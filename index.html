@@ -243,6 +243,27 @@
   .overlay h2 { margin: 0; font-size: 22px; letter-spacing: 3px; color: var(--yellow); }
   .overlay p  { margin: 0; font-size: 13px; color: var(--dim); }
 
+  /* The sound switch sits under the call to action and must not compete
+     with it: one slab on the overlay, and this is plain text beside it.
+     It lives on the overlay rather than in the header because the header's
+     spare room is load-bearing (see the +N), and because the overlay is
+     the one place a tablet can reach mid-run - mercy brings it up. 44px
+     tall on the same grounds as the mercy button: a finger, not a cursor. */
+  .sound-btn {
+    justify-self: center;
+    min-height: 44px;
+    margin-top: 4px;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: normal;
+    color: var(--dim);
+    background: transparent;
+    box-shadow: none;
+    animation: none;
+  }
+  .sound-btn:hover  { background: transparent; color: var(--text); }
+  .sound-btn:active { transform: none; box-shadow: none; }
+
 
   /* The one thing the screen wants you to do, so it should look like a
      button on a cabinet rather than a rectangle: a solid slab with a hard
@@ -494,10 +515,13 @@
       <h2 id="overlay-title">Strike hard. No mercy.</h2>
       <p  id="overlay-text">arrows or wasd to move</p>
       <button id="play-btn">Enter the dojo</button>
+      <button class="sound-btn" id="sound-btn" type="button">sound on</button>
     </div>
   </div>
 
-  <p class="hint" id="hint">arrows / wasd &middot; space = mercy &middot; r = restart</p>
+  <!-- Non-breaking spaces inside each pair, so a narrow column wraps
+       between controls and never splits "r" from "= restart". -->
+  <p class="hint" id="hint">arrows&nbsp;/&nbsp;wasd &middot; space&nbsp;=&nbsp;mercy &middot; r&nbsp;=&nbsp;restart &middot; m&nbsp;=&nbsp;sound</p>
   <p class="version" id="version"></p>
 </div>
 
@@ -535,6 +559,7 @@ const stageEl   = document.getElementById('stage');
 const hintEl    = document.getElementById('hint');
 const mercyBtn  = document.getElementById('mercy-btn');
 const playBtn   = document.getElementById('play-btn');
+const soundBtn  = document.getElementById('sound-btn');
 
 // Can this screen be touched? `any-pointer` rather than `pointer`, so an
 // iPad with a keyboard attached still gets the swipe copy and the mercy
@@ -920,6 +945,10 @@ function gameOver(cause) {
 const SOUND_VOLUME = 0.3;
 const FRAME = 1 / 60;
 
+// Muting is remembered, like the best score, and per-origin in the same
+// way: it won't follow the game to a different address.
+let muted = localStorage.getItem('strikeFirstMuted') === '1';
+
 let audioCtx = null;   // made on the first start, never before
 let audioOut, noiseBuffer;
 const pulseWaves = {};
@@ -934,13 +963,33 @@ function audio() {
   if (!audioCtx) {
     audioCtx = new AC();
     audioOut = audioCtx.createGain();
-    audioOut.gain.value = SOUND_VOLUME;
+    audioOut.gain.value = muted ? 0 : SOUND_VOLUME;
     audioOut.connect(audioCtx.destination);
     for (const duty of [0.125, 0.25]) pulseWaves[duty] = pulseWave(duty);
     noiseBuffer = makeNoise();
+    keepAwake();
   }
   if (audioCtx.state === 'suspended') audioCtx.resume();
   return audioCtx;
+}
+
+// Output hardware goes to sleep in the silence between sounds - MacBook
+// speakers do it after a few seconds - and waking it swallows the start of
+// the next sound. An egg blip is 50ms, so it vanished entirely: no sound at
+// the start of a run, then sounds apparently at random. The fix is to never
+// be silent. This hiss runs for as long as the page is open, at about
+// -80dB, far below hearing and below the level at which a browser marks
+// the tab as playing audio. It goes through audioOut, so muting silences
+// it too, and then the hardware may sleep, which is fine.
+const KEEP_AWAKE_LEVEL = 0.0001;
+
+function keepAwake() {
+  const hiss = audioCtx.createBufferSource(), gain = audioCtx.createGain();
+  hiss.buffer = noiseBuffer;
+  hiss.loop = true;
+  gain.gain.value = KEEP_AWAKE_LEVEL / SOUND_VOLUME;
+  hiss.connect(gain).connect(audioOut);
+  hiss.start();
 }
 
 // A pulse wave of a given duty cycle, from its Fourier series. 50% is a
@@ -1092,7 +1141,23 @@ const SOUNDS = {
 
 function playSound(name) {
   if (!audioCtx) return;    // nobody has pressed anything yet
+  if (muted) return;
   SOUNDS[name]();
+}
+
+// The M key and the overlay's sound button share this. Changing the output
+// volume as well as the flag means a sound already ringing stops at once
+// rather than finishing after you asked for quiet.
+function toggleSound() {
+  muted = !muted;
+  localStorage.setItem('strikeFirstMuted', muted ? '1' : '0');
+  if (audioOut) audioOut.gain.value = muted ? 0 : SOUND_VOLUME;
+  showSound();
+}
+
+function showSound() {
+  soundBtn.textContent = muted ? 'sound off' : 'sound on';
+  soundBtn.setAttribute('aria-pressed', String(!muted));
 }
 
 
@@ -1782,6 +1847,7 @@ document.addEventListener('keydown', (event) => {
   if (key in KEYS || key === ' ') event.preventDefault();
 
   if (key === 'r') { startGame(); return; }
+  if (key === 'm') { toggleSound(); return; }
 
   if (key === ' ') {
     if (phase === 'playing' || phase === 'paused') {
@@ -1814,6 +1880,14 @@ mercyBtn.addEventListener('click', () => {
   toggleMercy();
   mercyBtn.blur();
 });
+
+// Blurred for the same reason as mercy: a focused button would otherwise
+// answer the space bar that the game has just used to start or pause.
+soundBtn.addEventListener('click', () => {
+  toggleSound();
+  soundBtn.blur();
+});
+showSound();
 
 // Every turn, from a key or a swipe, goes through here, so both obey the
 // same rules and a swipe can never do something a key press couldn't.
