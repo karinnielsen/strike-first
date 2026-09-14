@@ -31,6 +31,10 @@ Each folder holds the options compared and says which one shipped and why.
 | [`favicon/`](favicon/) | Three candidates for the tab icon |
 | [`font-options.html`](font-options.html) | The brush typefaces considered for the first wordmark. Historical: the game has used no display face since v0.3.1 |
 
-One larger comparison lives on a branch rather than in this folder, because it
-is a complete alternative version of the game: `assets/pixel-sprites`, the
-pixel-art board artwork that lost to vector. See `ASSET-BRIEF.md` §7a.
+Two sets of artwork live on branches rather than in this folder:
+
+- `asset-review/board-sprites` — the delivered source files for the board
+  artwork that shipped, with previews at cell size. The paths themselves are
+  inlined in `index.html`
+- `assets/pixel-sprites` — the complete pixel-art alternative that lost to
+  vector. See `ASSET-BRIEF.md` §7a

@@ -282,7 +282,8 @@ Design direction is supplied separately. These are the functional targets.
 ### Board sprites — egg, rotten egg, mouse, snake head, snake body
 
 **Delivered, shipped in v0.3.1** as vector artwork. The paths are inlined in
-`SPRITE` in the script.
+`SPRITE` in the script; the delivered files are on the branch
+`asset-review/board-sprites`.
 
 * **Section 7 applies to all of these** — they are canvas assets, not DOM SVG
 * `viewBox="0 0 20 20"`, flat fills, one path per colour
