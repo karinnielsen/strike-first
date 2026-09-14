@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Favicon comparison</title>
+<style>
+  /* Everything here is at actual CSS size. Nothing is magnified, because
+     magnified views flatter detail that dissolves at real size. */
+  body { margin: 0; padding: 32px; font: 13px ui-monospace, Menlo, monospace;
+         background: #1b1b1f; color: #ece6da; }
+  h2 { font-size: 13px; color: #7b7480; font-weight: normal; margin: 28px 0 10px; }
+  .row { display: flex; gap: 48px; align-items: flex-start; flex-wrap: wrap; }
+  .col { min-width: 220px; }
+  .col > b { display: block; margin-bottom: 12px; color: #ffff00; }
+  .tabs { display: flex; padding: 6px 6px 0; border-radius: 8px 8px 0 0; width: 220px; }
+  .tabs.light { background: #dee1e6; color: #1f1f1f; }
+  .tabs.dark  { background: #202124; color: #e8eaed; }
+  .tab { display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+         border-radius: 8px 8px 0 0; font: 12px system-ui, sans-serif; width: 150px; }
+  .light .tab { background: #fff; }
+  .dark  .tab { background: #35363a; }
+  .tab img { width: 16px; height: 16px; }
+  .sizes { display: flex; gap: 16px; align-items: end; }
+  .touch { width: 60px; height: 60px; border-radius: 14px; }
+</style>
+</head>
+<body>
+<div class="row">
+  <div class="col">
+    <b>A — board cobra head</b>
+    <h2>Tab, light</h2>
+    <div class="tabs light"><div class="tab"><img src="favicon-head.svg" alt="">Strike First</div></div>
+    <h2>Tab, dark</h2>
+    <div class="tabs dark"><div class="tab"><img src="favicon-head.svg" alt="">Strike First</div></div>
+    <h2>16 · 32 · 60 (home screen)</h2>
+    <div class="sizes">
+      <img src="favicon-head.svg" width="16" height="16" alt="">
+      <img src="favicon-head.svg" width="32" height="32" alt="">
+      <img class="touch" src="favicon-head.svg" alt="">
+    </div>
+  </div>
+  <div class="col">
+    <b>B — cobra from the crest</b>
+    <h2>Tab, light</h2>
+    <div class="tabs light"><div class="tab"><img src="favicon-crest.svg" alt="">Strike First</div></div>
+    <h2>Tab, dark</h2>
+    <div class="tabs dark"><div class="tab"><img src="favicon-crest.svg" alt="">Strike First</div></div>
+    <h2>16 · 32 · 60 (home screen)</h2>
+    <div class="sizes">
+      <img src="favicon-crest.svg" width="16" height="16" alt="">
+      <img src="favicon-crest.svg" width="32" height="32" alt="">
+      <img class="touch" src="favicon-crest.svg" alt="">
+    </div>
+  </div>
+  <div class="col">
+    <b>C — B, cropped to the hood</b>
+    <h2>Tab, light</h2>
+    <div class="tabs light"><div class="tab"><img src="favicon-hood.svg" alt="">Strike First</div></div>
+    <h2>Tab, dark</h2>
+    <div class="tabs dark"><div class="tab"><img src="favicon-hood.svg" alt="">Strike First</div></div>
+    <h2>16 · 32 · 60 (home screen)</h2>
+    <div class="sizes">
+      <img src="favicon-hood.svg" width="16" height="16" alt="">
+      <img src="favicon-hood.svg" width="32" height="32" alt="">
+      <img class="touch" src="favicon-hood.svg" alt="">
+    </div>
+  </div>
+</div>
+</body>
+</html>

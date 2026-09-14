@@ -135,6 +135,11 @@ afterwards. The test is what the player has to do, not how much changed.
 ## Files
 
 - `index.html` — the entire game, heavily commented
+- `favicon.svg`, `apple-touch-icon.png`, `og-image.png` — the tab icon, the
+  home-screen icon and the link preview. Not part of the game: it plays
+  without them. The PNGs are rendered from the game by
+  `design/share/card.html`, so rebuild them there when the board or crest
+  changes
 - `test.js` — the test harness and the tests
 - `design/ASSET-BRIEF.md` — what a commissioned asset has to satisfy
 - `design/MICROCOPY.md` — the game's voice, and the rules that keep it honest

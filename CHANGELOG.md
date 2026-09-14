@@ -16,6 +16,14 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+### Added
+- **A tab icon.** The cobra's hood from the crest, cropped close so it still
+  reads as a hood at sixteen pixels. Also the home-screen icon on a tablet.
+- **A link preview.** Pasting the link somewhere shows the crest and a line
+  saying what it is beside a board in play, with a real title and
+  description, rather than a bare URL.
+  It points at the published address, so it shows up once the game is live.
+
 ### Planned
 See the [project roadmap](https://linear.app/unrulylabs/project/strike-first-3ec05fe538aa)
 for what's coming and in what order. It moves faster than this file.
