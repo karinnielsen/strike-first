@@ -16,6 +16,22 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+## [0.4.1] — 2026-09-14
+
+The crest comes alive. Between runs the cobra flicks its tongue, the way a
+real snake smells the air. Nothing plays differently, so it is a patch.
+
+### Added
+- **The crest cobra flicks its tongue** on the start, mercy and defeat
+  screens: mostly in pairs, at uneven pauses. It holds still for the whole
+  run, so nothing moves above the board while you play. Reduced motion turns
+  it off.
+
+### Changed
+- **The crest's mouth is closed at rest.** The tongue was always out; now it
+  only shows during a flick, drawn as five poses with a redrawn throat. The
+  artwork and its notes are in `design/title-crest/`.
+
 ## [0.4.0] — 2026-09-14
 
 Plays anywhere. The game has a link: open it in a browser on a desktop or a
@@ -249,7 +265,8 @@ First playable version.
   gradient.
 - **The version number** in the footer.
 
-[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/karinnielsen/strike-first/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/karinnielsen/strike-first/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/karinnielsen/strike-first/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/karinnielsen/strike-first/compare/v0.3.0...v0.3.1
