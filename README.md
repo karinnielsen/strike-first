@@ -1,13 +1,17 @@
 # Strike First
 
-A browser Snake game with a karate-dojo theme. One HTML file, no build step,
-no dependencies, nothing to install — open it and play.
+Snake, as a dojo. Eat eggs, chase mice, dodge rotten ones and earn your belt.
+
+**[Play it in your browser →](https://karinnielsen.github.io/strike-first/)**
+
+[![The Strike First cobra crest beside a game board, with a snake wearing an orange belt, a mouse and an egg](og-image.png)](https://karinnielsen.github.io/strike-first/)
+
+One HTML file, no build step, no dependencies, and it fetches nothing — open it
+and play. Made for desktop and tablet.
 
 Current version: **v0.3.2** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Play
-
-Open `index.html` in any browser.
 
 - **Arrow keys** or **WASD** to move
 - **Space** to pause — the game calls it mercy
@@ -79,17 +83,44 @@ by design and it is the best moment the game has.
 ### Score feedback
 
 A small `+1` for an egg, a big electric-yellow `+5` for a mouse. The size
-difference is the message: you see the value before you read it. Losses are
-red, and red means nothing else.
+difference is the message: you see the value before you read it. A loss is
+red and always carries its minus sign, so it never relies on colour alone.
 
-## Tuning
+## Next
 
-All the balance lives in named constants near the top of the script. Change
+Each is a milestone, and each ships as a version.
+
+- **Make it sing** — sound and motion, built once the layout has settled
+- **Dojo recruitment** — a challenge link that carries your score and belt
+- **Choose your fighter** — pick a dojo, then a character
+- **Forbidden techniques** — secrets, and modes you earn rather than pick
+- **The All Valley** — a tournament: accounts, and a leaderboard that outlives
+  one browser
+
+## How it's made
+
+Strike First is a first game, started on 7 September 2026 to learn how games
+are actually built — loops, state, input, timing, balance — and built with
+[Claude Code](https://claude.com/claude-code). The process is part of the
+work, so it is all in the repo:
+
+- **The commit history** says why each change was made, not only what changed,
+  including the one that was reverted
+- **[`CLAUDE.md`](CLAUDE.md)** holds the working agreements and the design
+  principles the game is held to — among them, *a reward only matters if it
+  can be refused*
+- **[`design/`](design/)** keeps the specs, the tooling used to judge how it
+  looks, and the options that lost, beside notes on why they lost
+
+### Tuning
+
+All the balance lives in named constants in section 2 of the script. Change
 those rather than scattering numbers through the code.
 
 | Constant | What it does |
 | --- | --- |
 | `LEVELS` | the nine speed tiers, as `{ from: score, ms: delay }` |
+| `BELTS` | the seven ranks and the best score each one needs |
 | `EGG_POINTS` / `MOUSE_POINTS` / `ROTTEN_POINTS` | what each food is worth |
 | `EGG_GROWTH` / `MOUSE_GROWTH` | how much length each one costs you |
 | `VISITOR_CHANCE` | odds that an egg brings a visitor along |
@@ -98,19 +129,13 @@ those rather than scattering numbers through the code.
 | `WARNING_MOVES` | moves left when a visitor starts flashing |
 | `REACH_BUDGET` | how far a visitor may spawn, as a fraction of its life |
 | `QUEASY_MOVES` | how long the snake looks ill after a rotten egg |
-| `BELTS` | the seven ranks and the best-score each one needs |
 
 Everything that could have been a timer counts **your moves** instead. Seconds
 would make a mouse trivial at high speed and brutal at low speed; counting
 moves keeps "can I reach it?" the same question all game, and stops anything
 expiring while the game is paused.
 
-## Next
-
-See the [project roadmap](https://linear.app/unrulylabs/project/strike-first-3ec05fe538aa)
-for what's coming and in what order. It moves faster than this file.
-
-## Tests
+### Tests
 
 ```bash
 node test.js
@@ -126,7 +151,15 @@ whether the game is *fun* — that still needs playing.
 
 Needs Node 15 or newer.
 
-## Versioning
+### Running it locally
+
+Open `index.html` in a browser, or serve the folder:
+
+```bash
+python3 -m http.server 8765
+```
+
+### Versioning
 
 The version lives in four places and they move together:
 
@@ -135,6 +168,8 @@ The version lives in four places and they move together:
 2. a new entry in `CHANGELOG.md`
 3. the **Current version** line at the top of this file
 4. an annotated git tag, e.g. `git tag -a v0.3.1 -m "..."`
+
+A test fails if the first three disagree.
 
 Read the numbers in game terms:
 
@@ -147,19 +182,24 @@ wordmark with a drawn crest, moved the whole palette and made the board
 artwork legible, and it was still a patch, because nothing played differently
 afterwards. The test is what the player has to do, not how much changed.
 
-## Files
+### Files
 
-- `index.html` — the entire game, heavily commented
+- `index.html` — the entire game, in nine commented sections
 - `favicon.svg`, `apple-touch-icon.png`, `og-image.png` — the tab icon, the
   home-screen icon and the link preview. Not part of the game: it plays
   without them. The PNGs are rendered from the game by
   `design/share/card.html`, so rebuild them there when the board or crest
   changes
 - `test.js` — the test harness and the tests
-- `design/ASSET-BRIEF.md` — what a commissioned asset has to satisfy
-- `design/MICROCOPY.md` — the game's voice, and the rules that keep it honest
-- `design/demo/` — an autopilot that plays the game by itself, for looking at
-  it without being distracted by playing, and notes on building a side-by-side
-- `design/title-crest/` — the crest that shipped, and the colourway that didn't
-- `design/font-options.html` — side-by-side of the brush typefaces considered
-  for the wordmark
+- `CHANGELOG.md` — every version, and what changed for the player
+- `CLAUDE.md` — how to work on the project
+- `design/` — specs, tooling and decision records; see its
+  [README](design/README.md)
+
+## Credits and licence
+
+An unofficial, non-commercial fan homage to *The Karate Kid* and *Cobra Kai*.
+It is not affiliated with or endorsed by their owners, and those names and
+characters belong to them.
+
+The code is released under the [MIT licence](LICENSE).

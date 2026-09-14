@@ -16,10 +16,6 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
-### Planned
-See the [project roadmap](https://linear.app/unrulylabs/project/strike-first-3ec05fe538aa)
-for what's coming and in what order. It moves faster than this file.
-
 ## [0.3.2] — 2026-09-14
 
 It plays on a tablet, and the whole board fits on the screen you have.
@@ -220,14 +216,23 @@ what belts get built on next.
 First playable version.
 
 ### Added
-- Grid-based snake game in a single self-contained HTML file, with wall and
-  self collision, pause, restart and a persisted best score
-- Apples worth 1 point, always exactly one on the board
-- Mice worth 5 points, appearing after roughly two apples in five, expiring
-  after a set number of player moves and flashing before they bolt
-- Floating score popups, sized and coloured by value; red reserved for losses
-- Progressive speed-up, from 200ms per move down to a 70ms floor
-- Cobra styling for the snake: hooded head, tapering tail, direction-aware
-  eyes, blinking, a flicking tongue and X eyes on defeat
-- Black-and-gold dojo theme with a brush-script wordmark on a fire gradient
-- Version number displayed in the footer
+- **A grid-based snake game** in a single self-contained HTML file, with wall
+  and self collision, pause, restart and a persisted best score.
+- **Apples** worth 1 point, always exactly one on the board.
+- **Mice** worth 5 points, appearing after roughly two apples in five, expiring
+  after a set number of player moves and flashing before they bolt.
+- **Floating score popups**, sized and coloured by value, with red reserved for
+  losses.
+- **A progressive speed-up**, from 200ms per move down to a 70ms floor.
+- **Cobra styling** for the snake: hooded head, tapering tail, direction-aware
+  eyes, blinking, a flicking tongue and X eyes on defeat.
+- **A black-and-gold dojo theme** with a brush-script wordmark on a fire
+  gradient.
+- **The version number** in the footer.
+
+[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/karinnielsen/strike-first/compare/v0.3.1...v0.3.2
+[0.3.1]: https://github.com/karinnielsen/strike-first/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/karinnielsen/strike-first/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/karinnielsen/strike-first/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/karinnielsen/strike-first/releases/tag/v0.1.0
