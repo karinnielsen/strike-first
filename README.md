@@ -86,6 +86,13 @@ A small `+1` for an egg, a big electric-yellow `+5` for a mouse. The size
 difference is the message: you see the value before you read it. A loss is
 red and always carries its minus sign, so it never relies on colour alone.
 
+### The crest
+
+Between runs the cobra in the crest flicks its tongue, the way a real snake
+smells the air: in pairs, at uneven pauses. It holds still while you play, so
+the only thing moving above the board is something worth looking at. Reduced
+motion turns it off.
+
 ## Next
 
 Each is a milestone, and each ships as a version.

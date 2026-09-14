@@ -55,6 +55,7 @@ function makeElement() {
     style: { setProperty() {}, removeProperty() {}, getPropertyValue: () => '' },
     classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
     appendChild() {},
+    setAttribute() {},
     remove() {},
     addEventListener() {},
     getContext: () => makeCanvasContext()
@@ -70,6 +71,7 @@ const handlers = {};
 const sandbox = {
   document: {
     getElementById: () => makeElement(),
+    querySelectorAll: () => [],
     createElement: () => makeElement(),
     addEventListener: (type, fn) => { (handlers[type] ||= []).push(fn); }
   },
@@ -83,6 +85,9 @@ const sandbox = {
   // The game ends by calling loop(), which re-arms itself with setTimeout.
   // Swallowing the timer stops it spinning forever inside the test run.
   setTimeout: () => 0,
+  requestAnimationFrame: () => 0,
+  cancelAnimationFrame: () => {},
+  performance: { now: () => 0 },
   Math,
   Date,
   console
@@ -136,6 +141,8 @@ globalThis.game = {
   BELTS, beltFor, promotionFor,
   BONE_BODY, DUSTY_TAIL, SICK_GREEN, blend, bodyColour, BELT_SEGMENT,
   QUEASY_SHAKE, queasyShake,
+  TONGUE_DOUBLE, TONGUE_PAUSE_MIN, TONGUE_PAUSE_MAX, tongueFlickPlan,
+  TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt,
   DEFEAT_LINES, defeatLine,
   SPRITE, SPRITE_SIZE, drawSprite,
   get bestAtStart() { return bestAtStart }, set bestAtStart(v) { bestAtStart = v },
@@ -942,6 +949,43 @@ describe('sprites', () => {
 // The README line is the reason this group exists at all: it said v0.1.0
 // until 12 September, through two releases that changed it, while the
 // other three never drifted once.
+describe('the crest tongue', () => {
+  test('mostly flicks in pairs, sometimes once', () => {
+    is(game.tongueFlickPlan(0, 0).flicks, 2, 'flicks');
+    is(game.tongueFlickPlan(game.TONGUE_DOUBLE, 0).flicks, 1, 'flicks');
+  });
+
+  test('starts and ends a flick with the mouth closed', () => {
+    is(game.tonguePoseAt(-1, 1), 0, 'pose before');
+    is(game.tonguePoseAt(0, 1), 1, 'pose at the start');
+    is(game.tonguePoseAt(game.TONGUE_FLICK_MS, 1), 0, 'pose after one flick');
+  });
+
+  test('reaches full length, then goes back in', () => {
+    is(game.tonguePoseAt(100, 1), 5, 'pose mid-flick');
+    is(game.tonguePoseAt(230, 1), 1, 'pose on the way in');
+  });
+
+  test('a double flick runs the sequence twice', () => {
+    is(game.tonguePoseAt(game.TONGUE_FLICK_MS, 2), 1, 'second flick starts');
+    is(game.tonguePoseAt(game.TONGUE_FLICK_MS * 2, 2), 0, 'pose after both');
+  });
+
+  test('the pose table ends closed, at the length of a flick', () => {
+    const last = game.TONGUE_POSES[game.TONGUE_POSES.length - 1];
+    is(last[0], game.TONGUE_FLICK_MS, 'last entry time');
+    is(last[1], 0, 'last pose');
+  });
+
+  test('pauses anywhere between the shortest and longest wait', () => {
+    is(game.tongueFlickPlan(0, 0).pauseMs, game.TONGUE_PAUSE_MIN, 'pause');
+    is(game.tongueFlickPlan(0, 1).pauseMs, game.TONGUE_PAUSE_MAX, 'pause');
+    const middle = game.tongueFlickPlan(0, 0.5).pauseMs;
+    is(middle > game.TONGUE_PAUSE_MIN && middle < game.TONGUE_PAUSE_MAX, true, 'in between');
+  });
+});
+
+
 describe('version', () => {
   test('matches the changelog', () => {
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
