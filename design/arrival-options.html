@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strike First — arrival options</title>
+<style>
+  body {
+    margin: 0; padding: 32px;
+    background: #09090b; color: #ece6da;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  h1 { font-size: 13px; letter-spacing: 3px; color: #ffff00; margin: 0 0 10px; font-weight: 400; }
+  p.lede { font-size: 12px; color: #7b7480; line-height: 1.6; margin: 0 0 18px; max-width: 760px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 24px; }
+  button.act {
+    font: inherit; font-size: 12px; cursor: pointer;
+    background: transparent; color: #ece6da;
+    border: 1px solid #2a2a30; border-radius: 4px; padding: 7px 12px;
+  }
+  button.act:hover { border-color: #ffff00; color: #ffff00; }
+  /* Actual size, never scaled to fit: the row scrolls instead. */
+  .grid { display: grid; grid-template-columns: repeat(2, 680px); gap: 24px; }
+  h2 { font-size: 12px; letter-spacing: 2px; font-weight: 400; margin: 0 0 4px; text-transform: uppercase; }
+  .brief { font-size: 11px; color: #7b7480; margin: 0 0 10px; min-height: 2.8em; line-height: 1.4; }
+  iframe { width: 680px; height: 1000px; border: 1px solid #2a2a30; border-radius: 4px; background: #09090b; }
+</style>
+</head>
+<body>
+<h1>ARRIVAL — FOUR CANDIDATES</h1>
+<p class="lede">
+  Each frame is the real game from <code>index.html</code> with only
+  <code>ARRIVAL</code> changed, at actual size. Replay loads all four again at
+  once, so they arrive in step. Arrival plays once per session in the game;
+  here it plays on every replay. The open question: does the board need to
+  wake at all, or is the crest arriving enough?
+</p>
+<div class="controls">
+  <button class="act" id="replay">Replay all</button>
+</div>
+<div class="grid" id="grid"></div>
+
+<script>
+const CANDIDATES = [
+  ['none',    'None — today', 'The page is simply there.'],
+  ['crest',   'Crest',        'The crest settles into place and flicks its tongue. The board and menu are there from the start. 0.7s.'],
+  ['wake',    'Wake',         'The crest, then the grid lights outward from the spawn, the snake appears tail first, the egg, the menu. 1.4s.'],
+  ['slither', 'Slither',      'The crest and the grid, then the snake slides in from the left wall a cell at a time, the egg, the menu. 1.4s.'],
+];
+
+const frames = [];
+let source;
+
+async function build() {
+  source = await (await fetch('../index.html', { cache: 'no-store' })).text();
+  const grid = document.getElementById('grid');
+  // ?show=crest,slither narrows it to those, in that order.
+  const show = new URLSearchParams(location.search).get('show');
+  const picked = show
+    ? show.split(',').map(s => CANDIDATES.find(c => c[0] === s)).filter(Boolean)
+    : CANDIDATES;
+  for (const [style, name, brief] of picked) {
+    const cell = document.createElement('div');
+    cell.innerHTML = `<h2>${name}</h2><p class="brief">${brief}</p>`;
+    const frame = document.createElement('iframe');
+    frame.dataset.style = style;
+    cell.appendChild(frame);
+    grid.appendChild(cell);
+    frames.push(frame);
+  }
+  loadAll();
+}
+
+// srcdoc frames share this page's sessionStorage, so the once-per-session
+// flag is cleared first, and swapped out of the source so the frames
+// cannot set it for each other.
+function loadAll() {
+  frames.forEach(frame => {
+    frame.srcdoc = source
+      .replace('<head>', '<head><base href="../">')
+      .replace(/'strikeFirstArrived'/g, `'arrival-options-${Math.random()}'`)
+      .replace(/const ARRIVAL = '[a-z]+';/, `const ARRIVAL = '${frame.dataset.style}';`);
+  });
+}
+
+document.getElementById('replay').onclick = loadAll;
+
+build();
+</script>
+</body>
+</html>

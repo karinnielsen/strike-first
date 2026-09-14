@@ -146,8 +146,11 @@ globalThis.game = {
   TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt,
   DEFEAT_LINES, defeatLine, defeatPool, fillLine,
   BOW_MS, bowPose, bowElapsed,
+  ARRIVAL, ARRIVAL_CREST_MS, ARRIVAL_BOARD_MS, ARRIVAL_ENTRY, arrivalMs, arrivalElapsed,
+  arrivalCrest, arrivalDot, arrivalSegment, arrivalShift, arrivalEgg, arrivalOverlay,
   DEFEAT_MS, DEFEAT_HOLD_MS, defeatRecoil, defeatDrain, defeatJolt, defeatBow, canRestart,
   get defeat() { return defeat },
+  get arrivalStart() { return arrivalStart }, set arrivalStart(v) { arrivalStart = v },
   SPRITE, SPRITE_SIZE, drawSprite,
   SOUNDS, startGame, toggleSound,
   get muted() { return muted }, set muted(v) { muted = v },
@@ -1190,6 +1193,62 @@ describe('the opening bow', () => {
 
   test('reduced motion keeps the head still', () => {
     is(game.bowPose(400, true), {scale: 1, back: 0}, 'pose');
+  });
+});
+
+
+describe('arrival', () => {
+  // The harness loads the page with no sessionStorage and no clock, so
+  // arrival is running, frozen at its first frame, until something ends it.
+  const STYLES = ['none', 'crest', 'wake', 'slither'];
+
+  test('every candidate ends on the start screen, so a skip cannot break anything', () => {
+    for (const style of STYLES) {
+      const end = game.arrivalMs(style);
+      is(game.arrivalCrest(end, style), {opacity: 1, rise: 0}, style + ' crest');
+      is(game.arrivalDot(end, 0, 0, style), 1, style + ' dot');
+      is(game.arrivalSegment(end, 0, 3, style), 1, style + ' head');
+      is(game.arrivalShift(end, style), 0, style + ' shift');
+      is(game.arrivalEgg(end, style), 1, style + ' egg');
+      is(game.arrivalOverlay(end, style), 1, style + ' menu');
+    }
+  });
+
+  test('not arriving is the start screen too', () => {
+    is(game.arrivalCrest(Infinity, 'wake'), {opacity: 1, rise: 0}, 'crest');
+    is(game.arrivalOverlay(Infinity, 'wake'), 1, 'menu');
+    is(game.arrivalShift(Infinity, 'slither'), 0, 'shift');
+  });
+
+  test('the board candidates open on an empty mat', () => {
+    is(game.arrivalCrest(0, 'wake').opacity, 0, 'crest');
+    is(game.arrivalDot(0, 10, 10, 'wake'), 0, 'dot');
+    is(game.arrivalSegment(0, 0, 3, 'wake'), 0, 'head');
+    is(game.arrivalShift(0, 'slither'), game.ARRIVAL_ENTRY, 'slither starts off the board');
+    is(game.arrivalEgg(0, 'wake'), 0, 'egg');
+    is(game.arrivalOverlay(0, 'wake'), 0, 'menu');
+  });
+
+  test('the grid lights from the spawn outward', () => {
+    is(game.arrivalDot(450, 10, 10, 'wake') > game.arrivalDot(450, 0, 0, 'wake'), true, 'centre first');
+  });
+
+  test('the wake brings the tail before the head', () => {
+    is(game.arrivalSegment(900, 2, 3, 'wake') > game.arrivalSegment(900, 0, 3, 'wake'), true, 'tail first');
+  });
+
+  test('the crest alone leaves the board and menu alone', () => {
+    is(game.arrivalDot(0, 10, 10, 'crest'), 1, 'dot');
+    is(game.arrivalOverlay(0, 'crest'), 1, 'menu');
+  });
+
+  test('a key ends arrival and still does its job', () => {
+    game.phase = 'ready';
+    game.arrivalStart = 0;
+    is(game.arrivalElapsed(), 0, 'arriving');
+    pressKey(' ');
+    is(game.arrivalElapsed(), Infinity, 'arrival over');
+    is(game.phase, 'bowing', 'space started the run');
   });
 });
 
