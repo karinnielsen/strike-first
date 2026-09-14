@@ -85,6 +85,7 @@ const sandbox = {
   // The game ends by calling loop(), which re-arms itself with setTimeout.
   // Swallowing the timer stops it spinning forever inside the test run.
   setTimeout: () => 0,
+  clearTimeout: () => {},
   requestAnimationFrame: () => 0,
   cancelAnimationFrame: () => {},
   performance: { now: () => 0 },
@@ -144,6 +145,7 @@ globalThis.game = {
   TONGUE_DOUBLE, TONGUE_PAUSE_MIN, TONGUE_PAUSE_MAX, tongueFlickPlan,
   TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt,
   DEFEAT_LINES, defeatLine, defeatPool, fillLine,
+  BOW_MS, bowPose, bowElapsed,
   DEFEAT_MS, DEFEAT_HOLD_MS, defeatRecoil, defeatDrain, defeatJolt, defeatBow, canRestart,
   get defeat() { return defeat },
   SPRITE, SPRITE_SIZE, drawSprite,
@@ -1084,7 +1086,7 @@ describe('sound', () => {
   test('starting a game without Web Audio still starts it', () => {
     game.audioCtx = null;
     game.startGame();
-    is(game.phase, 'playing', 'phase');
+    is(game.phase, 'bowing', 'phase');
   });
 
   test('each food plays its own sound', () => {
@@ -1145,6 +1147,49 @@ describe('sound', () => {
     is(JSON.stringify(game.snake), snake, 'snake');
     is(game.turnQueue, [], 'no turn queued');
     pressKey('m');
+  });
+});
+
+
+describe('the opening bow', () => {
+  function bowing() {
+    game.startGame();
+  }
+
+  test('the snake does not move while it bows', () => {
+    bowing();
+    const snake = JSON.stringify(game.snake);
+    pressKey('m'); pressKey('m');
+    is(JSON.stringify(game.snake), snake, 'snake');
+    is(game.phase, 'bowing', 'phase');
+  });
+
+  test('a direction cuts the bow and is the first move, taken at once', () => {
+    bowing();
+    const head = game.snake[0];
+    pressKey('ArrowUp');
+    is(game.phase, 'playing', 'phase');
+    is(game.snake[0], {x: head.x, y: head.y - 1}, 'head');
+  });
+
+  test('space does not restart a bow in progress', () => {
+    bowing();
+    pressKey(' ');
+    is(game.phase, 'bowing', 'phase');
+  });
+
+  test('starts and ends standing, so neither end jumps', () => {
+    is(game.bowPose(0, false), {scale: 1, back: 0}, 'at 0');
+    is(game.bowPose(game.BOW_MS, false), {scale: 1, back: 0}, 'at end');
+  });
+
+  test('dips, then draws back for the strike', () => {
+    is(game.bowPose(180, false).scale < 1, true, 'dipped');
+    is(game.bowPose(game.BOW_MS - 20, false).back > 0.25, true, 'drawn back');
+  });
+
+  test('reduced motion keeps the head still', () => {
+    is(game.bowPose(400, true), {scale: 1, back: 0}, 'pose');
   });
 });
 

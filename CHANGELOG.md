@@ -16,6 +16,19 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+## [0.4.4] — 2026-09-14
+
+Every run is a bout now, bowed into as well as out of. Nothing plays
+differently, so it is a patch.
+
+### Added
+- **An opening bow.** Every run opens with a bow, the way every lost one
+  closes with one: the snake dips its head, draws back, and its first step
+  snaps forward as a strike. Half a second. The snake does not move until it
+  is over, so it never costs reaction time, and a direction pressed during it
+  cuts it short and is taken as the first move at once. Reduced motion skips
+  it. Chosen from four candidates side by side, kept on `options/start-bow`.
+
 ## [0.4.3] — 2026-09-14
 
 Losing gets a moment. The snake's last mistake plays out on the board before
@@ -309,7 +322,8 @@ First playable version.
   gradient.
 - **The version number** in the footer.
 
-[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.4.3...HEAD
+[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.4.4...HEAD
+[0.4.4]: https://github.com/karinnielsen/strike-first/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/karinnielsen/strike-first/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/karinnielsen/strike-first/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/karinnielsen/strike-first/compare/v0.4.0...v0.4.1

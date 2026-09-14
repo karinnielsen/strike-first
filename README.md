@@ -9,7 +9,7 @@ Snake, as a dojo. Eat eggs, chase mice, dodge rotten ones and earn your belt.
 One HTML file, no build step, no dependencies, and it fetches nothing — open it
 and play. Made for desktop and tablet.
 
-Current version: **v0.4.3** — see [CHANGELOG.md](CHANGELOG.md).
+Current version: **v0.4.4** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Play
 
@@ -87,6 +87,14 @@ by design and it is the best moment the game has.
 A small `+1` for an egg, a big electric-yellow `+5` for a mouse. The size
 difference is the message: you see the value before you read it. A loss is
 red and always carries its minus sign, so it never relies on colour alone.
+
+### The bow
+
+Every run opens with a bow, the way every lost one closes with one. The snake
+dips its head, draws back, and its first step is a strike. Half a second, and
+the snake does not move until it is over, so it never eats into your reaction
+time. Press a direction during it and that is your first move, straight away.
+Reduced motion skips it.
 
 ### Defeat
 
