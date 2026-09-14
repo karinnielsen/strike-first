@@ -843,14 +843,19 @@ function addScore(points, kind) {
   // Order matters here. promotionFor() is asked BEFORE best moves, because
   // the question is whether this point crossed a threshold the old best
   // had not. Afterwards the answer would always be no.
+  let earned = null;
   if (score > best) {
-    const earned = promotionFor(best, score);
+    earned = promotionFor(best, score);
     best = score;
     bestEl.textContent = best;
     localStorage.setItem('strikeFirstBest', best);
     showBestBelt();
     if (earned) promote(earned);
   }
+
+  // A promotion brings its own sound, and it replaces the food's rather
+  // than playing over it: two sounds at once would be neither.
+  if (!earned) playSound(kind);
 
   // Restart the squash animation. Removing the class isn't enough on its
   // own - the browser batches up our changes and sees no difference.
@@ -894,6 +899,200 @@ function gameOver(cause) {
     defeatLine(cause, score, score > bestAtStart, Math.random()),
     'Again'
   );
+  playSound('defeat');
+}
+
+
+// ---- sound ------------------------------------------------------------
+// 80s/90s arcade: square and pulse waves and a noise channel, generated
+// here rather than shipped as files, so the game stays one file. Each
+// sound was picked by ear from candidates in design/sound-options.html,
+// which is where to audition changes before making them here.
+//
+// Time is counted in FRAMES, a 60th of a second, because that is how 8-bit
+// sound drivers stepped: pitch and volume change on the frame and never in
+// between. That stepping is most of what makes it sound arcade, so don't
+// smooth it into slides.
+//
+// Sound is output, like draw(): it reports what update() decided and never
+// decides anything itself.
+
+const SOUND_VOLUME = 0.3;
+const FRAME = 1 / 60;
+
+let audioCtx = null;   // made on the first start, never before
+let audioOut, noiseBuffer;
+const pulseWaves = {};
+
+// Browsers refuse to play audio until the player has interacted with the
+// page, so the context is created by startGame(), which only ever runs
+// from a click or a key. Returns null where there is no Web Audio at all
+// (and in the test harness), and every sound then quietly does nothing.
+function audio() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  if (!audioCtx) {
+    audioCtx = new AC();
+    audioOut = audioCtx.createGain();
+    audioOut.gain.value = SOUND_VOLUME;
+    audioOut.connect(audioCtx.destination);
+    for (const duty of [0.125, 0.25]) pulseWaves[duty] = pulseWave(duty);
+    noiseBuffer = makeNoise();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+// A pulse wave of a given duty cycle, from its Fourier series. 50% is a
+// plain square; the thinner 25% and 12.5% are the nasal sound most people
+// mean by "8-bit".
+function pulseWave(duty) {
+  const n = 64;
+  const real = new Float32Array(n), imag = new Float32Array(n);
+  for (let k = 1; k < n; k++) real[k] = (2 / (k * Math.PI)) * Math.sin(k * Math.PI * duty);
+  return audioCtx.createPeriodicWave(real, imag);
+}
+
+// One-bit noise, each value held for a few samples, which gives it the
+// gritty quality of a hardware noise channel rather than a hiss.
+function makeNoise() {
+  const len = audioCtx.sampleRate, hold = 6;
+  const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  let v = 1;
+  for (let i = 0; i < len; i++) {
+    if (i % hold === 0) v = Math.random() < 0.5 ? -1 : 1;
+    data[i] = v;
+  }
+  return buf;
+}
+
+// steps: [[frequency or null, volume, frames], ...] played in order.
+// The tiny setTargetAtTime on volume takes the click off each step
+// without smoothing the step itself away.
+function tone(wave, steps, delayFrames = 0) {
+  const t0 = audioCtx.currentTime + 0.01 + delayFrames * FRAME;
+  const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+  if (wave === 'p125')     osc.setPeriodicWave(pulseWaves[0.125]);
+  else if (wave === 'p25') osc.setPeriodicWave(pulseWaves[0.25]);
+  else                     osc.type = wave;
+  gain.gain.setValueAtTime(0, t0);
+  osc.connect(gain).connect(audioOut);
+  let t = t0;
+  for (const [f, v, frames] of steps) {
+    if (f) osc.frequency.setValueAtTime(f, t);
+    gain.gain.setTargetAtTime(f ? v : 0, t, 0.002);
+    t += frames * FRAME;
+  }
+  gain.gain.setTargetAtTime(0, t, 0.004);
+  osc.start(t0);
+  osc.stop(t + 0.05);
+}
+
+// steps: [[rate, volume, frames], ...]. Low rates crunch, high ones hiss.
+function noise(steps) {
+  const t0 = audioCtx.currentTime + 0.01;
+  const src = audioCtx.createBufferSource(), gain = audioCtx.createGain();
+  src.buffer = noiseBuffer;
+  src.loop = true;
+  gain.gain.setValueAtTime(0, t0);
+  src.connect(gain).connect(audioOut);
+  let t = t0;
+  for (const [rate, v, frames] of steps) {
+    src.playbackRate.setValueAtTime(rate, t);
+    gain.gain.setTargetAtTime(v, t, 0.002);
+    t += frames * FRAME;
+  }
+  gain.gain.setTargetAtTime(0, t, 0.004);
+  src.start(t0);
+  src.stop(t + 0.05);
+}
+
+// Note name to frequency: note('C5'), note('F#3').
+function note(name) {
+  const m = name.match(/^([A-G])(#|b)?(\d)$/);
+  const semis = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]]
+              + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
+  const midi = 12 * (Number(m[3]) + 1) + semis;
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+let eggsHeard = 0;
+
+const SOUNDS = {
+  // The one you hear most. A single blip, alternating between two notes a
+  // fourth apart, so a long run of eggs becomes a rhythm instead of one
+  // sound repeating until it grates.
+  egg() {
+    const f = eggsHeard++ % 2 ? note('G5') : note('C6');
+    tone('square', [[f, 0.32, 2], [f, 0.12, 1]]);
+  },
+
+  // A squeak, because it was a mouse, then a two-note ding, because it
+  // was worth five eggs.
+  mouse() {
+    tone('p125', [
+      [note('E6'), 0.28, 1], [note('G6'), 0.28, 1],
+      [note('E6'), 0.28, 1], [note('A6'), 0.28, 1],
+    ]);
+    tone('p25', [
+      [note('C6'), 0.4, 3], [note('G6'), 0.4, 4],
+      [note('G6'), 0.24, 4], [note('G6'), 0.1, 4],
+    ], 5);
+  },
+
+  // A burp. Pitch jumps up and down every frame (the roughness) while
+  // sliding down overall (running out of air), volume flutters on
+  // alternate frames (the throat), and low noise crackles underneath.
+  rotten() {
+    const frames = 22, steps = [], crackle = [];
+    let f = 120;
+    for (let k = 0; k < frames; k++) {
+      const swell = k < 3 ? (k + 1) / 3 : 1 - (k - 3) / frames;
+      const v = (k % 2 ? 0.28 : 0.5) * swell;
+      steps.push([f * (k % 2 ? 0.82 : 1.12), v, 1]);
+      crackle.push([0.22 + (k % 3) * 0.07, v * 0.4, 1]);
+      f *= 0.975;
+    }
+    tone('square', steps);
+    noise(crackle);
+  },
+
+  // Fast arpeggiated chords, I-IV-V-I, landing on a high C over a
+  // triangle bass. About a second: a moment, not a fanfare.
+  promotion() {
+    const chords = [
+      [note('C5'), note('E5'), note('G5')],
+      [note('F5'), note('A5'), note('C6')],
+      [note('G5'), note('B5'), note('D6')],
+    ];
+    const steps = [];
+    for (const chord of chords) {
+      for (let r = 0; r < 2; r++) chord.forEach(f => steps.push([f, 0.34, 2]));
+    }
+    [note('C6'), note('E6'), note('G6')].forEach(f => steps.push([f, 0.36, 2]));
+    steps.push([note('C7'), 0.38, 6], [note('C7'), 0.22, 6], [note('C7'), 0.1, 6]);
+    tone('p25', steps);
+    tone('triangle', [
+      [note('C3'), 0.9, 12], [note('F2'), 0.9, 12],
+      [note('G2'), 0.9, 12], [note('C3'), 0.9, 18],
+    ]);
+  },
+
+  // Two octaves straight down in semitones, fading as it falls. One
+  // gesture, the lose-a-life sound.
+  defeat() {
+    const steps = [];
+    for (let k = 0; k < 24; k++) {
+      steps.push([note('C5') * Math.pow(2, -k / 12), 0.42 - k * 0.013, 2]);
+    }
+    tone('square', steps);
+  },
+};
+
+function playSound(name) {
+  if (!audioCtx) return;    // nobody has pressed anything yet
+  SOUNDS[name]();
 }
 
 
@@ -1771,6 +1970,7 @@ function promote(belt) {
 
   stageEl.classList.add('promoting');
   hintEl.classList.add('promoting');
+  playSound('promotion');
 
   setTimeout(() => {
     stageEl.classList.remove('promoting');
@@ -1789,6 +1989,7 @@ function showBestBelt() {
 }
 
 function startGame() {
+  audio();    // always a click or a key, so the browser will allow it
   reset();
   phase = 'playing';
   overlay.classList.add('hidden');

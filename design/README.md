@@ -19,6 +19,7 @@ to revisit, when the alternative is still there to look at.
 | | |
 | --- | --- |
 | [`demo/`](demo/) | An autopilot that plays the game by itself, and how to build a side-by-side comparison |
+| [`sound-options.html`](sound-options.html) | Three candidates for each sound effect, and a button that plays your picks as a run. The ones in the game are marked. Audition changes here before making them in `index.html` |
 | [`share/card.html`](share/card.html) | Renders `og-image.png` and `apple-touch-icon.png` from the game itself. Rebuild them here when the board or crest changes |
 
 ## Decision records
