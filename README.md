@@ -88,6 +88,19 @@ A small `+1` for an egg, a big electric-yellow `+5` for a mouse. The size
 difference is the message: you see the value before you read it. A loss is
 red and always carries its minus sign, so it never relies on colour alone.
 
+### Defeat
+
+About a second on the board before the verdict. The moment of impact holds
+still so you can see the mistake, the snake is knocked back off whatever it
+hit, the colour drains out of it from the tail up, and it bows its head. Then
+a line in the dojo's voice, picked for how you died: the wall, your own tail,
+scoring nothing, a new hi-score, or falling a few points short of your
+hi-score or the next belt. The same line never comes up twice in a row.
+
+Space, **R** or a tap skips it once the first moment has passed, so the key you
+were hammering when you died does not restart the game by accident. Reduced
+motion keeps the flash and the drain, and nothing moves.
+
 ### Sound
 
 80s/90s arcade sound, generated in the page from square and pulse waves rather

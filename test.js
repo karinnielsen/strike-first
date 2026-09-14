@@ -143,7 +143,9 @@ globalThis.game = {
   QUEASY_SHAKE, queasyShake,
   TONGUE_DOUBLE, TONGUE_PAUSE_MIN, TONGUE_PAUSE_MAX, tongueFlickPlan,
   TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt,
-  DEFEAT_LINES, defeatLine,
+  DEFEAT_LINES, defeatLine, defeatPool, fillLine,
+  DEFEAT_MS, DEFEAT_HOLD_MS, defeatRecoil, defeatDrain, defeatJolt, defeatBow, canRestart,
+  get defeat() { return defeat },
   SPRITE, SPRITE_SIZE, drawSprite,
   SOUNDS, startGame, toggleSound,
   get muted() { return muted }, set muted(v) { muted = v },
@@ -332,7 +334,7 @@ describe('update - dying', () => {
   test('running into the right wall ends the game', () => {
     freshGame({ snake: [{x: 20, y: 10}, {x: 19, y: 10}] });
     game.update();
-    is(game.phase, 'over', 'phase');
+    is(game.phase, 'dying', 'phase');
   });
 
   test('running into the top wall ends the game', () => {
@@ -341,7 +343,7 @@ describe('update - dying', () => {
       direction: {x: 0, y: -1}
     });
     game.update();
-    is(game.phase, 'over', 'phase');
+    is(game.phase, 'dying', 'phase');
   });
 
   test('running into your own body ends the game', () => {
@@ -349,7 +351,7 @@ describe('update - dying', () => {
       snake: [{x: 5, y: 5}, {x: 6, y: 5}, {x: 6, y: 6}, {x: 5, y: 6}]
     });
     game.update();   // heading right, straight into the second segment
-    is(game.phase, 'over', 'phase');
+    is(game.phase, 'dying', 'phase');
   });
 });
 
@@ -813,70 +815,140 @@ describe('the unwell snake', () => {
 
 
 describe('defeat lines', () => {
+  const inPool = (name, line) =>
+    game.DEFEAT_LINES[name].some(l => l.split(/\{[^}]+\}/).every(part => line.includes(part)));
+
   test('a wall death gets a wall line', () => {
-    const line = game.defeatLine('wall', 20, false, 0);
-    is(game.DEFEAT_LINES.wall.includes(line), true, 'from the wall pool');
+    is(inPool('wall', game.defeatLine('wall', 20, 60, 0)), true, 'from the wall pool');
   });
 
   test('eating yourself gets a self line', () => {
-    const line = game.defeatLine('self', 20, false, 0);
-    is(game.DEFEAT_LINES.self.includes(line), true, 'from the self pool');
+    is(inPool('self', game.defeatLine('self', 20, 60, 0)), true, 'from the self pool');
   });
 
   test('scoring nothing gets its own line, whatever killed you', () => {
     for (const cause of ['wall', 'self']) {
-      const line = game.defeatLine(cause, 0, false, 0);
-      is(game.DEFEAT_LINES.nothing.includes(line), true, 'from the nothing pool');
+      is(inPool('nothing', game.defeatLine(cause, 0, 40, 0)), true, 'from the nothing pool');
     }
   });
 
   // Never sneer at somebody's best ever run.
-  test('a new record outranks how you died', () => {
+  test('a new hi-score outranks how you died', () => {
     for (const cause of ['wall', 'self']) {
-      const line = game.defeatLine(cause, 90, true, 0);
-      is(game.DEFEAT_LINES.record.includes(line), true, 'from the record pool');
+      is(inPool('record', game.defeatLine(cause, 90, 50, 0)), true, 'from the record pool');
+    }
+  });
+
+  test('a new hi-score just short of a belt says which belt and how close', () => {
+    // Green is from 35, so 33 is two points off it
+    is(game.defeatPool('wall', 33, 20).pool, 'nearBelt', 'pool');
+    is(game.defeatLine('wall', 33, 20, 0), 'Green belt was two points away.', 'line');
+  });
+
+  test('one point is a point, not points', () => {
+    is(game.defeatLine('wall', 34, 20, 0), 'Green belt was one point away.', 'singular');
+  });
+
+  test('falling a few short of the hi-score is a near miss', () => {
+    is(game.defeatPool('wall', 57, 60).pool, 'nearBest', 'three short');
+    is(game.defeatPool('wall', 56, 60).pool, 'wall', 'four short is just a wall');
+    is(game.defeatLine('self', 58, 60, 0), 'Two points from your hi-score. That close.', 'line');
+  });
+
+  test('matching the hi-score exactly is a tie, not a near miss', () => {
+    is(game.defeatPool('wall', 60, 60).pool, 'tie', 'pool');
+  });
+
+  test('there is no near miss until there is a hi-score worth missing', () => {
+    is(game.defeatPool('wall', 5, 7).pool, 'wall', 'hi-score of 7');
+  });
+
+  test('the same line never lands twice in a row', () => {
+    for (let roll = 0; roll < 1; roll += 0.05) {
+      const first  = game.defeatLine('wall', 20, 60, roll);
+      const second = game.defeatLine('wall', 20, 60, roll, first);
+      is(second !== first, true, 'reroll at ' + roll.toFixed(2));
     }
   });
 
   test('every roll from 0 up to 1 lands on a real line', () => {
     let bad = null;
     for (let roll = 0; roll < 1; roll += 0.001) {
-      const line = game.defeatLine('wall', 20, false, roll);
-      if (!game.DEFEAT_LINES.wall.includes(line)) bad = roll;
+      if (!inPool('wall', game.defeatLine('wall', 20, 60, roll))) bad = roll;
     }
     is(bad, null, 'no roll fell off the end');
   });
 
   test('a roll of exactly 1 is still safe', () => {
-    const line = game.defeatLine('wall', 20, false, 1);
-    is(game.DEFEAT_LINES.wall.includes(line), true, 'in the pool');
+    is(inPool('wall', game.defeatLine('wall', 20, 60, 1)), true, 'in the pool');
   });
 
   test('an unknown cause still returns a line rather than nothing', () => {
-    is(typeof game.defeatLine(undefined, 20, false, 0.5), 'string', 'type');
+    is(typeof game.defeatLine(undefined, 20, 60, 0.5), 'string', 'type');
   });
 
-  test('the whole pool is reachable, so no line is dead copy', () => {
-    for (const pool of Object.values(game.DEFEAT_LINES)) {
-      const seen = new Set();
-      for (let roll = 0; roll < 1; roll += 0.001) {
-        seen.add(pool[Math.min(pool.length - 1, Math.floor(roll * pool.length))]);
-      }
-      is(seen.size, pool.length, 'all ' + pool.length + ' reachable');
-    }
-  });
-
-  // The house style, asserted rather than trusted. See design/MICROCOPY.md.
+  // The house style, asserted rather than trusted, on every line as the
+  // player would read it - blanks filled with the longest belt name and
+  // the widest number. See design/MICROCOPY.md.
   test('every line obeys the dojo voice', () => {
-    const all = Object.values(game.DEFEAT_LINES).flat();
+    const all = Object.values(game.DEFEAT_LINES).flat()
+      .map(l => game.fillLine(l, 3, 'Cho Dan Bo'));
     const contracted = all.filter(l => /\w'\w/.test(l));
     const shouting   = all.filter(l => l.includes('!'));
     const unpunctued = all.filter(l => !l.endsWith('.'));
     const rambling   = all.filter(l => l.split(/\s+/).length > 9);
+    const unfilled   = all.filter(l => l.includes('{'));
     is(contracted.length, 0, 'no contractions: ' + contracted.join(' / '));
     is(shouting.length,   0, 'no exclamation marks: ' + shouting.join(' / '));
     is(unpunctued.length, 0, 'all end in a full stop: ' + unpunctued.join(' / '));
     is(rambling.length,   0, 'none over nine words: ' + rambling.join(' / '));
+    is(unfilled.length,   0, 'no blanks left: ' + unfilled.join(' / '));
+  });
+
+  test('"record" is not a word the dojo uses', () => {
+    const all = Object.values(game.DEFEAT_LINES).flat().filter(l => /record/i.test(l));
+    is(all.length, 0, 'say hi-score: ' + all.join(' / '));
+  });
+});
+
+
+describe('the defeat sequence', () => {
+  test('dying does not show the verdict at once', () => {
+    freshGame({ snake: [{x: 20, y: 10}, {x: 19, y: 10}] });
+    game.update();
+    is(game.phase, 'dying', 'phase');
+    is(game.defeat.cause, 'wall', 'cause');
+  });
+
+  test('the hit-stop holds the head against what it hit', () => {
+    is(game.defeatRecoil(0, false), 0, 'at impact');
+    is(game.defeatRecoil(game.DEFEAT_HOLD_MS - 1, false), 0, 'end of hold');
+    is(game.defeatRecoil(200, false) > 0, true, 'then knocked back');
+  });
+
+  test('the recoil stays inside the square', () => {
+    let most = 0;
+    for (let ms = 0; ms < 2000; ms += 5) most = Math.max(most, game.defeatRecoil(ms, false));
+    is(most < 0.5, true, 'at most ' + most.toFixed(2) + ' of a cell');
+  });
+
+  test('the tail goes to ash before the neck', () => {
+    is(game.defeatDrain(550, 1) > game.defeatDrain(550, 0), true, 'tail first');
+    is(game.defeatDrain(0, 1), 0, 'nothing at impact');
+    is(game.defeatDrain(game.DEFEAT_MS, 0) > 0, true, 'all drained by the verdict');
+  });
+
+  test('reduced motion keeps the flash and drain but nothing moves', () => {
+    const j = game.defeatJolt(40, {x: 1, y: 0}, true);
+    is(j.x === 0 && j.y === 0, true, 'no jolt');
+    is(game.defeatRecoil(200, true), 0, 'no recoil');
+    is(game.defeatBow(650, true), 1, 'no bow');
+  });
+
+  test('restart is refused while the key that killed you is still down', () => {
+    freshGame({ snake: [{x: 20, y: 10}, {x: 19, y: 10}] });
+    game.update();
+    is(game.canRestart(), false, 'locked at impact');
   });
 });
 

@@ -16,6 +16,23 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+### Added
+- **A defeat sequence.** About a second on the board before the verdict: the
+  impact holds still, yellow sparks fly from the point of contact, the snake
+  is knocked back, drains to ash from the tail up and bows. Space, R or a tap
+  skips it after the first 300ms. Reduced motion keeps the flash and the
+  drain without the movement.
+- **Near-miss defeat lines.** Ending within three points of your hi-score, or
+  of the next belt on a new hi-score, says so and by how much.
+- **More defeat lines,** thirty-seven in all, with nods to the series.
+
+### Changed
+- **The same defeat line never appears twice in a row.**
+- **The overlay's button stands apart** from the title and line above it,
+  on every screen, so the verdict and the call to action read as two things.
+- "A record and a corpse" is now "A hi-score and a corpse", because the dojo
+  does not say record.
+
 ## [0.4.2] — 2026-09-14
 
 The game makes noise. Arcade sound effects for everything that happens in a
