@@ -3,7 +3,7 @@
 A browser Snake game with a karate-dojo theme. One HTML file, no build step,
 no dependencies, nothing to install — open it and play.
 
-Current version: **v0.3.1** — see [CHANGELOG.md](CHANGELOG.md).
+Current version: **v0.3.2** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Play
 

@@ -16,6 +16,16 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+### Planned
+See the [project roadmap](https://linear.app/unrulylabs/project/strike-first-3ec05fe538aa)
+for what's coming and in what order. It moves faster than this file.
+
+## [0.3.2] — 2026-09-14
+
+It plays on a tablet, and the whole board fits on the screen you have.
+Nothing about the game changes — same board, same rules, new ways to reach
+it.
+
 ### Added
 - **Touch controls, so it plays on a tablet.** Swipe on the board to steer;
   the turn lands while your finger is still moving, and one stroke can round
@@ -29,9 +39,19 @@ new wordmark, a new palette and legible board artwork and was still a patch.
   description, rather than a bare URL.
   It points at the published address, so it shows up once the game is live.
 
-### Planned
-See the [project roadmap](https://linear.app/unrulylabs/project/strike-first-3ec05fe538aa)
-for what's coming and in what order. It moves faster than this file.
+### Changed
+- **The whole board fits on short and landscape screens.** Stacked, the page
+  is 971px tall, so a landscape iPad, a laptop window or a 1080p browser cut
+  off the bottom of the board. When it doesn't fit, the crest sits centred on
+  top, the board below it on the left and the stats as a list beside it. The
+  crest shrinks first, then the board, never below 20px cells. Chosen by the
+  space available, not the device.
+
+### Fixed
+- **Pages that fit no longer scroll on iPad Safari.** It centred against a
+  height that included the hidden toolbar.
+- **The board has a visible edge again**, and the start overlay no longer
+  darkens it away.
 
 ## [0.3.1] — 2026-09-12
 

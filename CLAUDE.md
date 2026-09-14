@@ -285,11 +285,16 @@ read a long brew build as normal progress.
 Also beware that piping brew through `tail` swallows its exit status: the
 failed build reported exit code 0 and looked like a success.
 
-**The 68px gap below the wordmark is load-bearing.** The floating `+N` rises
-24px out of the score counter and collides with the title without it. It is
-deliberately fixed rather than fluid: the popup is a fixed size and travels a
-fixed distance, so the room it needs doesn't shrink on a small screen. Measure
-the clearance after touching the header — don't eyeball it.
+**The room above the score is load-bearing, and it lives in two places.** The
+floating `+N` rises 24px out of the score counter and collides with whatever
+sits above it. In the stacked layout that's the crest, so its bottom margin is
+68px. In the side-by-side layout for short screens (v0.3.2) the stats have a
+column of their own and the `+N` rises into the top of *that*, so the crest's
+margin drops to 16px and the room moves to 52px of `padding-top` on the stats
+list. Both are deliberately fixed rather than fluid: the popup is a fixed size
+and travels a fixed distance, so the room it needs doesn't shrink on a small
+screen. Touch either layout's header or stats and measure the clearance in
+both — don't eyeball it.
 
 **`localStorage` is per-origin.** The best score doesn't follow the game across
 ports, machines or to a published URL. That's expected, not a bug.
