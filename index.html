@@ -32,7 +32,7 @@
     --yellow: #ffff00;   /* the dojo's own yellow: reward, and the
                             one thing the screen is asking you to do.
                             Rank is --belt and has never been this. */
-    --red:    #d3262f;   /* blood, and losses only     */
+    --red:    #d3262f;   /* points lost, always beside a minus */
     --brand:  #ee3524;   /* the wordmark, hotter than the gameplay red */
     --bone:   #e8e2d6;   /* the cobra                  */
     --yellow-deep: #7a7a00; /* the shadow side of it    */
@@ -516,13 +516,13 @@ const CELL = 30;                      // one grid square = 30 pixels
 const COLS = canvas.width  / CELL;    // 21 columns across
 const ROWS = canvas.height / CELL;    // 21 rows down
 
-// Handy references to the bits of HTML we update as the game runs.
 // Single source of truth for the version. Bump this, add a CHANGELOG entry,
 // update the Current version line in README.md, and tag the commit - those
 // four go together, always.
 const VERSION = '0.3.2';
 document.getElementById('version').textContent = 'v' + VERSION;
 
+// Handy references to the bits of HTML we update as the game runs.
 const scoreEl   = document.getElementById('score');
 const levelEl   = document.getElementById('level');
 const bestEl    = document.getElementById('best');
@@ -534,6 +534,7 @@ const bestNameEl = document.getElementById('best-belt-name');
 const stageEl   = document.getElementById('stage');
 const hintEl    = document.getElementById('hint');
 const mercyBtn  = document.getElementById('mercy-btn');
+const playBtn   = document.getElementById('play-btn');
 
 // Can this screen be touched? `any-pointer` rather than `pointer`, so an
 // iPad with a keyboard attached still gets the swipe copy and the mercy
@@ -553,7 +554,6 @@ const MERCY_TEXT = TOUCH ? 'Tap continue to fight on' : 'Press space to fight on
 // Asked once and kept, so anything that moves can check it cheaply. The
 // game honours this in CSS too; doing it properly everywhere is UNR-104.
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
-const playBtn   = document.getElementById('play-btn');
 
 
 // =====================================================================
@@ -620,6 +620,53 @@ const REACH_BUDGET  = 0.5;
 // like everything else, so it lasts the same number of decisions at every
 // speed and doesn't tick away while the game is paused.
 const QUEASY_MOVES  = 14;
+
+// Difficulty within a run, as tiers rather than a smooth slope.
+//
+// This used to shave 4ms off per point, continuously. It worked, but it
+// was invisible: every run felt like the same gradient and nothing ever
+// happened. Steps give a run a rhythm - settle in, master a pace, get
+// pushed - and give you something to notice that isn't the score.
+//
+// A level is within a run and resets when you die. A belt is across runs
+// and is a rank you hold. They are different things and they live in
+// different places: the level in the header, the belt on the snake.
+//
+// Level 1 opened at 200ms and playing it showed that was too brisk to
+// start, especially now there are three things on the board to read
+// rather than two. It opens slower and takes longer to bite.
+const LEVELS = [
+  { from:   0, ms: 260 },   // 1 - unhurried, room to think
+  { from:   8, ms: 225 },
+  { from:  18, ms: 195 },
+  { from:  30, ms: 170 },
+  { from:  45, ms: 145 },
+  { from:  65, ms: 120 },
+  { from:  90, ms: 100 },
+  { from: 120, ms:  85 },
+  { from: 155, ms:  70 }    // 9 - the floor. Nothing gets faster than this.
+];
+
+// Best score needed for each rank. What a belt IS, and why rank comes
+// from your best score, is explained with the belt code below.
+//
+// THRESHOLDS ARE A STARTING SHAPE, to be corrected by play. The first
+// gap is the one that matters: every player experiences white to orange
+// and progressively fewer see each rank after it, so it is the
+// highest-traffic decision on the whole ladder. Nobody has watched a new
+// player score anything yet, so 15 is a compromise between "meet the
+// mechanic before you stop playing" and "make it feel earned", not a
+// finding. If new players bounce off it, lower it - that is a one-line
+// change and there is no cost to being wrong in that direction.
+const BELTS = [
+  { name: 'White',         colour: '#e8e2d6', from:   0 },
+  { name: 'Orange',        colour: '#f4761c', from:  15 },
+  { name: 'Green',         colour: '#46a86c', from:  35 },
+  { name: 'Brown',         colour: '#9c6438', from:  65 },
+  { name: 'Red',           colour: '#d3262f', from: 110 },
+  { name: 'Cho Dan Bo',    colour: '#3f7fd0', from: 175 },
+  { name: 'Midnight blue', colour: '#324791', from: 275 }
+];
 
 // localStorage is the browser's tiny notepad - it survives a refresh.
 // Renaming the game shouldn't cost you your record, so we still read the
@@ -721,11 +768,11 @@ function update() {
   // double-tap folding the snake back on itself.
   if (turnQueue.length) direction = turnQueue.shift();
 
-  // The mouse is on a countdown, measured in your moves rather than in
-  // seconds. That keeps it just as catchable at top speed as at level 1,
-  // and means it doesn't quietly escape while the game is paused.
   if (queasy > 0) queasy -= 1;
 
+  // A visitor is on a countdown, measured in your moves rather than in
+  // seconds. That keeps a mouse just as catchable at top speed as at level
+  // 1, and means nothing quietly escapes while the game is paused.
   if (visitor) {
     visitor.life -= 1;
     if (visitor.life <= 0) visitor = null;   // it got bored, or it went off
@@ -838,6 +885,7 @@ function gameOver(cause) {
   // "DEFEATED" and "PROMOTED" are not the same news and should not
   // share a slot. The promotion lands on its own, mid-run, which is
   // where it belongs and what makes it worth having. See UNR-81.
+  //
   // The score is not repeated here - it is still sitting in the header
   // where you have been watching it all run. This screen gets one thing
   // to say, so it may as well be worth reading.
@@ -887,7 +935,7 @@ function draw() {
 
 
 // =====================================================================
-//  SPRITES - the drawn artwork, as Path2D
+//  5. SPRITES - the drawn artwork, as Path2D
 // =====================================================================
 // Commissioned rather than hand-coded, because detailed artwork is the one
 // thing this project has repeatedly got wrong when drawing it in code.
@@ -897,26 +945,9 @@ function draw() {
 // here rather than per frame, because these are painted sixty times a
 // second and reparsing a path string that often is pure waste.
 //
-// Every path is authored in a 20x20 box, which is one grid cell, so
-// drawing one means translating to the cell and filling. See
-// design/ASSET-BRIEF.md section 7, and design/board-sprites/ for the
-// original files.
-// HOW BIG THINGS ARE ON THE BOARD.
-//
-// Each sprite carries its own scale and its own true centre, because the
-// artwork is not centred in its 20x20 box - the mouse sits slightly left,
-// the rotten egg slightly low - and scaling about the box centre rather
-// than the artwork's centre makes that drift worse the bigger it gets.
-//
-// The rewards were drawn at roughly half a cell, which was fine when they
-// were three coloured blobs and is not fine now there is artwork to read.
-// A food should carry about the same visual weight as a snake segment,
-// which is 18px. These overflow the cell slightly and that is correct -
-// so does the snake's own hood.
-//
-// The ROTTEN egg is deliberately the largest thing on the board. The tilt
-// foreshortens it, so at matching numbers it reads as the smaller of the
-// two, which is backwards for the thing you are meant to notice and avoid.
+// Every path is authored in a 20x20 box, the size a grid cell was when the
+// artwork was commissioned, so drawing one means translating to the cell,
+// scaling and filling. See design/ASSET-BRIEF.md section 7.
 const SPRITE = {
   egg: [
     { fill: '#f4e8cf', d: 'M10 3.6C7.5 3.6 4.9 8.7 4.9 11.1C4.9 14.2 7 16.4 10 16.4C13 16.4 15.1 14.2 15.1 11.1C15.1 8.7 12.5 3.6 10 3.6Z' },
@@ -989,17 +1020,6 @@ const SPRITE = {
   ]
 };
 
-// How much bigger than the authored artwork each one is drawn, and where
-// its true centre sits inside the 20x20 box. Balance lives in constants.
-// THE HEAD IS THE EXCEPTION TO ONE CELL, AND ALWAYS HAS BEEN.
-//
-// The hood is 26px wide and the tongue reaches well past the head. They
-// have never fitted inside a 20px square and they are not meant to - a
-// cobra that fits neatly in its own cell does not look like a cobra.
-//
-// So the head artwork is authored inside a 20x20 box, normalised by
-// 1/1.8, and scaled back up here. Drawing it unscaled shrinks the head to
-// something meek. See design/ASSET-BRIEF.md section 7.
 // The artwork and the hand-drawn effects were all authored for a 20px
 // cell. This is what lets the cell size change without every number in
 // the drawing code being wrong.
@@ -1009,12 +1029,37 @@ const SPRITE = {
 // inside a shell that had grown around them.
 const CELL_SCALE = CELL / 20;
 
+// THE HEAD IS THE EXCEPTION TO ONE CELL, AND ALWAYS HAS BEEN.
+//
+// The hood is wider than a cell and the tongue reaches well past the head.
+// They have never fitted inside one square and they are not meant to - a
+// cobra that fits neatly in its own cell does not look like a cobra.
+//
+// So the head artwork is authored inside a 20x20 box, normalised by
+// 1/1.8, and scaled back up here. Drawing it unscaled shrinks the head to
+// something meek. See design/ASSET-BRIEF.md section 7.
 const HEAD_SCALE = 1.8;
 
 // How wide the tail artwork actually is inside its box, which is not the
 // box. Measured, not guessed.
 const TAIL_ART_WIDTH = 11.3;
 
+// HOW BIG THINGS ARE ON THE BOARD.
+//
+// Each sprite carries its own scale and its own true centre, because the
+// artwork is not centred in its 20x20 box - the mouse sits slightly left,
+// the rotten egg slightly low - and scaling about the box centre rather
+// than the artwork's centre makes that drift worse the bigger it gets.
+//
+// The rewards were drawn at roughly half a cell, which was fine when they
+// were three coloured blobs and is not fine now there is artwork to read.
+// A food should carry about the same visual weight as a snake segment.
+// These overflow the cell slightly and that is correct - so does the
+// snake's own hood.
+//
+// The ROTTEN egg is deliberately the largest thing on the board. The tilt
+// foreshortens it, so at matching numbers it reads as the smaller of the
+// two, which is backwards for the thing you are meant to notice and avoid.
 const SPRITE_SIZE = {
   egg:       { scale: 1.35, cx: 10.0, cy: 10.0 },
   rottenEgg: { scale: 1.45, cx: 10.5, cy: 11.2 },
@@ -1374,6 +1419,11 @@ function bodyColour(t, sick) {
   return mixColour(blend(BONE_BODY, DUSTY_TAIL, t), SICK_GREEN, sick * 0.8);
 }
 
+// How far the head shivers when the snake is queasy, in pixels at full
+// nausea. Small: it has to read as a shudder without making the head hard
+// to aim. A tenth of a cell, so it stays well inside one square.
+const QUEASY_SHAKE = 3.2;
+
 // The shudder, as an offset in pixels. Two different frequencies so it
 // wobbles rather than sliding along one line, which reads as a shiver
 // instead of a drift.
@@ -1410,7 +1460,7 @@ function mixColour(from, to, t) {
 
 
 // =====================================================================
-//  5. THE GAME LOOP - the heartbeat
+//  6. THE GAME LOOP - the heartbeat
 // =====================================================================
 // Every game ever made is some version of: update, draw, wait, repeat.
 // The loop runs forever; update() only actually runs while we're playing,
@@ -1421,32 +1471,8 @@ function loop() {
   setTimeout(loop, stepDelay());
 }
 
-// Difficulty within a run, as tiers rather than a smooth slope.
+// The tiers themselves are LEVELS, with the rest of the balance in section 2.
 //
-// This used to shave 4ms off per point, continuously. It worked, but it
-// was invisible: every run felt like the same gradient and nothing ever
-// happened. Steps give a run a rhythm - settle in, master a pace, get
-// pushed - and give you something to notice that isn't the score.
-//
-// A level is within a run and resets when you die. A belt is across runs
-// and is a rank you hold. They are different things and they live in
-// different places: the level in the header, the belt on the snake.
-//
-// Level 1 opened at 200ms and playing it showed that was too brisk to
-// start, especially now there are three things on the board to read
-// rather than two. It opens slower and takes longer to bite.
-const LEVELS = [
-  { from:   0, ms: 260 },   // 1 - unhurried, room to think
-  { from:   8, ms: 225 },
-  { from:  18, ms: 195 },
-  { from:  30, ms: 170 },
-  { from:  45, ms: 145 },
-  { from:  65, ms: 120 },
-  { from:  90, ms: 100 },
-  { from: 120, ms:  85 },
-  { from: 155, ms:  70 }    // 9 - the floor. Nothing gets faster than this.
-];
-
 // Takes a score, returns a level. Pure: it reads nothing and changes
 // nothing, which is why it needs no scaffolding to test.
 function levelFor(points) {
@@ -1463,7 +1489,7 @@ function stepDelay() {
 
 
 // =====================================================================
-//  BELTS - rank across runs
+//  7. BELTS - rank across runs
 // =====================================================================
 // A belt is a rank you HOLD, and it is what unlocks things later. An
 // unlock has to survive a death to mean anything, which is why rank
@@ -1493,91 +1519,16 @@ function stepDelay() {
 // most. Rank is never carried by colour alone - the belt's NAME is shown
 // alongside it - because seven hues cannot be told apart under a colour
 // vision deficiency, and because the board is dark.
-//
-// THRESHOLDS ARE A STARTING SHAPE, to be corrected by play. The first
-// gap is the one that matters: every player experiences white to orange
-// and progressively fewer see each rank after it, so it is the
-// highest-traffic decision on the whole ladder. Nobody has watched a new
-// player score anything yet, so 15 is a compromise between "meet the
-// mechanic before you stop playing" and "make it feel earned", not a
-// finding. If new players bounce off it, lower it - that is a one-line
-// change and there is no cost to being wrong in that direction.
+
 // Which segment carries the band. Never 0 - that's the head, and the head
 // already carries direction, eyes, blinking, the tongue and the X on
 // defeat. One behind it reads as a collar and is always present, since the
 // snake is three segments long before it has eaten anything.
 const BELT_SEGMENT = 1;
 
-// How far the head shivers when the snake is queasy, in pixels at full
-// nausea. Small: it has to read as a shudder without making the head hard
-// to aim. Cells are 20px, so this stays well inside one square.
-const QUEASY_SHAKE = 3.2;
-
-// DEFEAT LINES.
-//
-// The dojo voice: no contractions, second person, eight words at most,
-// full stops even on fragments, never an exclamation mark, nine words
-// at most. See
-// design/MICROCOPY.md - that file is the authority, this is just where
-// the strings live.
-//
-// Grouped by how you died, because a line that names your actual mistake
-// is worth three generic ones. The game already knows: it can only ever
-// be a wall or your own tail.
-//
-// `record` outranks everything. Somebody who has just beaten their own
-// best deserves acknowledgement rather than a joke at their expense - the
-// dojo is harsh, not cruel.
-const DEFEAT_LINES = {
-  wall: [
-    'The wall does not move. You do.',
-    'Fear does not exist in this dojo. Walls do.',
-    'You found the edge of the mat.',
-    'Straight lines are not a strategy.',
-    'No mercy from the wall either.'
-  ],
-  self: [
-    'You struck first. At yourself.',
-    'The enemy was you. It usually is.',
-    'A cobra that bites itself learns twice.',
-    'Even a cobra cannot swallow all of itself.',
-    'Turn earlier. That is the entire lesson.'
-  ],
-  nothing: [
-    'Not one thing. Not one.',
-    'The dojo will pretend it did not see that.',
-    'This is a karate game, not a standing-still game.'
-  ],
-  record: [
-    'Better than you have ever been. Still dead.',
-    'A record and a corpse.',
-    'You have never done that before. Do it again.'
-  ]
-};
-
-// Pick the line. `roll` is a number from 0 up to 1 - passed in rather than
-// rolled in here, so this takes arguments and returns an answer and needs
-// no scaffolding to test.
-function defeatLine(cause, points, isRecord, roll) {
-  const pool = isRecord      ? DEFEAT_LINES.record
-             : points === 0  ? DEFEAT_LINES.nothing
-             : DEFEAT_LINES[cause] || DEFEAT_LINES.wall;
-  return pool[Math.min(pool.length - 1, Math.floor(roll * pool.length))];
-}
-
 // How long the promotion moment lasts. Long enough to read without
 // pausing, short enough that it is over before it costs you the run.
 const PROMOTION_MS = 1400;
-
-const BELTS = [
-  { name: 'White',         colour: '#e8e2d6', from:   0 },
-  { name: 'Orange',        colour: '#f4761c', from:  15 },
-  { name: 'Green',         colour: '#46a86c', from:  35 },
-  { name: 'Brown',         colour: '#9c6438', from:  65 },
-  { name: 'Red',           colour: '#d3262f', from: 110 },
-  { name: 'Cho Dan Bo',    colour: '#3f7fd0', from: 175 },
-  { name: 'Midnight blue', colour: '#324791', from: 275 }
-];
 
 // Takes a best score, returns the rank held as a 1-based number - the
 // same shape as levelFor, so BELTS[beltFor(x) - 1] gets you the belt.
@@ -1593,10 +1544,8 @@ function beltFor(points) {
 // Did going from one best score to another earn a belt? Returns the belt
 // just reached, or null.
 //
-// NOT CALLED YET. This is the seam the promotion moment plugs into, and
-// it is deliberately not wired to the defeat screen - see gameOver(). It
-// is tested, so whoever builds UNR-81 inherits a settled answer to "was
-// that a promotion?" rather than deriving it again.
+// Called from addScore() the moment a point passes your record, and
+// deliberately never from the defeat screen - see gameOver().
 //
 // The first line is the rule that keeps rank honest: a score that isn't a
 // personal best can never promote you, however high it is. Everything
@@ -1609,7 +1558,7 @@ function promotionFor(oldBest, newBest) {
 
 
 // =====================================================================
-//  6. INPUT - turn key presses into intentions
+//  8. INPUT - turn key presses into intentions
 // =====================================================================
 // How many turns to remember while waiting for the next step. Two is enough
 // to round a corner with a quick double-tap. More and the snake starts to
@@ -1736,7 +1685,7 @@ for (const type of ['pointerup', 'pointercancel']) {
 
 
 // =====================================================================
-//  7. MENUS + KICKOFF
+//  9. MENUS + KICKOFF
 // =====================================================================
 // An overlay says one thing. Rank is not repeated here: it is on the snake
 // and named in the header, so saying it a third time was a third voice
@@ -1747,6 +1696,57 @@ function showOverlay(title, text, buttonLabel) {
   textEl.textContent  = text;
   playBtn.textContent = buttonLabel;
   overlay.classList.remove('hidden');
+}
+
+// DEFEAT LINES.
+//
+// The dojo voice: no contractions, second person, nine words at most,
+// full stops even on fragments, never an exclamation mark. See
+// design/MICROCOPY.md - that file is the authority, this is just where
+// the strings live.
+//
+// Grouped by how you died, because a line that names your actual mistake
+// is worth three generic ones. The game already knows: it can only ever
+// be a wall or your own tail.
+//
+// `record` outranks everything. Somebody who has just beaten their own
+// best deserves acknowledgement rather than a joke at their expense - the
+// dojo is harsh, not cruel.
+const DEFEAT_LINES = {
+  wall: [
+    'The wall does not move. You do.',
+    'Fear does not exist in this dojo. Walls do.',
+    'You found the edge of the mat.',
+    'Straight lines are not a strategy.',
+    'No mercy from the wall either.'
+  ],
+  self: [
+    'You struck first. At yourself.',
+    'The enemy was you. It usually is.',
+    'A cobra that bites itself learns twice.',
+    'Even a cobra cannot swallow all of itself.',
+    'Turn earlier. That is the entire lesson.'
+  ],
+  nothing: [
+    'Not one thing. Not one.',
+    'The dojo will pretend it did not see that.',
+    'This is a karate game, not a standing-still game.'
+  ],
+  record: [
+    'Better than you have ever been. Still dead.',
+    'A record and a corpse.',
+    'You have never done that before. Do it again.'
+  ]
+};
+
+// Pick the line. `roll` is a number from 0 up to 1 - passed in rather than
+// rolled in here, so this takes arguments and returns an answer and needs
+// no scaffolding to test.
+function defeatLine(cause, points, isRecord, roll) {
+  const pool = isRecord      ? DEFEAT_LINES.record
+             : points === 0  ? DEFEAT_LINES.nothing
+             : DEFEAT_LINES[cause] || DEFEAT_LINES.wall;
+  return pool[Math.min(pool.length - 1, Math.floor(roll * pool.length))];
 }
 
 // You crossed a threshold you had never crossed. Rare - perhaps once in
