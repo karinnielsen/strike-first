@@ -130,7 +130,7 @@ globalThis.game = {
   COLS, ROWS, CELL, VERSION,
   EGG_POINTS, MOUSE_POINTS, ROTTEN_POINTS, EGG_GROWTH, MOUSE_GROWTH,
   MOUSE_LIFE, ROTTEN_LIFE, WARNING_MOVES, QUEASY_MOVES,
-  LEVELS, REACH_BUDGET, TURN_QUEUE_MAX,
+  LEVELS, REACH_BUDGET, TURN_QUEUE_MAX, SWIPE_MIN, swipeDirection, queueTurn,
   update, reset, isOccupied, stepDelay, mixColour, KEYS, addScore, queasiness,
   levelFor, reachableSquare,
   BELTS, beltFor, promotionFor,
@@ -564,6 +564,48 @@ describe('input', () => {
     game.update();
     is(game.turnQueue, [], 'queue');
     is(game.direction, {x: 0, y: -1}, 'direction');
+  });
+});
+
+
+describe('swipes - touch steering, see UNR-89', () => {
+  const min = game.SWIPE_MIN;
+
+  test('a finger that has barely moved is not a swipe', () => {
+    is(game.swipeDirection(min - 1, 0, min), null, 'short horizontal');
+    is(game.swipeDirection(0, -(min - 1), min), null, 'short vertical');
+    is(game.swipeDirection(0, 0, min), null, 'no movement');
+  });
+
+  test('each of the four directions', () => {
+    is(game.swipeDirection(min, 0, min),  {x:  1, y:  0}, 'right');
+    is(game.swipeDirection(-min, 0, min), {x: -1, y:  0}, 'left');
+    is(game.swipeDirection(0, min, min),  {x:  0, y:  1}, 'down - screen y grows downwards, like the grid');
+    is(game.swipeDirection(0, -min, min), {x:  0, y: -1}, 'up');
+  });
+
+  test('a diagonal swipe goes the way it was mostly going', () => {
+    is(game.swipeDirection(40, -15, min), {x: 1, y: 0}, 'mostly right');
+    is(game.swipeDirection(-10, -35, min), {x: 0, y: -1}, 'mostly up');
+  });
+
+  // A swipe must never be able to do something a key press can't. The
+  // rules live in queueTurn, and both inputs go through it.
+  test('a swipe obeys the same rules as a key', () => {
+    freshGame();                                         // heading right
+    game.queueTurn(game.swipeDirection(-min, 0, min));   // straight back
+    is(game.turnQueue, [], 'U-turn refused');
+
+    game.queueTurn(game.swipeDirection(0, -min, min));   // up
+    game.queueTurn(game.swipeDirection(-min, 0, min));   // then left
+    is(game.turnQueue, [{x: 0, y: -1}, {x: -1, y: 0}], 'corner in one stroke');
+  });
+
+  test('swiping does nothing unless the game is playing', () => {
+    freshGame();
+    game.phase = 'paused';
+    game.queueTurn(game.swipeDirection(0, -min, min));
+    is(game.turnQueue, [], 'queue');
   });
 });
 

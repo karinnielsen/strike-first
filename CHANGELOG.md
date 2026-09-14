@@ -17,6 +17,11 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 ## [Unreleased]
 
 ### Added
+- **Touch controls, so it plays on a tablet.** Swipe on the board to steer;
+  the turn lands while your finger is still moving, and one stroke can round
+  a corner. A mercy button sits under the crest, never on the board. Swipes
+  obey exactly the same rules as keys. Touch screens get instructions that
+  say swipe rather than naming keys they don't have.
 - **A tab icon.** The cobra's hood from the crest, cropped close so it still
   reads as a hood at sixteen pixels. Also the home-screen icon on a tablet.
 - **A link preview.** Pasting the link somewhere shows the crest and a line

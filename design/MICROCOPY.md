@@ -194,12 +194,16 @@ The complete inventory, so nothing drifts unnoticed.
 | `Strike First` — wordmark, page title | — |
 | `Strike hard. No mercy.` — start overlay | Dojo |
 | `arrows or wasd to move` — start overlay | Utility |
+| `swipe to move` — start overlay, touch screens | Utility |
 | `Enter the dojo` — start button | Dojo |
 | `MERCY` / `Press space to fight on` / `Continue` — pause | Dojo |
+| `Tap continue to fight on` — pause, touch screens | Dojo |
 | `DEFEATED` / a defeat line / `Again` — defeat | Dojo |
 | `<BELT> BELT` — promotion announcement | Dojo |
 | `score` `level` `hi-score` `belt` — header labels | Utility |
 | `arrows / wasd · space = mercy · r = restart` — footer | Utility |
+| `swipe to move · ❚❚ = mercy` — footer, touch screens | Utility |
+| `mercy` — the touch pause button's accessible name | Utility |
 | Belt names — header and promotion | — |
 
 Sixteen defeat lines live in `DEFEAT_LINES` in `index.html`, grouped by how you

@@ -13,6 +13,13 @@ Open `index.html` in any browser.
 - **Space** to pause — the game calls it mercy
 - **R** to restart
 
+On a tablet or any touch screen:
+
+- **Swipe on the board** to turn. The turn happens as your finger moves, and
+  right-then-up in one unbroken stroke rounds a corner
+- **The ❚❚ button** under the crest for mercy
+- Tap the button on the board to start, continue or go again
+
 The board is 21×21 squares, drawn at 30px a square. The grid is the game; the
 cell size is only how large it is drawn.
 
@@ -105,9 +112,9 @@ No framework and no dependencies, same as the game. The harness reads
 `index.html`, pulls the inline script out and runs it against a stubbed
 browser, so the game stays a single file with nothing to install.
 
-91 tests, covering the grid, the speed curve, collisions, growth, scoring, the
-visitor countdown and the input rules. They cannot tell you whether the game is
-*fun* — that still needs playing.
+97 tests, covering the grid, the speed curve, collisions, growth, scoring, the
+visitor countdown and the input rules for keys and swipes. They cannot tell you
+whether the game is *fun* — that still needs playing.
 
 Needs Node 15 or newer.
 
