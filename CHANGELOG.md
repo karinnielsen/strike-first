@@ -16,6 +16,12 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+## [0.4.3] — 2026-09-14
+
+Losing gets a moment. The snake's last mistake plays out on the board before
+the verdict, and the verdict knows how close you came. Nothing plays
+differently, so it is a patch.
+
 ### Added
 - **A defeat sequence.** About a second on the board before the verdict: the
   impact holds still, yellow sparks fly from the point of contact, the snake
