@@ -19,17 +19,15 @@ Repository: `karinnielsen/strike-first` on GitHub, default branch `main`.
 | This spec | `design/ASSET-BRIEF.md` |
 | The game — all of it | `index.html` |
 | Colour palette | `index.html`, the `:root` block at the top of `<style>` |
-| Wordmark and fire gradient | `index.html`, the `h1` rules below it |
+| Wordmark — the cobra crest | `index.html`, the inline `<svg>` in `h1.crest` |
 | Board geometry — `CELL`, `COLS`, `ROWS` | `index.html`, top of the `<script>` |
-| Balance constants | `index.html`, same block |
+| Balance constants | `index.html`, section 2 of the `<script>` |
 | How to work on the project | `CLAUDE.md` |
 | Version history | `CHANGELOG.md` |
 | Roadmap, design principles, open questions | The Linear project, linked from `CLAUDE.md` |
 
-**The repository is private,** so a link to it resolves only for someone who has
-been granted access. If the tool doing the drawing has repo access, work from
-the files directly. If it does not, paste the contents of this spec in instead —
-a raw file URL will not load for it.
+If the tool doing the drawing can read GitHub, work from the files directly. If
+it cannot, paste the contents of this spec in instead.
 
 If you can read the repo, `index.html` is the source of truth for any colour or
 dimension. This spec is a copy of those values and can go stale.
@@ -60,7 +58,8 @@ not the deliverable.
 ## 2. Size budget
 
 **Under 20KB of SVG source per asset, target under 10KB.** The entire game is
-currently ~37KB.
+currently ~125KB, and the crest — the one asset allowed over budget, see
+`design/title-crest/README.md` — is a large share of it.
 
 ## 3. Colour
 
@@ -73,17 +72,14 @@ Use the existing palette. Values are the CSS custom properties in `index.html`.
 | `--line` | `#2a2a30` | Grid lines, borders |
 | `--text` | `#ece6da` | Body text |
 | `--dim` | `#7b7480` | Secondary text |
-| `--gold` | `#e8b53a` | Rank, reward |
-| `--red` | `#d3262f` | Gameplay red |
+| `--yellow` | `#ffff00` | Reward, and the one thing the screen is asking you to do. Never rank |
+| `--yellow-deep` | `#7a7a00` | The shadow side of yellow |
+| `--red` | `#d3262f` | Points lost |
 | `--brand` | `#ee3524` | The wordmark only |
 | `--bone` | `#e8e2d6` | The snake |
 
-The wordmark uses a fire gradient — the one place more than two colours appear
-together. An asset locked up with the wordmark may use it; nothing else should.
-
-```
-linear-gradient(180deg, #ee3524 16%, #f4761c 55%, #f7c948 93%)
-```
+Rank is carried by the belt colours, which live in `BELTS` in the script rather
+than in this table. Those seven hues are effectively the whole colour budget.
 
 ### Adding a hue requires approval
 
@@ -105,8 +101,8 @@ bone `#ece6da`. Artwork that only works on a light background will be rejected.
 
 ## 4. Typography
 
-One typeface appears in the game: **Permanent Marker**, used for the wordmark
-and nothing else. Everything else is system monospace.
+No display typeface appears in the game. The wordmark's lettering is outlined
+into the crest artwork, and everything else is system monospace.
 
 Assets should avoid lettering. Where lettering is unavoidable it must be
 outlined paths, per section 1.
@@ -115,15 +111,17 @@ outlined paths, per section 1.
 
 | Thing | Size |
 | -- | -- |
-| Play area | 420 × 420 px |
+| Play area | 630 × 630 px, shrinking to no less than 420 × 420 on short screens |
 | Grid | 21 × 21 cells |
-| One cell | 20 × 20 px |
-| Wordmark | 68px, skewed −11°, small caps |
+| One cell | 30 × 30 px, and never below 20 × 20 |
+| Authoring box for board art | 20 × 20, scaled up at draw time by `CELL_SCALE` |
+| Wordmark | The cobra crest, inline SVG, sized in CSS |
 
-**Board assets must read at 20 × 20 px.** At that size only silhouette and one
-strong colour break survive. Verify at actual size, not zoomed.
+**Board assets must read at 20 × 20 px,** the smallest a cell is ever drawn. At
+that size only silhouette and one strong colour break survive. Verify at actual
+size, not zoomed.
 
-**Page assets** — anything outside the 420 × 420 board — have room for detail.
+**Page assets** — anything outside the board — have room for detail.
 
 ### Nothing may obscure the gameplay canvas
 
@@ -143,8 +141,7 @@ Every asset is checked before it ships:
 
 ## 7. Assets drawn on the board are different
 
-**Read this before drawing anything that appears inside the 420 x 420 play
-area.** It overrides parts of section 1.
+**Read this before drawing anything that appears inside the play area.** It overrides parts of section 1.
 
 The board is an HTML `<canvas>`, painted with drawing commands. It is not
 inline SVG and nothing in it is a DOM element. An SVG file cannot simply be
@@ -165,7 +162,7 @@ a short list of path strings, each filled with one flat colour.
 
 | Requirement | Why |
 | -- | -- |
-| **`viewBox="0 0 20 20"`**, artwork centred, drawn to fill it | One grid cell is exactly 20 x 20 px |
+| **`viewBox="0 0 20 20"`**, artwork centred, drawn to fill it | The authoring box. It is one cell, scaled to whatever size the cell is drawn |
 | **Flat fills only.** No gradients, no filters, no blend modes, no opacity on a gradient stop | `Path2D` carries geometry only. Fills are set in code, one at a time |
 | **Each colour is its own `<path>`** with a plain `fill="#rrggbb"` | Every distinct fill becomes one `fillStyle` + one `fill()` in code |
 | **Under 12 paths per asset**, fewer is better | Each path is a draw call, sixty times a second |
@@ -191,13 +188,13 @@ is necessary and not sufficient.
 
 ### The head is the exception to 20 x 20
 
-The snake's hood is 26px wide and its tongue reaches 18px ahead of the head
-centre. They have never fitted inside one cell and they are not going to.
+Measured in the 20px authoring box, the snake's hood is 26 units wide and its
+tongue reaches 18 units ahead of the head centre. They have never fitted inside one cell and they are not going to.
 
 So head artwork is authored in a 20px box and **normalised by 1/1.8 about the
 pivot `(10,10)`**, then scaled back up at draw time: `translate(cx, cy)`,
 rotate for direction, `scale(1.8, 1.8)`, `translate(-10, -10)`. That restores
-a 14 x 14px head with a 15 x 26px hood.
+a 14 x 14 head with a 15 x 26 hood, in the same units.
 
 Rendering the head as a plain 20px sprite shrinks it and is wrong. This
 adapter exists because the 20px rule and the approved head dimensions
@@ -230,104 +227,34 @@ runtime and any baked-in shading will fight it.
 player's rank. So the body block must be a single recolourable shape. A block
 with two tones in it cannot wear a belt.
 
-## 7a. EXPERIMENT: pixel art for the board
+## 7a. Pixel art for the board — tried, not chosen
 
-**Status: being tried, 8 September. Not yet decided.** If this wins it replaces
-section 7 entirely for board assets. Section 7 still governs page assets like
-the crest either way.
+**Decided 9 September: vector won.** Kept here as a record of the experiment,
+not as a requirement. The complete pixel-art alternative lives on the branch
+`assets/pixel-sprites`.
 
-### Why
+### What was tried
 
-The game is a 1984 reference and the board is a 21 x 21 grid of 20px cells.
-Vector artwork was integrated and, even scaled up, the rewards still did not
-read at cell size — the detail that makes the artwork good is exactly what
-twenty pixels cannot hold. Pixel art is the discipline invented for that
-constraint rather than one fighting it.
+Vector artwork did not read at 20px cells. Pixel art is the discipline invented
+for exactly that constraint, so a full set was commissioned to the same brief:
+authored at 10 x 10, rendered at 2x into the cell, delivered as a palette plus a
+grid of characters so it could still be inlined without a build step.
 
-The vector attempt is preserved on the branch `assets/vector-sprites` so the
-two can be compared rather than remembered.
+### Why it lost
 
-### Resolution — the decision everything else follows from
+The problem was never the style, it was the cell. Dropping phones from the
+project allowed 30px cells on the same 21 x 21 grid, and at 30px the vector
+artwork became legible immediately.
 
-**Author at 10 x 10. It is rendered at 2x into the 20px cell.**
+At that point pixel art's own constraint started to cost: it has to scale by
+whole numbers or it turns to mush, and a board that shrinks to fit short screens
+cannot promise a whole-number scale. Vector has no such limit.
 
-One art pixel becomes a 2 x 2 block on screen. This is the whole point: at
-20 x 20 with one art pixel per screen pixel it is not pixel art, it is a small
-picture with the same legibility problem we already have. Chunky pixels are
-what make it read, and they are what the era actually looked like.
+### What carries over
 
-Ten by ten is not much room. That is the constraint doing its job — it forces
-silhouette and one or two internal details, which is all that ever survived
-anyway.
-
-### Format — it still has to inline
-
-The game is one self-contained HTML file with no build step and no asset
-pipeline, so **PNG sprite sheets are unusable**. Deliver each sprite as a
-palette and a grid of characters:
-
-```js
-egg: {
-  palette: { '.': null, 's': '#f4e8cf', 'r': '#c9a227', 'h': '#ffffff' },
-  rows: [
-    '...rr...',
-    '..rssr..',
-    '.rshssr.',
-    ...
-  ]
-}
-```
-
-* `.` is transparent, always
-* One character per colour, chosen to hint at what it is
-* Rows are equal length, and there are as many rows as columns
-* This diffs cleanly in git, is readable by a human, is editable by hand, and
-  is smaller than any image
-
-### Colour
-
-**Four to six colours per sprite, including transparent.** Pixel art reads by
-restraint; a gradient dithered across ten shades at this size is mud.
-
-The palette in section 3 still applies, and so does the rule about raising a
-new hue — with one clarification learned the hard way: **also raise an existing
-palette colour being used for a new meaning.** Gold means rank and reward here,
-so gold used for something else is a change worth flagging even though the hex
-is already in the file.
-
-### What each sprite needs
-
-| Sprite | Notes |
-| --- | --- |
-| Egg | Must not read as a snake segment. The snake is bone and is most of what moves; contrast against the background is necessary and not sufficient |
-| Rotten egg | **The largest thing on the board.** Keeps a non-colour cue — the tilt and the crack — so it reads as wrong without relying on green |
-| Mouse | Must not be confusable with either egg. Faces the way it travels; it is mirrored in code, so draw it facing right only |
-| Snake head | See below |
-| Snake body | One block, single colour, recoloured at runtime. One segment wears the belt |
-| Snake tail | The pointed tip. Rotated in code to trail the body |
-
-### The snake head
-
-**Rotation is free here.** The head only ever faces four directions, and a 90°
-rotation of a pixel grid is lossless — so draw it **facing right only** and the
-code will turn it. Four separate sprites are not needed.
-
-The head still needs to arrive as **separable parts**, for the same reasons as
-before: the eyes blink, become crosses on defeat, and the tongue flicks and
-holds out while queasy. Deliver `head`, `hood`, `eyes-open`, `eyes-blink`,
-`eyes-defeated`, `tongue`, `markings` as separate grids sharing one coordinate
-space.
-
-The hood may exceed the cell. It always has — it is 26px wide today, and a
-cobra that fits neatly inside its own square does not look like a cobra. Say
-what box you have drawn it in and the code will scale to match.
-
-### Motion
-
-The head shudders after a rotten egg. **That shudder will be quantised to whole
-art pixels** rather than moving smoothly, because sub-pixel movement destroys a
-pixel grid. Nothing to do about it in the artwork; noted so the movement is not
-a surprise.
+One rule from the experiment applies to everything: **raise an existing palette
+colour being used for a new meaning,** not only a new hue. A colour already in
+the file can still collide with what it means elsewhere.
 
 ## 8. Per-asset requirements
 
@@ -335,7 +262,9 @@ Design direction is supplied separately. These are the functional targets.
 
 ### Cobra crest for the title lockup — UNR-86
 
-* Locks up with the wordmark; may use the fire gradient
+**Delivered, shipped in v0.3.1.** See `design/title-crest/`.
+
+* Locks up with the wordmark, lettering outlined into the artwork
 * Drawn at roughly 300–400px wide, must survive scaling down
 * Page asset, not a board asset
 
@@ -352,13 +281,16 @@ Design direction is supplied separately. These are the functional targets.
 
 ### Board sprites — egg, rotten egg, mouse, snake head, snake body
 
+**Delivered, shipped in v0.3.1** as vector artwork. The paths are inlined in
+`SPRITE` in the script.
+
 * **Section 7 applies to all of these** — they are canvas assets, not DOM SVG
 * `viewBox="0 0 20 20"`, flat fills, one path per colour
 * The egg and the rotten egg should **rhyme**: same silhouette family, so the
   rotten one reads as a bad version of a thing you know rather than a new
   object. The current rotten egg is tipped over and cracked, which is what
   tells you it is wrong before the colour does — keep a non-colour signal
-* The mouse must not be confusable with either egg at 20px
+* The mouse must not be confusable with either egg at cell size
 * The snake head and body: see "The snake is not a picture" above
 
 ## 9. How to deliver
