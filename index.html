@@ -1232,7 +1232,7 @@ function draw() {
   ctx.fillStyle = '#1e1e24';
   for (let x = 0; x < COLS; x++) {
     for (let y = 0; y < ROWS; y++) {
-      const lit = arrivalDot(arrived, x, y, ARRIVAL);
+      const lit = arrivalDot(arrived, x, y);
       if (lit <= 0) continue;
       ctx.globalAlpha = lit;
       ctx.fillRect(x * CELL + CELL / 2 - 1, y * CELL + CELL / 2 - 1, 2, 2);
@@ -1241,7 +1241,7 @@ function draw() {
   ctx.globalAlpha = 1;
 
   // The egg, with a gentle pulse driven by the clock.
-  const pulse = (1 + Math.sin(Date.now() / 200) * 0.10) * arrivalEgg(arrived, ARRIVAL);
+  const pulse = (1 + Math.sin(Date.now() / 200) * 0.10) * arrivalEgg(arrived);
   if (pulse > 0) drawEgg(egg.x * CELL + CELL / 2, egg.y * CELL + CELL / 2, pulse);
 
   if (visitor) {
@@ -1510,10 +1510,10 @@ function drawMouse() {
 // ---- the snake --------------------------------------------------------
 // Drawn tail-first, so the head always ends up painted on top.
 function drawSnake() {
-  // On arrival the snake may still be sliding in from the wall, or not
-  // all there yet. Off the board is simply not drawn.
+  // On arrival the snake may still be sliding in from the wall. Off the
+  // board is simply not drawn.
   const arrived = arrivalElapsed();
-  const shift   = arrivalShift(arrived, ARRIVAL);
+  const shift   = arrivalShift(arrived);
 
   for (let i = snake.length - 1; i >= 1; i--) {
     if (snake[i].x - shift < 0) continue;
@@ -1523,9 +1523,7 @@ function drawSnake() {
     // which is what turns a row of identical blocks into a real tail.
     const t = i / (snake.length - 1);
 
-    const size  = ((CELL - 2) - t * 7)  // segments shrink toward the tip
-                * arrivalSegment(arrived, i, snake.length, ARRIVAL);
-    if (size <= 0) continue;
+    const size  = (CELL - 2) - t * 7;   // segments shrink toward the tip
     const inset = (CELL - size) / 2;    // keeps each one centred in its square
 
     const radius = size / 3;
@@ -1560,7 +1558,7 @@ function drawSnake() {
     );
   }
 
-  if (snake[0].x - shift >= 0) drawHead(shift, arrivalSegment(arrived, 0, snake.length, ARRIVAL));
+  if (snake[0].x - shift >= 0) drawHead(shift);
 }
 
 // The pointed tip. The artwork points LEFT, so it is turned to face away
@@ -1591,9 +1589,8 @@ function drawTailTip(i, size, shift) {
 
 // The head is where all the personality lives: it faces the way you're
 // travelling, blinks, flicks its tongue, and gets X eyes when you crash.
-function drawHead(shift = 0, grown = 1) {
+function drawHead(shift = 0) {
   const head = snake[0];
-  if (grown <= 0) return;
 
   // The whole head is painted around cx/cy, so shifting them shudders the
   // hood, eyes, markings and tongue together as one thing.
@@ -1617,7 +1614,7 @@ function drawHead(shift = 0, grown = 1) {
   // Before a run, the opening bow.
   const pose = bowPose(bowElapsed(), REDUCED_MOTION.matches);
   const back = (defeatRecoil(ms, REDUCED_MOTION.matches) + pose.back) * CELL;
-  const bow  = defeatBow(ms, REDUCED_MOTION.matches) * pose.scale * grown;
+  const bow  = defeatBow(ms, REDUCED_MOTION.matches) * pose.scale;
 
   const cx = (head.x - shift) * CELL + CELL / 2 + shake.x - fwd.x * back;
   const cy = head.y * CELL + CELL / 2 + shake.y - fwd.y * back;
@@ -1864,70 +1861,51 @@ function bowPose(ms, reduced) {
 // ---- arrival, drawn ---------------------------------------------------
 // What happens between opening the page and the start screen, once per
 // session. It says what this is before a word is read - a cobra, a dojo -
-// and gets out of the way. Every beat ends on the start screen exactly as
-// it is without one, so any key, click or tap jumps to the last frame and
-// nothing can break. See UNR-103.
+// and gets out of the way. It ends on the start screen exactly as it is
+// without one, so any key, click or tap jumps to the last frame and nothing
+// can break. See UNR-103.
 //
-// Candidates, compared side by side in design/arrival-options.html:
-//   'none'    - today: the page is simply there
-//   'crest'   - the crest settles into place and flicks its tongue; the
-//               board is there from the start
-//   'wake'    - the crest, then the mat's grid lights outward from the
-//               spawn, the snake appears tail first, the egg, the menu
-//   'slither' - the crest and the grid, then the snake slides in from the
-//               left wall one cell at a time, by the board's own rules
-const ARRIVAL = 'wake';
+// The crest settles and flicks its tongue, the mat's grid lights outward
+// from the spawn, and the snake slides in from the left wall one cell at a
+// time, by the board's own rules. Then the egg, then the menu. Chosen 14
+// September over no arrival, the crest alone, and the snake appearing in
+// place tail first. Those are kept on the branch options/arrival, with
+// design/arrival-options.html to compare.
+const ARRIVAL_MS         = 1400;   // start to menu
 const ARRIVAL_CREST_MS   = 700;
 const ARRIVAL_CREST_RISE = 10;     // px the crest settles down through
-const ARRIVAL_BOARD_MS   = 1400;   // the board candidates, start to menu
-const ARRIVAL_ENTRY      = 11;     // cells left the slither starts: head just off the wall
-
-function arrivalMs(style) {
-  if (style === 'crest') return ARRIVAL_CREST_MS;
-  if (style === 'wake' || style === 'slither') return ARRIVAL_BOARD_MS;
-  return 0;
-}
+const ARRIVAL_ENTRY      = 11;     // cells left the snake starts: head just off the wall
 
 function clamp01(t) { return Math.min(1, Math.max(0, t)); }
 
 // Everything below takes how far into arrival we are and returns a pose,
-// where 1 (or 0 for a shift) is the start screen. Past the end, or with no
-// arrival running (ms is Infinity), they all return the start screen.
-function arrivalWakes(ms, style) {
-  return ms < ARRIVAL_BOARD_MS && (style === 'wake' || style === 'slither');
-}
-
-function arrivalCrest(ms, style) {
-  if (style === 'none' || !(ms < ARRIVAL_CREST_MS)) return { opacity: 1, rise: 0 };
+// where 1 (or 0 for the shift) is the start screen. Past the end, or with
+// no arrival running (ms is Infinity), they all return the start screen.
+function arrivalCrest(ms) {
+  if (!(ms < ARRIVAL_CREST_MS)) return { opacity: 1, rise: 0 };
   const t = easeOut(ms / ARRIVAL_CREST_MS);
   return { opacity: t, rise: ARRIVAL_CREST_RISE * (1 - t) };
 }
 
 // A grid dot lights once the ring spreading from the spawn reaches it.
-function arrivalDot(ms, x, y, style) {
-  if (!arrivalWakes(ms, style)) return 1;
+function arrivalDot(ms, x, y) {
+  if (!(ms < ARRIVAL_MS)) return 1;
   const d = Math.hypot(x - Math.floor(COLS / 2), y - Math.floor(ROWS / 2));
   return clamp01((ms - 250 - d * 35) / 150);
 }
 
-// Segment i (0 the head) of len: in 'wake' they arrive tail first.
-function arrivalSegment(ms, i, len, style) {
-  if (!arrivalWakes(ms, style) || style !== 'wake') return 1;
-  return easeOut((ms - 750 - (len - 1 - i) * 90) / 140);
-}
-
-// How many cells left of its spawn the slithering snake still is.
-function arrivalShift(ms, style) {
-  if (!arrivalWakes(ms, style) || style !== 'slither') return 0;
+// How many cells left of its spawn the snake still is.
+function arrivalShift(ms) {
+  if (!(ms < ARRIVAL_MS)) return 0;
   return Math.min(ARRIVAL_ENTRY, Math.max(0, ARRIVAL_ENTRY - Math.floor((ms - 600) / 45)));
 }
 
-function arrivalEgg(ms, style) {
-  return arrivalWakes(ms, style) ? easeOut((ms - 1050) / 200) : 1;
+function arrivalEgg(ms) {
+  return ms < ARRIVAL_MS ? easeOut((ms - 1050) / 200) : 1;
 }
 
-function arrivalOverlay(ms, style) {
-  return arrivalWakes(ms, style) ? clamp01((ms - 1150) / 250) : 1;
+function arrivalOverlay(ms) {
+  return ms < ARRIVAL_MS ? clamp01((ms - 1150) / 250) : 1;
 }
 
 // The flash at the point of contact: short yellow rays bursting from the
@@ -2021,7 +1999,7 @@ function loop() {
   clearTimeout(loopTimer);
   // A hidden tab stops animation frames, so the bow can end here too.
   if (phase === 'bowing' && bowElapsed() >= BOW_MS) phase = 'playing';
-  if (arrivalElapsed() >= arrivalMs(ARRIVAL)) endArrival();
+  if (arrivalElapsed() >= ARRIVAL_MS) endArrival();
   if (phase === 'playing') update();
   // A hidden tab stops animation frames; this makes sure the verdict
   // still arrives rather than waiting for the tab to come back.
@@ -2600,7 +2578,7 @@ function arrivalDue() {
 }
 
 function startArrival() {
-  if (ARRIVAL === 'none' || REDUCED_MOTION.matches || !arrivalDue()) return;
+  if (REDUCED_MOTION.matches || !arrivalDue()) return;
   try { sessionStorage.setItem('strikeFirstArrived', '1'); } catch (e) {}
   arrivalStart = performance.now();
   showArrival(0);
@@ -2609,10 +2587,10 @@ function startArrival() {
 
 // The DOM half: the crest and the menu. The board is draw()'s.
 function showArrival(ms) {
-  const crest = arrivalCrest(ms, ARRIVAL);
+  const crest = arrivalCrest(ms);
   crestEl.style.opacity   = crest.opacity;
   crestEl.style.transform = `translateY(${-crest.rise}px)`;
-  overlay.style.opacity   = arrivalOverlay(ms, ARRIVAL);
+  overlay.style.opacity   = arrivalOverlay(ms);
 }
 
 function arrivalFrame() {
@@ -2623,7 +2601,7 @@ function arrivalFrame() {
     arrivalFlicked = true;
     flickTongue(2);
   }
-  if (ms >= arrivalMs(ARRIVAL)) return endArrival();
+  if (ms >= ARRIVAL_MS) return endArrival();
   showArrival(ms);
   draw();
   requestAnimationFrame(arrivalFrame);
@@ -2650,7 +2628,7 @@ phase = 'ready';
 showBestBelt();
 startArrival();
 loop();
-setTimeout(idleTongue, TONGUE_PAUSE_MIN + (arrivalStart === null ? 0 : arrivalMs(ARRIVAL)));
+setTimeout(idleTongue, TONGUE_PAUSE_MIN + (arrivalStart === null ? 0 : ARRIVAL_MS));
 </script>
 
 </body>
