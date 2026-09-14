@@ -16,6 +16,25 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-09-14
+
+Plays anywhere. The game has a link: open it in a browser on a desktop or a
+tablet and play, with nothing to download or send around. This ships the
+milestone that touch controls, the fitted layout and the link preview in
+v0.3.2 were building towards. The game itself plays exactly as it did.
+
+### Added
+- **A playable link** at <https://karinnielsen.github.io/strike-first/>. The
+  link preview, tab icon and home-screen icon from v0.3.2 now have somewhere
+  to point.
+- **An MIT licence** for the code, and a note that this is an unofficial,
+  non-commercial fan homage.
+
+### Changed
+- **The repository is public.** The README now opens with the link and a
+  picture of the game, lists what is coming next, and says where the process
+  lives: the commit history, `CLAUDE.md` and `design/`.
+
 ## [0.3.2] — 2026-09-14
 
 It plays on a tablet, and the whole board fits on the screen you have.
@@ -230,7 +249,8 @@ First playable version.
   gradient.
 - **The version number** in the footer.
 
-[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/karinnielsen/strike-first/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/karinnielsen/strike-first/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/karinnielsen/strike-first/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/karinnielsen/strike-first/compare/v0.2.0...v0.3.0
