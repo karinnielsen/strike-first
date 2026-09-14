@@ -16,6 +16,27 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+## [0.4.2] — 2026-09-14
+
+The game makes noise. Arcade sound effects for everything that happens in a
+run, and a way to turn them off that is remembered. Nothing plays
+differently, so it is a patch.
+
+### Added
+- **Sound effects** in an 80s/90s arcade register, generated in the page from
+  square and pulse waves and noise, so the game is still one file: a blip for
+  an egg, a squeak and ding for a mouse, a burp for a rotten egg, arpeggiated
+  chords for a promotion (in place of the food's sound, never over it) and a
+  two-octave fall for defeat. Nothing plays until a game has been started.
+  The candidates they were picked from are in `design/sound-options.html`.
+- **Mute.** Press M, or use the sound on / sound off button under the
+  overlay's main button, which is also how a tablet mutes: mercy brings the
+  overlay up mid-run. The choice is remembered.
+
+### Changed
+- **The keyboard hint wraps between controls,** never inside one. In the
+  side-by-side layout it used to split "r" from "= restart".
+
 ## [0.4.1] — 2026-09-14
 
 The crest comes alive. Between runs the cobra flicks its tongue, the way a
