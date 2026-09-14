@@ -17,11 +17,19 @@ On a tablet or any touch screen:
 
 - **Swipe on the board** to turn. The turn happens as your finger moves, and
   right-then-up in one unbroken stroke rounds a corner
-- **The ❚❚ button** under the crest for mercy
+- **The ❚❚ button** under the crest for mercy — or at the foot of the scores,
+  when they sit beside the board
 - Tap the button on the board to start, continue or go again
 
 The board is 21×21 squares, drawn at 30px a square. The grid is the game; the
 cell size is only how large it is drawn.
+
+The whole board fits on screen on an iPad in either orientation and in
+ordinary laptop and desktop windows. In a tall window the crest, scores and
+board stack. In a short or landscape one — a landscape iPad, a laptop, a
+1080p browser — the crest sits on top and the scores become a list beside the
+board. When there isn't room for the board at full size, the crest shrinks
+first and then the board, but never below 20px a square.
 
 ## What's in it
 

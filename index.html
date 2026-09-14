@@ -42,7 +42,13 @@
 
   body {
     margin: 0;
+    /* iPad Safari's 100vh is the height with its toolbar hidden, up to
+       70pt more than you can see, so centring against it pushed the foot
+       of the page off the bottom and made a page that fits scroll. svh is
+       the height you actually get, and it holds still when the toolbar
+       comes and goes. vh first, for browsers without svh. */
     min-height: 100vh;
+    min-height: 100svh;
     display: grid;
     place-items: center;
     background: var(--bg);
@@ -216,18 +222,20 @@
   canvas {
     display: block;
     background: var(--panel);
-    border: 1px solid var(--line);
+    /* Lighter than --line: against the mat, a --line border left the board
+       with no visible edge. */
+    border: 1px solid #4b4652;
     border-radius: 10px;
   }
 
   .overlay {
     position: absolute;
-    inset: 0;                              /* fill the whole stage */
+    inset: 1px;          /* inside the border, which it used to darken away */
     display: grid;
     place-content: center;
     gap: 10px;
     text-align: center;
-    border-radius: 10px;
+    border-radius: 9px;
     background: rgba(9, 9, 11, 0.9);
   }
 
@@ -346,6 +354,109 @@
     font-size: 10px;
     letter-spacing: 1px;
     color: #4b4652;
+  }
+
+  /* SHORT WINDOWS: CREST ON TOP, BOARD AND STATS SIDE BY SIDE.
+     Stacked, the page is 971px tall, so a landscape iPad (about 690 once
+     Safari has its share), a laptop window and even a 1080p browser cut
+     off the bottom of the board. Whenever the stacked page doesn't fit,
+     the crest stays centred over everything, the board sits under it on
+     the left, and the stats get a column of their own on the right as a
+     list with room in it.
+
+     Chosen by the space available, not by the device: a short laptop
+     window and a landscape iPad are the same problem. Touch only decides
+     input - the swipe copy and the mercy button. Tall windows keep the
+     stacked page.
+
+     When space runs short the crest gives way first, the board takes
+     what is left, and nothing shrinks the stats. */
+  @media (max-height: 970px) and (min-aspect-ratio: 1/1) and (min-width: 800px) {
+    .wrap {
+      /* Full size while the board can still have all 632px under it,
+         then shrinking with the window down to 250px. Its height is 0.36
+         of its width, and 680px is the board plus the padding and gap. */
+      --crest-w: clamp(250px, calc((100svh - 680px) / 0.36), 400px);
+      --stats-w: 240px;
+      display: grid;
+      grid-template-columns: auto var(--stats-w);
+      grid-template-rows: auto 1fr auto auto;
+      column-gap: 48px;
+      padding: 16px 24px;
+    }
+
+    /* The header's two halves go to different places, so it steps aside
+       and lets them be grid items in their own right. */
+    header { display: contents; }
+
+    h1.crest {
+      grid-column: 1 / -1;
+      grid-row: 1;
+      margin: 0 0 16px;          /* the +N no longer rises this way */
+    }
+    h1.crest svg { width: var(--crest-w); }
+
+    /* The board takes whatever height the crest leaves, up to full size.
+       On an iPad Air that is about 555px, a 26px cell. It never goes below
+       420px, 20px cells, the size the artwork was first drawn for: a
+       window shorter than that scrolls rather than shrinking the board
+       past where it reads. Swipes steer by distance moved, so a smaller
+       board changes nothing about input. */
+    .stage { grid-column: 1; grid-row: 2 / -1; }
+
+    canvas {
+      width: clamp(420px,
+                   min(calc(100svh - 48px - var(--crest-w) * 0.36),
+                       calc(100vw - 384px)),   /* padding, gap, stats, a scrollbar */
+                   632px);
+      height: auto;
+    }
+
+    /* THE STATS AS A LIST. One thing per row, label left and value right,
+       and the gap between the two groups is what still says live versus
+       standing. */
+    .scores {
+      grid-column: 2;
+      grid-row: 2;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 36px;
+      padding-top: 52px;         /* room for the +N to rise out of the top row */
+    }
+    .scores .group { flex-direction: column; gap: 0; }
+    .scores .group span {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .scores b { font-size: 20px; }
+    .scores .rank { align-items: center; }
+    .rank .belt-swatch { margin-left: auto; }
+
+    /* The value sits at the right-hand end of its row, so the +N rises
+       from there rather than from the middle of the row. */
+    .score-pop { left: auto; right: 0; animation-name: float-up-right; }
+
+    /* Mercy lives at the foot of the list, full width, where a thumb
+       already is. Nothing covers the board, and it is far from the +N. */
+    .mercy-btn {
+      order: 1;
+      position: static;
+      margin-top: auto;
+      width: 100%;
+      height: 56px;
+    }
+
+    .hint    { grid-column: 2; grid-row: 3; }
+    .version { grid-column: 2; grid-row: 4; }
+  }
+
+  @keyframes float-up-right {
+    0%   { opacity: 0; transform: translateY(  6px) scale(0.8); }
+    15%  { opacity: 1; transform: translateY(  0px) scale(1.1); }
+    100% { opacity: 0; transform: translateY(-24px) scale(1);   }
   }
 </style>
 </head>
