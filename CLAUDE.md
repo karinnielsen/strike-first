@@ -303,11 +303,15 @@ ports, machines or to a published URL. That's expected, not a bug.
 twice as inline paths and rejected both times. Detailed artwork wants to be
 drawn in a vector editor and dropped in as a file. See UNR-86.
 
-**A merged *pull request* closes the issue its branch is named after.** The
-Linear integration matches `unr-90-...` to UNR-90 and marks it Done when the PR
-merges. A plain fast-forward push to `main` does *not* — that needs closing by
-hand. So: for a PR that only partly addresses an issue, use a branch name that
-doesn't reference it; and after a direct merge, close the issue yourself.
+**Linear closes issues from git in two ways, and both fire without asking.**
+A merged pull request closes the issue its branch is named after — `unr-90-...`
+closes UNR-90. And a commit pushed to `main` whose message says `Closes UNR-N`
+(or `Fixes`) closes that issue too, no PR needed: UNR-128 went Done three
+seconds after its direct-to-main commit. So a plain push with no keyword is the
+only case that needs closing by hand. For work that only partly addresses an
+issue, keep the ID out of the branch name and write `Part of UNR-N` rather
+than `Closes`. Check the status before closing anything yourself — it is often
+already Done.
 
 **Balance lives in named constants** at the top of the script. Change those
 rather than scattering numbers through the code.
