@@ -145,6 +145,8 @@ globalThis.game = {
   TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt,
   DEFEAT_LINES, defeatLine,
   SPRITE, SPRITE_SIZE, drawSprite,
+  SOUNDS, startGame,
+  get audioCtx() { return audioCtx }, set audioCtx(v) { audioCtx = v },
   get bestAtStart() { return bestAtStart }, set bestAtStart(v) { bestAtStart = v },
   get best() { return best }, set best(v) { best = v }
 };`;
@@ -982,6 +984,64 @@ describe('the crest tongue', () => {
     is(game.tongueFlickPlan(0, 1).pauseMs, game.TONGUE_PAUSE_MAX, 'pause');
     const middle = game.tongueFlickPlan(0, 0.5).pauseMs;
     is(middle > game.TONGUE_PAUSE_MIN && middle < game.TONGUE_PAUSE_MAX, true, 'in between');
+  });
+});
+
+
+// The sounds themselves are judged by ear, in design/sound-options.html.
+// What can be tested is WHICH sound fires, and when. Each one is swapped
+// for a spy that writes down its name.
+describe('sound', () => {
+  function listen(fn) {
+    const heard = [];
+    const real = Object.assign({}, game.SOUNDS);
+    for (const name in game.SOUNDS) game.SOUNDS[name] = () => heard.push(name);
+    try { fn(); } finally { Object.assign(game.SOUNDS, real); }
+    return heard;
+  }
+
+  test('nothing plays before the player has pressed anything', () => {
+    freshGame();
+    game.audioCtx = null;
+    is(listen(() => game.addScore(game.EGG_POINTS, 'egg')), [], 'heard');
+  });
+
+  // Node has no Web Audio, so starting has to be safe without it rather
+  // than taking the game down with it.
+  test('starting a game without Web Audio still starts it', () => {
+    game.audioCtx = null;
+    game.startGame();
+    is(game.phase, 'playing', 'phase');
+  });
+
+  test('each food plays its own sound', () => {
+    freshGame();
+    game.audioCtx = {};
+    game.best = 1000;
+    is(listen(() => {
+      game.addScore(game.EGG_POINTS, 'egg');
+      game.addScore(game.MOUSE_POINTS, 'mouse');
+      game.addScore(game.ROTTEN_POINTS, 'rotten');
+    }), ['egg', 'mouse', 'rotten'], 'heard');
+    game.audioCtx = null;
+  });
+
+  // Two sounds at once would be neither.
+  test('a promotion replaces the sound of the food that earned it', () => {
+    freshGame({ score: 10 });
+    game.audioCtx = {};
+    game.best = 14;
+    is(listen(() => game.addScore(game.MOUSE_POINTS, 'mouse')), ['promotion'], 'heard');
+    game.audioCtx = null;
+  });
+
+  test('defeat plays once, on the way out', () => {
+    freshGame();
+    game.audioCtx = {};
+    game.snake = [{x: 0, y: 5}, {x: 1, y: 5}, {x: 2, y: 5}];
+    game.direction = {x: -1, y: 0};
+    is(listen(() => game.update()), ['defeat'], 'heard');
+    game.audioCtx = null;
   });
 });
 

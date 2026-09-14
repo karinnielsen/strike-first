@@ -86,6 +86,14 @@ A small `+1` for an egg, a big electric-yellow `+5` for a mouse. The size
 difference is the message: you see the value before you read it. A loss is
 red and always carries its minus sign, so it never relies on colour alone.
 
+### Sound
+
+80s/90s arcade sound, generated in the page from square and pulse waves rather
+than shipped as audio files. A blip for an egg, a squeak and a ding for a
+mouse, a burp for a rotten egg, a quick run of chords for a promotion, and a
+long fall for defeat. A promotion replaces the sound of the food that earned
+it. Nothing plays until you start a game.
+
 ### The crest
 
 Between runs the cobra in the crest flicks its tongue, the way a real snake
