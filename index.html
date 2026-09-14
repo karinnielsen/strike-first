@@ -1829,7 +1829,8 @@ const TONGUE_DOUBLE    = 0.7;    // share of flicks that come as a pair
 //   'none'   - never; the crest holds still while you play
 //   'mouse'  - once when a mouse appears, the snake smelling prey
 //   'reward' - once every time you eat something worth points
-const TONGUE_IN_RUN = 'none';
+//   'sized'  - like 'reward', but twice for a mouse: the flick matches the +5
+const TONGUE_IN_RUN = 'sized';
 
 // Takes two random numbers, returns what the next idle flick looks like.
 // Pure, so the irregularity can be tested without waiting for it.
@@ -1901,6 +1902,9 @@ function watchCrest() {
   const mouse = visitor && visitor.kind === 'mouse' ? visitor : null;
   if (TONGUE_IN_RUN === 'mouse' && mouse && mouse !== tongueSawMouse) flickTongue(1, false);
   if (TONGUE_IN_RUN === 'reward' && score > tongueSawScore) flickTongue(1, false);
+  if (TONGUE_IN_RUN === 'sized' && score > tongueSawScore) {
+    flickTongue(score - tongueSawScore >= MOUSE_POINTS ? 2 : 1, false);
+  }
   tongueSawMouse = mouse;
   tongueSawScore = score;
 }
