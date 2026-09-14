@@ -260,15 +260,17 @@ ports, machines or to a published URL. That's expected, not a bug.
 twice as inline paths and rejected both times. Detailed artwork wants to be
 drawn in a vector editor and dropped in as a file. See UNR-86.
 
-**Linear closes issues from git in two ways, and both fire without asking.**
+**Linear can close issues from git, without asking — but not reliably.**
 A merged pull request closes the issue its branch is named after — `unr-90-...`
 closes UNR-90. And a commit pushed to `main` whose message says `Closes UNR-N`
-(or `Fixes`) closes that issue too, no PR needed: UNR-128 went Done three
-seconds after its direct-to-main commit. So a plain push with no keyword is the
-only case that needs closing by hand. For work that only partly addresses an
-issue, keep the ID out of the branch name and write `Part of UNR-N` rather
-than `Closes`. Check the status before closing anything yourself — it is often
-already Done.
+(or `Fixes`) *can* close that issue too, no PR needed: UNR-128 went Done three
+seconds after its direct-to-main commit, and UNR-129 closed from a local merge
+commit. But on 14 September UNR-84 and UNR-85 did not close from merge commits
+worded exactly the same way, and both had to be closed by hand. So treat the
+keyword as a hope, not a mechanism: after pushing, check the status, and close
+it yourself if it hasn't moved. For work that only partly addresses an issue,
+keep the ID out of the branch name and write `Part of UNR-N` rather than
+`Closes`, since when the keyword does fire, it fires on partial work too.
 
 **Balance lives in named constants** at the top of the script. Change those
 rather than scattering numbers through the code.
