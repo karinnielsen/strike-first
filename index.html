@@ -1825,12 +1825,6 @@ const TONGUE_PAUSE_MIN = 1800;   // shortest wait between flicks
 const TONGUE_PAUSE_MAX = 6500;   // longest
 const TONGUE_DOUBLE    = 0.7;    // share of flicks that come as a pair
 
-// The one open question in UNR-129: may it flick during a run, and when?
-//   'none'   - never; the crest holds still while you play
-//   'mouse'  - once when a mouse appears, the snake smelling prey
-//   'reward' - once every time you eat something worth points
-const TONGUE_IN_RUN = 'none';
-
 // Takes two random numbers, returns what the next idle flick looks like.
 // Pure, so the irregularity can be tested without waiting for it.
 function tongueFlickPlan(r1, r2) {
@@ -1853,9 +1847,6 @@ function tonguePoseAt(ms, flicks) {
 const tonguePoses = [1, 2, 3, 4, 5].map((n) =>
   document.getElementById('sf-red-crest-tongue-' + n));
 let tongueFrame = 0;           // the pending animation frame, 0 when still
-let tongueIdleFlick = false;   // true unless the flick was for something in the run
-let tongueSawMouse = null;
-let tongueSawScore = 0;
 
 function showTonguePose(pose) {
   tonguePoses.forEach((g, i) => g.setAttribute('display', i + 1 === pose ? 'inline' : 'none'));
@@ -1863,10 +1854,9 @@ function showTonguePose(pose) {
 
 // Timed by elapsed time rather than counted frames, so a slow machine
 // drops poses instead of stretching the flick.
-function flickTongue(flicks, idle) {
+function flickTongue(flicks) {
   if (REDUCED_MOTION.matches) return;
   stillTongue();
-  tongueIdleFlick = idle;
   const start = performance.now();
   const step = (now) => {
     showTonguePose(tonguePoseAt(now - start, flicks));
@@ -1890,19 +1880,16 @@ document.addEventListener('visibilitychange', stillTongue);
 // the snake, and the tongue should not flick faster when you're good.
 function idleTongue() {
   const plan = tongueFlickPlan(Math.random(), Math.random());
-  if (phase !== 'playing') flickTongue(plan.flicks, true);
+  if (phase !== 'playing') flickTongue(plan.flicks);
   setTimeout(idleTongue, plan.pauseMs);
 }
 
-// Called from the loop after draw(). It only reacts to what update()
-// already decided, and never feeds anything back.
+// Called from the loop after draw(). All it does is close the mouth once a
+// run is under way. Flicking during a run - when a mouse appears, or on
+// every reward - was built and set aside in UNR-129: any motion up here
+// pulls the eye off the board, towards nothing you need.
 function watchCrest() {
-  if (phase === 'playing' && tongueIdleFlick && tongueFrame) stillTongue();
-  const mouse = visitor && visitor.kind === 'mouse' ? visitor : null;
-  if (TONGUE_IN_RUN === 'mouse' && mouse && mouse !== tongueSawMouse) flickTongue(1, false);
-  if (TONGUE_IN_RUN === 'reward' && score > tongueSawScore) flickTongue(1, false);
-  tongueSawMouse = mouse;
-  tongueSawScore = score;
+  if (phase === 'playing' && tongueFrame) stillTongue();
 }
 
 // Set up an opening position to look at behind the menu, then start the
