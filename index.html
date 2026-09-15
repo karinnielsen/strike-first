@@ -361,12 +361,18 @@
   .dojos { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 26px; margin-top: 40px; padding: 0 16px; color: var(--dim); }
   .dojos b { color: var(--text); font-weight: normal; }
   .dojos .mine, .dojos .mine b { color: var(--yellow); }
+  .dojos .standing { display: none; }
 
   /* SHORT. When the board is drawn small the podium loses the runs either
      side of yours - never yours - and the spacing tightens to the
      comfortable set that was compared against this one. Fewer rows rather
      than smaller ones: text and buttons stay a size a finger and an eye
-     can use. */
+     can use.
+
+     The dojos shrink to yours alone, with where it stands, on one line.
+     Three dojos wrapped onto two lines at this width, and the one left on
+     its own line read as overflow rather than third place. The other two
+     are in the full view (UNR-134). */
   @container overlay (max-height: 540px) {
     .overlay.with-board h2 { margin-bottom: 8px; }
     .overlay.with-board #play-btn { margin-top: 28px; }
@@ -375,7 +381,9 @@
     .board td { height: 26px; }
     .board .gap td { height: 14px; }
     .board .near { display: none; }
-    .dojos { margin-top: 20px; gap: 2px 18px; }
+    .dojos { margin-top: 20px; }
+    .dojos > :not(.mine) { display: none; }
+    .dojos .standing { display: inline; }
   }
 
 
@@ -3199,8 +3207,9 @@ function podiumRows(top, near, you) {
 
 // Every dojo, best total first, from the dojo_players rows already cut to
 // each dojo's team. A dojo with nobody is still listed. Pure.
+// Dojos level on points share a place, the way a tie does on any table.
 function dojoStandings(players, team) {
-  return DOJO_IDS.map(dojo => {
+  const standings = DOJO_IDS.map(dojo => {
     const mine = players.filter(p => p.dojo === dojo && p.place <= team);
     return {
       dojo,
@@ -3208,6 +3217,12 @@ function dojoStandings(players, team) {
       students: mine.length ? mine[0].students : 0
     };
   }).sort((a, b) => b.total - a.total);
+  return standings.map(d => ({ ...d, place: 1 + standings.filter(o => o.total > d.total).length }));
+}
+
+function ordinal(n) {
+  const teen = n % 100 >= 11 && n % 100 <= 13;
+  return n + (teen ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
 }
 
 function studentsLabel(n) {
@@ -3333,7 +3348,12 @@ function showBoard() {
     if (d.dojo === yours) div.className = 'mine';
     const total = document.createElement('b');
     total.textContent = d.students ? String(d.total) : '—';
-    div.append(badge(d.dojo), ' ', total, ` · ${studentsLabel(d.students)}`);
+    // Where it stands, shown only in the short layout, where yours is the
+    // only dojo left. A dojo with nobody has no standing to state.
+    const standing = document.createElement('span');
+    standing.className = 'standing';
+    if (d.students) standing.textContent = ` · ${ordinal(d.place)} of ${board.standings.length}`;
+    div.append(badge(d.dojo), ' ', total, standing, ` · ${studentsLabel(d.students)}`);
     dojos.append(div);
   }
 

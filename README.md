@@ -141,7 +141,8 @@ There is no way to pick a dojo yet, so every signed run counts for Cobra Kai unl
 the address says otherwise, such as `?dojo=miyagi-do`.
 
 When the board is drawn small, the runs either side of yours are left out
-rather than squeezing the rest. If the leaderboard can't be reached, there is
+rather than squeezing the rest, and the dojos come down to one line: yours,
+with where it stands, such as `708 · 2nd of 3 · 9 students`. If the leaderboard can't be reached, there is
 no board, and nothing else waits for it.
 
 ### Sound

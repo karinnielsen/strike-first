@@ -171,7 +171,7 @@ globalThis.game = {
   get lastRunId() { return lastRunId },
   BOARD_TEAM, PODIUM, PODIUM_REACH, boardRequests, neighbourRequest,
   podiumRows, dojoStandings, studentsLabel, readRows, fetchBoard, loadBoard,
-  dropBoard, dueBoard, skipInitials, DOJO_BADGES, badgeSvg,
+  dropBoard, dueBoard, skipInitials, DOJO_BADGES, badgeSvg, ordinal,
   get board() { return board }, get boardDue() { return boardDue },
   get boardShown() { return !boardEl.hidden }
 };`;
@@ -1565,10 +1565,21 @@ describe('the board', () => {
       player('cobra-kai', 20, 4, 9)                // off the team
     ], game.BOARD_TEAM);
     is(standings, [
-      { dojo: 'miyagi-do', total: 200, students: 1 },
-      { dojo: 'cobra-kai', total: 120, students: 9 },
-      { dojo: 'eagle-fang', total: 0, students: 0 }
+      { dojo: 'miyagi-do', total: 200, students: 1, place: 1 },
+      { dojo: 'cobra-kai', total: 120, students: 9, place: 2 },
+      { dojo: 'eagle-fang', total: 0, students: 0, place: 3 }
     ], 'standings');
+  });
+
+  test('dojos level on points share a place', () => {
+    const player = (dojo, best) => ({ dojo, initials: 'AAA', best, place: 1, students: 1 });
+    const standings = game.dojoStandings([player('cobra-kai', 90), player('miyagi-do', 90), player('eagle-fang', 40)], 3);
+    is(standings.map(d => d.place), [1, 1, 3], 'places');
+  });
+
+  test('places in words', () => {
+    is([1, 2, 3, 4, 11, 12, 13, 21, 22, 101].map(game.ordinal),
+      ['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd', '101st'], 'ordinals');
   });
 
   test('every dojo has a badge, on the 18px grid, in the palette', () => {
