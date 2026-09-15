@@ -154,7 +154,120 @@ single line:
 
 ---
 
-## 6. Writing a defeat line
+## 6. Dojo voices
+
+Added 15 September, when dojo select moved into The All Valley. **Not in the
+game yet.** Today every player hears the one dojo voice in section 1. The plan
+is that once you belong to a dojo, the feedback you get — defeat lines, the
+promotion, the mercy screen — comes from that dojo's sensei. This section is
+the brief for writing those lines when that work is picked up.
+
+**Every player has a dojo.** Settled 15 September: choosing one is forced, the
+way an arcade select screen is, with a countdown that picks for you if you do
+nothing. So there is no dojo-less player and no neutral sensei to write for.
+Switching dojos is allowed, and the voice switches with it.
+
+### What stays the same across all three
+
+The dojo voice's grammar is the house style, and every dojo speaks it: nine
+words or fewer, full stops, never an exclamation mark, never explain the joke.
+The rules in section 7 about knowing how they died, never sneering at a good
+run and a near miss outranking a joke apply to every dojo. The vocabulary in
+section 2 is locked for all of them — `mercy`, `DEFEATED`, `Again` do not
+change with the dojo, because they are the game's interface, not a sensei's
+opinion.
+
+**A dojo changes attitude, not grammar.** What each sensei cares about, what
+they blame you for, what they praise. Same sentence shapes, different values.
+
+The one deliberate exception is Eagle Fang's contractions, below.
+
+### Cobra Kai
+
+Founded by John Kreese, later run by Terry Silver and by Johnny Lawrence. The
+creed is *strike first, strike hard, no mercy*: aggressive, offence-heavy, and
+contemptuous of hesitation.
+
+* **Values:** aggression, commitment, winning. Hesitation is the only sin.
+* **Blames you for:** being slow, being careful, backing off. Dying while
+  attacking is forgivable; dying while dithering is not.
+* **Praises:** a greedy run. Taking the mouse when you should not have.
+* **Register:** cold, clipped, drill-sergeant. The house voice already sounds
+  most like this dojo, which is not a coincidence — the game is called
+  *Strike First*.
+* **Leans on:** negating a feeling by decree. Fear, doubt and caution do not
+  exist here.
+
+> `The wall struck first. Remember that.`
+> `You hesitated. The mat noticed.`
+> `Two points short. The wall showed no mercy.`
+
+### Miyagi-Do
+
+Founded by Mr. Miyagi, reopened by Daniel LaRusso. Karate for defence only,
+built on balance and inner peace.
+
+* **Values:** balance, patience, control. Survival is the victory.
+* **Blames you for:** rushing, greed, losing your centre. The rotten egg was a
+  lesson in wanting too much.
+* **Praises:** a long, calm run. Knowing when not to take the mouse.
+* **Register:** quiet and unhurried. Still no contractions, but the formality
+  is gentle rather than stern — a teacher, not a drill instructor. Where Cobra
+  Kai states rules, Miyagi-Do offers lessons.
+* **Leans on:** nature and craft rather than combat. Trees, water, tending
+  things, balance. Write fresh images; the series' famous chores and phrases
+  are theirs, not ours.
+* **Harsh never, but honest.** It is the one dojo that is kinder than the
+  house voice, and it must still tell you what you did wrong.
+
+> `You fought yourself. Nobody wins that bout.`
+> `Balance first. Speed will follow.`
+> `Two points short. Patience is also training.`
+
+### Eagle Fang Karate
+
+Started by Johnny Lawrence when he lost Cobra Kai. Aggressive offence with a
+raw, unorthodox attitude, and proud of not being polished.
+
+* **Values:** guts, instinct, attitude. Rules are for other dojos.
+* **Blames you for:** being soft, overthinking, playing it safe. Closer to
+  Cobra Kai than to Miyagi-Do, but scrappy rather than disciplined.
+* **Praises:** anything reckless that worked.
+* **Register:** loud-mouthed, blunt, a bit out of date. The only dojo that
+  **uses contractions**, because it is the only one that does not stand on
+  ceremony — the formality that powers the house voice is exactly what Eagle
+  Fang rejects. Everything else in the grammar still holds, including no
+  exclamation marks: it is swagger, not shouting.
+* **Leans on:** the dismissive comparison. This is a dojo, not a [soft
+  thing]. Nicknames and insults are affectionate, never cruel.
+
+> `Walls don't dodge, genius. Turn.`
+> `You bit your own tail. Real tough.`
+> `Two points. That's it? Get back out there.`
+
+### Telling them apart
+
+The same death, three senseis:
+
+| Moment | Cobra Kai | Miyagi-Do | Eagle Fang |
+| -- | -- | -- | -- |
+| Hit the wall | `The wall struck first. Remember that.` | `The wall was patient. Be patient too.` | `Walls don't dodge, genius. Turn.` |
+| New hi-score | `Your best. Now make it look easy.` | `Your best yet. Rest, then begin again.` | `Now that's what I'm talking about.` |
+
+If a line could be moved to another dojo's column without anyone noticing,
+it has no voice yet.
+
+### Open questions
+
+* **Which strings change with the dojo?** Defeat lines and the promotion are
+  obvious. The start overlay's `Strike hard. No mercy.` is the Cobra Kai creed,
+  which reads oddly to a Miyagi-Do student.
+* **`test.js` asserts the house style.** Eagle Fang's contractions will need a
+  per-dojo exception there, not a loosened rule for everyone.
+
+---
+
+## 7. Writing a defeat line
 
 Defeat lines are the largest writing surface in the game and the one the player
 sees most, so they get their own rules.
@@ -179,7 +292,7 @@ sees most, so they get their own rules.
 
 ---
 
-## 7. Rules inherited from elsewhere
+## 8. Rules inherited from elsewhere
 
 These are not copy rules but they constrain copy, so they are repeated here.
 
@@ -192,7 +305,7 @@ These are not copy rules but they constrain copy, so they are repeated here.
 
 ---
 
-## 8. Current strings
+## 9. Current strings
 
 The complete inventory, so nothing drifts unnoticed.
 
