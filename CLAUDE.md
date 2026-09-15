@@ -256,6 +256,24 @@ both — don't eyeball it.
 **`localStorage` is per-origin.** The best score doesn't follow the game across
 ports, machines or to a published URL. That's expected, not a bug.
 
+**The game is no longer dependency-free.** Since UNR-106 it talks to one hosted
+Supabase database, with plain `fetch` against its REST API — no client library,
+still one file, no build step. `db/scores.sql` is the record of the schema:
+change it there first, then Karin runs it in the SQL Editor. Only the
+*publishable* key (`sb_publishable_…`) may appear in the page; a test fails if
+a secret key does. The page's rules are only suggestions — what the public key
+may do is decided by grants and row-level security in the SQL.
+
+To check those permissions without leaving rows behind, send an insert that
+breaks a `check` constraint: an allowed insert fails with `23514`, a forbidden
+one with `42501`, and neither writes anything. Updates and deletes should
+always come back `42501`.
+
+**The Browser tool's `space` key arrives as an empty key name**, so the game
+never sees it. Arrows and letters are fine. To press mercy, dispatch a real
+`KeyboardEvent('keydown', {key: ' '})` at the document, which still goes
+through the game's own input handler.
+
 **Don't hand-code detailed SVG illustrations.** A cobra crest was attempted
 twice as inline paths and rejected both times. Detailed artwork wants to be
 drawn in a vector editor and dropped in as a file. See UNR-86.

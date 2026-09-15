@@ -627,6 +627,15 @@ let phase;          // 'ready' | 'playing' | 'paused' | 'dying' | 'over'
 let defeat;         // how the last run ended: {cause, at, time}, or null
 let lastDefeatLine; // so the same line never lands twice in a row
 
+// How the run went, as well as how it ended. Nothing in the game reads
+// these; they go with a score to the database, where they are what lets a
+// forged score be told apart from a real one (UNR-132).
+let moves;          // steps actually taken. The one that killed you isn't one.
+let runStartedAt;   // performance.now() of the first move, or null
+let pausedAt;       // when mercy was asked for, or null
+let pausedMs;       // total time spent in mercy this run
+let runMs;          // first move to death, pauses taken out. Set at death.
+
 // Three foods filling three roles, and no more. The EGG is the baseline:
 // always there, low value, no cost. The MOUSE is the temptation: worth
 // five times as much, but it expires and it costs you extra length. The
@@ -745,6 +754,11 @@ function reset() {
   queasy        = 0;
   visitor       = null;
   defeat        = null;
+  moves         = 0;
+  runStartedAt  = null;
+  pausedAt      = null;
+  pausedMs      = 0;
+  runMs         = 0;
   scoreEl.textContent = score;
   levelEl.textContent = levelFor(score);
   placeEgg();
@@ -853,6 +867,11 @@ function update() {
   // Move: add the new head to the front of the list...
   snake.unshift(head);
 
+  // The clock starts on the first move, not on the bow or the button, so a
+  // run's duration is only ever time spent steering.
+  if (moves === 0) runStartedAt = performance.now();
+  moves += 1;
+
   // Did we land on anything? Only one of these can be true, since nothing
   // is ever placed on a square something else already occupies.
   if (head.x === egg.x && head.y === egg.y) {
@@ -957,6 +976,7 @@ const DEFEAT_HOLD_MS = 90;     // the hit-stop: nothing moves
 function gameOver(cause, at) {
   phase  = 'dying';
   defeat = { cause, at, dir: direction, time: performance.now() };
+  runMs  = runDuration(runStartedAt, defeat.time, pausedMs);
   playSound('defeat');
   requestAnimationFrame(dyingFrame);
 }
@@ -2163,9 +2183,12 @@ document.addEventListener('keydown', (event) => {
 function toggleMercy() {
   if (phase === 'playing') {
     phase = 'paused';
+    pausedAt = performance.now();
     showOverlay('MERCY', MERCY_TEXT, 'Continue');
   } else if (phase === 'paused') {
     phase = 'playing';
+    if (pausedAt !== null) pausedMs += performance.now() - pausedAt;
+    pausedAt = null;
     overlay.classList.add('hidden');
   }
 }
@@ -2484,10 +2507,11 @@ function bowFrame() {
   requestAnimationFrame(bowFrame);
 }
 
+// Continue goes through toggleMercy() like space does, so the time spent
+// paused is counted the same way whichever you used.
 playBtn.addEventListener('click', () => {
   if (phase === 'paused') {
-    phase = 'playing';
-    overlay.classList.add('hidden');
+    toggleMercy();
   } else {
     startGame();
   }
@@ -2654,6 +2678,116 @@ showBestBelt();
 startArrival();
 loop();
 setTimeout(idleTongue, TONGUE_PAUSE_MIN + (arrivalStart === null ? 0 : ARRIVAL_MS));
+
+// =====================================================================
+//  10. SCORES - runs that outlive the browser
+// =====================================================================
+// Scores go to a hosted Postgres database (Supabase), which the page talks
+// to with plain fetch against its REST API. No client library: the page
+// only ever needs to add a row and read some back, and that is two HTTP
+// requests, not a dependency. UNR-106.
+//
+// The key below is PUBLIC ON PURPOSE. It is the publishable key, meant to
+// sit in a web page, and on its own it can do exactly two things: read the
+// scores table and add a row to it. The database refuses everything else -
+// changing a score, deleting one, choosing its own id or timestamp. Those
+// rules live in db/scores.sql, not here, because a rule in the page is a
+// suggestion. The secret key must never appear in this file.
+const SCORE_SERVICE = {
+  url: 'https://jsaaqqggpkpxxvhgyxrz.supabase.co',
+  key: 'sb_publishable_nmZm6yx0etkBIuw8y-IKog_2XC48LMH'
+};
+
+// A slow database must never hold up a game. After this long, give up.
+const SCORE_TIMEOUT_MS = 8000;
+
+// The dojos a score can belong to, as the database names them. Dojo select
+// (UNR-114) should use these ids; the database refuses any other.
+const DOJO_IDS = ['cobra-kai', 'miyagi-do', 'eagle-fang'];
+
+// First move to death, with time spent in mercy taken out. Not a mechanic -
+// nothing in play depends on it - so wall-clock time is right here. A tab
+// in the background slows the heartbeat, which can only make a run look
+// longer, never impossibly short.
+function runDuration(startedAt, endedAt, paused) {
+  if (startedAt === null) return 0;          // died before moving
+  return Math.max(0, Math.round(endedAt - startedAt - paused));
+}
+
+// Build the row the database stores for one run, or null if it isn't one
+// the database would accept. The checks match the table's own, so the page
+// never sends something it knows will bounce.
+//
+// Belt is the rank you held when the run ended, which comes from your best
+// rather than this run - and your best is at least this run.
+function scoreRecord({ initials, dojo, score, best, length, moves, durationMs }) {
+  initials = String(initials || '').trim().toUpperCase();
+  const whole = (n, min) => Number.isInteger(n) && n >= min;
+  if (!/^[A-Z]{3}$/.test(initials)) return null;
+  if (!DOJO_IDS.includes(dojo)) return null;
+  if (!whole(score, 0) || !whole(best, 0) || !whole(length, 3) ||
+      !whole(moves, 0) || !whole(durationMs, 0)) return null;
+  return {
+    initials,
+    dojo,
+    score,
+    belt: BELTS[beltFor(Math.max(best, score)) - 1].name,
+    length,
+    moves,
+    duration_ms: durationMs,
+    version: VERSION
+  };
+}
+
+// The run that just ended, as a row. Only meaningful after death.
+function runRecord(initials, dojo) {
+  return scoreRecord({
+    initials, dojo, score, best,
+    length: snake.length, moves, durationMs: runMs
+  });
+}
+
+// What to send, without sending it, so the tests can check the request -
+// and in particular which key goes with it - with no network at all.
+// return=representation hands the saved row back, id included, which is
+// how the leaderboard will find the run you just played (UNR-108).
+function scoreRequest(record, service) {
+  return {
+    url: service.url + '/rest/v1/scores',
+    options: {
+      method: 'POST',
+      headers: {
+        apikey: service.key,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation'
+      },
+      body: JSON.stringify(record)
+    }
+  };
+}
+
+// Send a row. Resolves to the saved row, or null if anything went wrong.
+// It never throws and never rejects: a score that fails to save is a shame,
+// a game that breaks because the network did is a bug.
+async function submitScore(record, send = globalThis.fetch) {
+  if (!record || !send) return null;
+  const { url, options } = scoreRequest(record, SCORE_SERVICE);
+  if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
+    options.signal = AbortSignal.timeout(SCORE_TIMEOUT_MS);
+  }
+  try {
+    const response = await send(url, options);
+    if (!response.ok) {
+      console.warn('Score not saved:', response.status, await response.text());
+      return null;
+    }
+    const rows = await response.json();
+    return rows[0] || null;
+  } catch (err) {
+    console.warn('Score not saved:', err);
+    return null;
+  }
+}
 </script>
 
 </body>

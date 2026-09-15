@@ -156,7 +156,10 @@ globalThis.game = {
   get muted() { return muted }, set muted(v) { muted = v },
   get audioCtx() { return audioCtx }, set audioCtx(v) { audioCtx = v },
   get bestAtStart() { return bestAtStart }, set bestAtStart(v) { bestAtStart = v },
-  get best() { return best }, set best(v) { best = v }
+  get best() { return best }, set best(v) { best = v },
+  get moves() { return moves }, get runMs() { return runMs },
+  get pausedMs() { return pausedMs }, toggleMercy, gameOver,
+  SCORE_SERVICE, DOJO_IDS, runDuration, scoreRecord, runRecord, scoreRequest, submitScore
 };`;
 
 vm.createContext(sandbox);
@@ -182,6 +185,21 @@ function test(name, fn) {
     console.log('  FAIL  ' + name);
     console.log('        ' + err.message);
   }
+}
+
+// For code that returns a promise. They run alongside the rest and the
+// report waits for them, so a hanging one shows up as a missing result.
+const pending = [];
+
+function testAsync(name, fn) {
+  pending.push(Promise.resolve().then(fn).then(
+    () => { passed++; console.log('  pass  ' + name); },
+    (err) => {
+      failed++;
+      console.log('  FAIL  ' + name);
+      console.log('        ' + err.message);
+    }
+  ));
 }
 
 function is(actual, expected, what) {
@@ -1249,6 +1267,138 @@ describe('arrival', () => {
 });
 
 
+describe('scores - how a run is measured, UNR-106', () => {
+  // performance.now() is frozen at 0 in the fake browser. These tests move
+  // it by hand, then put it back.
+  const realNow = sandbox.performance.now;
+  let clock = 0;
+  const at = (ms) => { clock = ms; };
+
+  test('every step taken is a move, the fatal one is not', () => {
+    freshGame();
+    game.update();
+    game.update();
+    is(game.moves, 2, 'two steps');
+    game.snake = [{x: 20, y: 5}, {x: 19, y: 5}, {x: 18, y: 5}];
+    game.update();   // into the wall
+    is(game.moves, 2, 'still two');
+  });
+
+  test('a run lasts from its first move to its death', () => {
+    sandbox.performance.now = () => clock;
+    freshGame();
+    at(1000); game.update();
+    at(1260); game.update();
+    at(1520); game.gameOver('wall', {x: 21, y: 5});
+    is(game.runMs, 520, 'no bow, no start screen');
+    sandbox.performance.now = realNow;
+  });
+
+  test('time spent in mercy does not count', () => {
+    sandbox.performance.now = () => clock;
+    freshGame();
+    at(0);     game.update();
+    at(100);   game.toggleMercy();
+    is(game.phase, 'paused', 'paused');
+    at(60100); game.toggleMercy();
+    at(60300); game.gameOver('self', {x: 5, y: 5});
+    is(game.runMs, 300, 'a minute of mercy taken out');
+    sandbox.performance.now = realNow;
+  });
+
+  test('dying before moving lasts nothing', () => {
+    is(game.runDuration(null, 5000, 0), 0, 'no first move');
+    is(game.runDuration(1000, 900, 0), 0, 'never negative');
+  });
+
+  const run = {
+    initials: 'kar', dojo: 'cobra-kai', score: 40, best: 70,
+    length: 30, moves: 412, durationMs: 81234
+  };
+
+  test('a run becomes the row the database stores', () => {
+    is(game.scoreRecord(run), {
+      initials: 'KAR', dojo: 'cobra-kai', score: 40, belt: 'Brown',
+      length: 30, moves: 412, duration_ms: 81234, version: game.VERSION
+    }, 'row');
+  });
+
+  test('belt comes from best, and best is at least this run', () => {
+    is(game.scoreRecord({ ...run, score: 40, best: 0 }).belt, 'Green', 'a first run');
+  });
+
+  test('refuses what the database would refuse', () => {
+    const bad = [
+      { initials: 'KA' }, { initials: 'K4R' }, { initials: 'KARI' },
+      { dojo: 'karate-kid' }, { dojo: undefined },
+      { score: -1 }, { score: 2.5 }, { length: 2 }, { moves: -1 },
+      { durationMs: NaN }, { best: undefined }
+    ];
+    for (const change of bad) {
+      is(game.scoreRecord({ ...run, ...change }), null, JSON.stringify(change));
+    }
+  });
+
+  test('every dojo is one the database knows', () => {
+    const sql = fs.readFileSync(path.join(__dirname, 'db/scores.sql'), 'utf8');
+    for (const id of game.DOJO_IDS) is(sql.includes(`'${id}'`), true, id);
+  });
+
+  test('the run just played, straight from the game', () => {
+    freshGame();
+    game.update();
+    game.update();
+    game.gameOver('wall', {x: 21, y: 5});
+    const row = game.runRecord('abc', 'miyagi-do');
+    is([row.initials, row.moves, row.length], ['ABC', 2, 3], 'from state');
+  });
+
+  test('the request carries the public key and nothing else', () => {
+    const { url, options } = game.scoreRequest({ score: 1 }, game.SCORE_SERVICE);
+    is(url, game.SCORE_SERVICE.url + '/rest/v1/scores', 'url');
+    is(options.method, 'POST', 'method');
+    is(options.headers.apikey, game.SCORE_SERVICE.key, 'apikey');
+    is('Authorization' in options.headers, false, 'no bearer token');
+    is(options.body, '{"score":1}', 'body');
+  });
+
+  test('only a publishable key is ever in the page', () => {
+    is(game.SCORE_SERVICE.key.startsWith('sb_publishable_'), true, 'publishable');
+    is(/sb_secret_|service_role/.test(html), false, 'no secret key');
+  });
+
+  const reply = (ok, body) => async () => ({
+    ok, status: ok ? 201 : 400,
+    json: async () => body, text: async () => JSON.stringify(body)
+  });
+  const quietly = async (fn) => {
+    const warn = console.warn;
+    console.warn = () => {};
+    try { return await fn(); } finally { console.warn = warn; }
+  };
+
+  testAsync('scores: a saved score comes back with its id', async () => {
+    const saved = await game.submitScore(game.scoreRecord(run), reply(true, [{ id: 7 }]));
+    is(saved, { id: 7 }, 'row');
+  });
+
+  testAsync('scores: a refused score is null, not an error', async () => {
+    is(await quietly(() => game.submitScore(game.scoreRecord(run), reply(false, {}))), null, 'refused');
+  });
+
+  testAsync('scores: no network is null, not an error', async () => {
+    const offline = async () => { throw new Error('offline'); };
+    is(await quietly(() => game.submitScore(game.scoreRecord(run), offline)), null, 'offline');
+  });
+
+  testAsync('scores: an invalid run is never sent', async () => {
+    let sent = false;
+    await game.submitScore(null, async () => { sent = true; });
+    is(sent, false, 'not sent');
+  });
+});
+
+
 describe('version', () => {
   test('matches the changelog', () => {
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
@@ -1266,6 +1416,8 @@ describe('version', () => {
 
 // ---- report ---------------------------------------------------------
 
-console.log('\n' + '-'.repeat(40));
-console.log(`${passed} passed, ${failed} failed`);
-process.exit(failed > 0 ? 1 : 0);
+Promise.all(pending).then(() => {
+  console.log('\n' + '-'.repeat(40));
+  console.log(`${passed} passed, ${failed} failed`);
+  process.exit(failed > 0 ? 1 : 0);
+});

@@ -6,8 +6,8 @@ Snake, as a dojo. Eat eggs, chase mice, dodge rotten ones and earn your belt.
 
 [![The Strike First cobra crest beside a game board, with a snake wearing an orange belt, a mouse and an egg](og-image.png)](https://karinnielsen.github.io/strike-first/)
 
-One HTML file, no build step, no dependencies, and it fetches nothing — open it
-and play. Made for desktop and tablet.
+One HTML file, no build step and nothing to install — open it and play. Its one
+outside connection is a hosted database for scores. Made for desktop and tablet.
 
 Current version: **v0.4.6** — see [CHANGELOG.md](CHANGELOG.md).
 
@@ -191,12 +191,13 @@ expiring while the game is paused.
 node test.js
 ```
 
-No framework and no dependencies, same as the game. The harness reads
+No framework and nothing to install, same as the game. The harness reads
 `index.html`, pulls the inline script out and runs it against a stubbed
 browser, so the game stays a single file with nothing to install.
 
-97 tests, covering the grid, the speed curve, collisions, growth, scoring, the
-visitor countdown and the input rules for keys and swipes. They cannot tell you
+151 tests, covering the grid, the speed curve, collisions, growth, scoring, the
+visitor countdown, the input rules for keys and swipes, and how a run becomes a
+score record. None of them touch the network. They cannot tell you
 whether the game is *fun* — that still needs playing.
 
 Needs Node 15 or newer.
@@ -234,7 +235,10 @@ afterwards. The test is what the player has to do, not how much changed.
 
 ### Files
 
-- `index.html` — the entire game, in nine commented sections
+- `index.html` — the entire game, in ten commented sections
+- `db/scores.sql` — the scores table and the rules that stop the page's public
+  key doing anything but submitting and reading scores. The record of what the
+  database looks like: change it here, then run the change in Supabase
 - `favicon.svg`, `apple-touch-icon.png`, `og-image.png` — the tab icon, the
   home-screen icon and the link preview. Not part of the game: it plays
   without them. The PNGs are rendered from the game by
