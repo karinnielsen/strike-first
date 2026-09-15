@@ -16,6 +16,23 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+## [0.4.6] — 2026-09-15
+
+Reduced motion now covers the whole game. Nothing plays differently, and no
+one without the setting sees a change, so it is a patch.
+
+### Changed
+- **Score feedback under reduced motion.** The `+N` fades in and out where it
+  appears instead of rising and growing, keeping its size, colour and sign.
+  The score counter turns briefly yellow instead of swelling. Chosen over
+  keeping the swell, side by side.
+- **The egg holds still** under reduced motion. Its pulse was decoration.
+
+With these, everything that moves either stops or calms when the setting is
+on: arrival, the opening bow, the defeat, the queasy shiver, the tongue
+flicks, the promotion ring, the button pulse, and now the score and the egg.
+The snake's own movement stays, because it is the game.
+
 ## [0.4.5] — 2026-09-14
 
 The game arrives now, instead of simply being there. Nothing plays
@@ -336,7 +353,8 @@ First playable version.
   gradient.
 - **The version number** in the footer.
 
-[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.4.5...HEAD
+[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.4.6...HEAD
+[0.4.6]: https://github.com/karinnielsen/strike-first/compare/v0.4.5...v0.4.6
 [0.4.5]: https://github.com/karinnielsen/strike-first/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/karinnielsen/strike-first/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/karinnielsen/strike-first/compare/v0.4.2...v0.4.3

@@ -149,6 +149,7 @@
     white-space: nowrap;
     pointer-events: none;            /* never let it block a click */
     color: var(--bone);              /* bone: a routine gain */
+    transform: translateX(-50%);     /* centred, when nothing is moving it */
     animation: float-up 900ms ease-out forwards;
   }
 
@@ -156,8 +157,9 @@
      the dojo's yellow. The size difference IS the message. */
   .score-pop.big { font-size: 21px; color: var(--yellow); }
 
-  /* Red is reserved for LOSING points, and nothing else - so the moment we
-     add something that costs you, it reads as bad without explanation. */
+  /* Red here means LOSING points, always beside its minus sign, so a food
+     that costs you reads as bad without explanation. The red belt is the
+     other red in the game, and it lives on the snake's band, not here. */
   .score-pop.minus { color: var(--red); }
 
   @keyframes float-up {
@@ -365,13 +367,34 @@
 
   /* Motion has to have a way out. The ring is the part that moves; the
      colour change stays, so the moment still reads without animating.
-     Doing this properly across the whole game is its own issue. */
+     The canvas side of this is REDUCED_MOTION in the script. See UNR-104. */
   @media (prefers-reduced-motion: reduce) {
     .stage.promoting canvas { animation: none; box-shadow: 0 0 0 4px var(--belt); }
 
     /* The slab keeps its edge and its travel - those are not motion, they
        are what makes it look pressable. Only the pulse stops. */
     button { animation: none; }
+
+    /* The score feedback carries information, so it is calmed, not
+       removed. The +N fades in and out where it appears, keeping its size,
+       colour and sign. Two classes so it outranks the short layout's
+       float-up-right, which comes later in the sheet. */
+    .scores .score-pop { animation-name: pop-fade; }
+
+    /* The counter brightens to the reward yellow instead of swelling. */
+    #score.bump { animation-name: bump-glow; }
+  }
+
+  @keyframes pop-fade {
+    0%   { opacity: 0; }
+    15%  { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  @keyframes bump-glow {
+    0%   { color: var(--text);   }
+    40%  { color: var(--yellow); }
+    100% { color: var(--text);   }
   }
 
   .version {
@@ -463,7 +486,7 @@
 
     /* The value sits at the right-hand end of its row, so the +N rises
        from there rather than from the middle of the row. */
-    .score-pop { left: auto; right: 0; animation-name: float-up-right; }
+    .score-pop { left: auto; right: 0; transform: none; animation-name: float-up-right; }
 
     /* Mercy lives at the foot of the list, full width, where a thumb
        already is. Nothing covers the board, and it is far from the +N. */
@@ -548,7 +571,7 @@ const ROWS = canvas.height / CELL;    // 21 rows down
 // Single source of truth for the version. Bump this, add a CHANGELOG entry,
 // update the Current version line in README.md, and tag the commit - those
 // four go together, always.
-const VERSION = '0.4.5';
+const VERSION = '0.4.6';
 document.getElementById('version').textContent = 'v' + VERSION;
 
 // Handy references to the bits of HTML we update as the game runs.
@@ -1240,8 +1263,10 @@ function draw() {
   }
   ctx.globalAlpha = 1;
 
-  // The egg, with a gentle pulse driven by the clock.
-  const pulse = (1 + Math.sin(Date.now() / 200) * 0.10) * arrivalEgg(arrived);
+  // The egg, with a gentle pulse driven by the clock, held still for
+  // reduced motion. It is decoration; the egg says everything without it.
+  const breathe = REDUCED_MOTION.matches ? 1 : 1 + Math.sin(Date.now() / 200) * 0.10;
+  const pulse = breathe * arrivalEgg(arrived);
   if (pulse > 0) drawEgg(egg.x * CELL + CELL / 2, egg.y * CELL + CELL / 2, pulse);
 
   if (visitor) {

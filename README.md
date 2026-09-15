@@ -9,7 +9,7 @@ Snake, as a dojo. Eat eggs, chase mice, dodge rotten ones and earn your belt.
 One HTML file, no build step, no dependencies, and it fetches nothing — open it
 and play. Made for desktop and tablet.
 
-Current version: **v0.4.5** — see [CHANGELOG.md](CHANGELOG.md).
+Current version: **v0.4.6** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Play
 
