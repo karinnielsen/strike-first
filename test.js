@@ -58,6 +58,8 @@ function makeElement() {
     setAttribute() {},
     remove() {},
     addEventListener() {},
+    focus() {},
+    blur() {},
     getContext: () => makeCanvasContext()
   };
   el.parentElement = el;   // addScore() reaches for scoreEl.parentElement
@@ -160,8 +162,10 @@ globalThis.game = {
   get moves() { return moves }, get runMs() { return runMs },
   get pausedMs() { return pausedMs }, toggleMercy, gameOver,
   SCORE_SERVICE, DOJO_IDS, runDuration, scoreRecord, runRecord, scoreRequest, submitScore,
-  wantsInitials, cleanInitials, BLOCKED_INITIALS, signInitials,
-  get entry() { return entry }, set entry(v) { entry = v }
+  wantsInitials, cleanInitials, BLOCKED_INITIALS, signInitials, hideInitials,
+  dojoFor, currentDojo,
+  get entry() { return entry }, set entry(v) { entry = v },
+  get lastRunId() { return lastRunId }
 };`;
 
 vm.createContext(sandbox);
@@ -202,6 +206,22 @@ function testAsync(name, fn) {
       console.log('        ' + err.message);
     }
   ));
+}
+
+// For async tests that share the game's state, such as the open initials
+// entry: each waits for the one before, pass or fail.
+let inOrder = Promise.resolve();
+function testAsyncInOrder(name, fn) {
+  const run = inOrder.then(() => fn(), () => fn());
+  inOrder = run;
+  testAsync(name, () => run);
+}
+
+// Code that warns on purpose, run without the noise.
+async function quietly(fn) {
+  const warn = console.warn;
+  console.warn = () => {};
+  try { return await fn(); } finally { console.warn = warn; }
 }
 
 function is(actual, expected, what) {
@@ -1373,11 +1393,6 @@ describe('scores - how a run is measured, UNR-106', () => {
     ok, status: ok ? 201 : 400,
     json: async () => body, text: async () => JSON.stringify(body)
   });
-  const quietly = async (fn) => {
-    const warn = console.warn;
-    console.warn = () => {};
-    try { return await fn(); } finally { console.warn = warn; }
-  };
 
   testAsync('scores: a saved score comes back with its id', async () => {
     const saved = await game.submitScore(game.scoreRecord(run), reply(true, [{ id: 7 }]));
@@ -1435,6 +1450,52 @@ describe('initials', () => {
     game.signInitials();
     is(game.entry && game.entry.value, 'KYS', 'still open, not signed');
     game.entry = null;
+  });
+
+  // A run that just ended, with the initials field open on it.
+  const signable = (initials) => {
+    freshGame({ score: 12 });
+    game.best = 12;
+    game.phase = 'over';
+    game.entry = { value: initials, focus() {}, blur() {} };
+  };
+
+  testAsyncInOrder('signing sends the run and keeps its id', async () => {
+    signable('KAR');
+    let body = null;
+    const send = async (url, options) => {
+      body = JSON.parse(options.body);
+      return { ok: true, status: 201, json: async () => [{ id: 42 }] };
+    };
+    const saving = game.signInitials(send);
+    is(game.entry, null, 'entry closed while saving, so it cannot send twice');
+    await saving;
+    is([body.initials, body.dojo, body.score], ['KAR', 'cobra-kai', 12], 'row sent');
+    is(game.lastRunId, 42, 'id kept');
+    is(sandbox.localStorage.getItem('strikeFirstLastRun'), '42', 'id remembered');
+  });
+
+  testAsyncInOrder('a failed save opens the entry again, filled in', async () => {
+    signable('KAR');
+    await quietly(() => game.signInitials(async () => { throw new Error('offline'); }));
+    is(game.entry && game.entry.value, 'KAR', 'Sign is the retry');
+    game.hideInitials();
+  });
+
+  testAsyncInOrder('a save that fails after the next run started reopens nothing', async () => {
+    signable('KAR');
+    let fail;
+    const saving = game.signInitials(() => new Promise((_, reject) => { fail = reject; }));
+    game.hideInitials();                       // Again pressed
+    fail(new Error('offline'));
+    await quietly(() => saving);
+    is(game.entry, null, 'no entry over the new run');
+  });
+
+  test('the dojo stand-in: asked, else remembered, else Cobra Kai', () => {
+    is(game.dojoFor('miyagi-do', 'eagle-fang'), 'miyagi-do', 'asked');
+    is(game.dojoFor('dragon', 'eagle-fang'), 'eagle-fang', 'unknown ignored');
+    is(game.dojoFor(null, null), 'cobra-kai', 'default');
   });
 
   test('while initials are open, game keys do not restart', () => {

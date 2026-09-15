@@ -2770,6 +2770,25 @@ const SCORE_TIMEOUT_MS = 8000;
 // (UNR-114) should use these ids; the database refuses any other.
 const DOJO_IDS = ['cobra-kai', 'miyagi-do', 'eagle-fang'];
 
+// STAND-IN until dojo select (UNR-114), which replaces all of this. There
+// is no way to pick a dojo in the page yet, so ?dojo=miyagi-do in the
+// address picks one and it is remembered; otherwise every run is Cobra
+// Kai. That default is why this branch stays unmerged until UNR-114.
+const DOJO_KEY = 'strikeFirstDojo';
+
+function dojoFor(asked, remembered) {
+  if (DOJO_IDS.includes(asked)) return asked;
+  if (DOJO_IDS.includes(remembered)) return remembered;
+  return 'cobra-kai';
+}
+
+function currentDojo() {
+  const asked = typeof location === 'undefined' ? null
+    : new URLSearchParams(location.search).get('dojo');
+  if (DOJO_IDS.includes(asked)) localStorage.setItem(DOJO_KEY, asked);
+  return dojoFor(asked, localStorage.getItem(DOJO_KEY));
+}
+
 // Initials the dojo will not print. Slurs, hate, sexual terms and
 // self-harm; mild cheek like WTF is allowed, as arcades always did, and
 // identities are not on it, because blocking them treats the identity as
@@ -2880,8 +2899,19 @@ async function submitScore(record, send = globalThis.fetch) {
 // focus it cannot use. Most players never need the keyboard anyway: last
 // time's initials come back filled in, and signing again is one tap.
 //
-// Nothing is sent to the board yet: signing only remembers the initials.
+// Signing sends the run. The id the database hands back is kept, because
+// that is how the board finds your run: initials are not unique.
 const INITIALS_KEY = 'strikeFirstInitials';
+const LAST_RUN_KEY = 'strikeFirstLastRun';
+
+// Your last saved run, so the board can highlight it even after a run that
+// didn't ask for initials. Survives a reload, like the initials do.
+let lastRunId = Number(localStorage.getItem(LAST_RUN_KEY)) || null;
+
+// The row being saved right now, or null. Leaving the verdict clears it,
+// which is how a save that finishes late knows not to reopen the entry
+// over a run that has already started.
+let signing = null;
 
 const initialsEl = document.getElementById('initials');
 const skipBtn    = document.getElementById('skip-btn');
@@ -2902,7 +2932,8 @@ function cleanInitials(text) {
   return String(text || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
 }
 
-function openInitials() {
+// A note replaces "Sign the board." until the player types.
+function openInitials(note) {
   initialsEl.innerHTML =
     '<p class="initials-label" id="initials-label">Sign the board.</p>' +
     '<input class="initials-input" id="initials-input" ' +
@@ -2925,6 +2956,7 @@ function openInitials() {
   skipBtn.hidden = false;
   playBtn.textContent = 'Sign';
   showInitials();
+  if (note) document.getElementById('initials-label').textContent = note;
   if (!matchMedia('(pointer: coarse)').matches) entry.focus({ preventScroll: true });
 }
 
@@ -2953,14 +2985,36 @@ function initialsKeydown(event) {
   }
 }
 
-function signInitials() {
+// The row is built before anything waits, so pressing Again mid-save can't
+// change what gets saved. While it saves the entry is closed, so Enter or a
+// second tap can't send it twice, and Again works: a run never waits on the
+// network. If it fails, the entry comes back filled in, and Sign is the
+// retry - no extra button. Resolves once the save has settled, for tests.
+async function signInitials(send = globalThis.fetch) {
   const initials = cleanInitials(entry && entry.value);
   if (initials.length !== 3 || BLOCKED_INITIALS.includes(initials)) return;
   localStorage.setItem(INITIALS_KEY, initials);
-  initialsEl.innerHTML =
-    '<p class="initials-label">Signed.</p>' +
-    `<p class="initials-done">${initials}</p>`;
+  const record = runRecord(initials, currentDojo());
+  signing = record;
+  showSigned('Signing…', initials);
   endEntry();
+
+  const saved = await submitScore(record, send);
+  if (saved && saved.id) {
+    lastRunId = saved.id;
+    localStorage.setItem(LAST_RUN_KEY, saved.id);
+  }
+  if (signing !== record) return;            // the verdict has gone
+  signing = null;
+  if (saved) showSigned('Signed.', initials);
+  else openInitials('Not saved. Sign again to try once more.');
+}
+
+// Output only.
+function showSigned(label, initials) {
+  initialsEl.innerHTML =
+    `<p class="initials-label">${label}</p>` +
+    `<p class="initials-done">${initials}</p>`;
 }
 
 function skipInitials() {
@@ -2977,6 +3031,7 @@ function endEntry() {
 
 function hideInitials() {
   endEntry();
+  signing = null;
   initialsEl.hidden = true;
   initialsEl.innerHTML = '';
 }
