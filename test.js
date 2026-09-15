@@ -171,7 +171,7 @@ globalThis.game = {
   get lastRunId() { return lastRunId },
   BOARD_TEAM, PODIUM, PODIUM_REACH, boardRequests, neighbourRequest,
   podiumRows, dojoStandings, studentsLabel, readRows, fetchBoard, loadBoard,
-  dropBoard, dueBoard, skipInitials,
+  dropBoard, dueBoard, skipInitials, DOJO_BADGES, badgeSvg,
   get board() { return board }, get boardDue() { return boardDue },
   get boardShown() { return !boardEl.hidden }
 };`;
@@ -1569,6 +1569,20 @@ describe('the board', () => {
       { dojo: 'cobra-kai', total: 120, students: 9 },
       { dojo: 'eagle-fang', total: 0, students: 0 }
     ], 'standings');
+  });
+
+  test('every dojo has a badge, on the 18px grid, in the palette', () => {
+    const palette = ['#ffff00', '#7a7a00', '#ece6da', '#7b7480', '#2a2a30', '#d3262f'];
+    for (const dojo of game.DOJO_IDS) {
+      const paths = game.DOJO_BADGES[dojo];
+      is(Array.isArray(paths) && paths.length > 0, true, dojo + ' has a badge');
+      for (const [fill, d] of paths) {
+        is(palette.includes(fill), true, `${dojo} fill ${fill}`);
+        const numbers = d.match(/-?\d+/g).map(Number);
+        is(numbers.every(n => Number.isInteger(n) && Math.abs(n) <= 18), true, `${dojo} stays on the grid`);
+      }
+      is(game.badgeSvg(dojo).startsWith('<svg viewBox="0 0 18 18"'), true, dojo + ' svg');
+    }
   });
 
   test('students, counted in words', () => {
