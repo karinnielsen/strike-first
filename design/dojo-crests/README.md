@@ -53,3 +53,33 @@ Subject clauses used:
 - Eagle Fang: Preserve frontal aggressive eagle head, flared bone feather outline, yellow eyes and beak, open red mouth and long bone fangs.
 
 Only design/dojo-crests/ changes. No game edits, version bump, tag or merge. Each review update adds a commit to the existing PR, preserving history rather than force-pushing.
+
+## Native leaderboard sprites — response to Claude's 15 September review
+
+Separate optical reductions, authored pixel by pixel on **18 × 18**, not resampled from the large artwork. The square references and higher-density alternatives above are preserved for larger-placement review.
+
+| Dojo | Native PNG | Exact 2× PNG | Editable inline SVG |
+| --- | --- | --- | --- |
+| Cobra Kai | [18px](cobrakai-18.png) | [36px](cobrakai-36.png) | [SVG](cobrakai-18.svg) |
+| Miyagi-Do | [18px](miyagido-18.png) | [36px](miyagido-36.png) | [SVG](miyagido-18.svg) |
+| Eagle Fang | [18px](eaglefang-18.png) | [36px](eaglefang-36.png) | [SVG](eaglefang-18.svg) |
+
+![Native leaderboard proof, with diagnostic enlargements](leaderboard-proof.png)
+
+### Contract and integration
+
+- One logical pixel = one image pixel at 18px. The 36px exports repeat each source pixel in an exact 2×2 block using nearest neighbour.
+- Background is fully transparent; alpha is only 0 or 255. Visible colours use only #ffff00, #7a7a00, #ece6da, #7b7480, #2a2a30 and #d3262f (individual sprites use subsets). No antialiasing or large-source resampling.
+- Silhouette priorities: spread cobra hood and coil; layered bonsai canopy, bent trunk, roots and red sun; frontal eagle head with slanted eyes and hooked yellow beak. All three share the same top/bottom occupied rows, with widths adjusted for their shapes rather than stretched to a common box.
+- Render at exactly 18×18 CSS px with `image-rendering: pixelated`. For a 2× display, the 36px PNG may be used at the same 18 CSS px size. Do not stretch to fractional dimensions. The SVG equivalents use integer horizontal pixel runs, flat palette fills, a viewBox, no embedded raster, and `shape-rendering="crispEdges"`; inline at 18px or integer multiples.
+- `leaderboard-source.json` contains the exact 18-row grids, palette, bounds and coverage. `build-leaderboard.py` contains the authored grids and reproduces PNG, SVG, source and proof with Python 3 + Pillow. DejaVu Sans Mono is preferred for the proof; a default font is used if unavailable. The proof font has no effect on sprite output.
+- The proof's first section shows actual 18px badges beside 12px monospace on #09090b. Lower 6× views are inspection aids only. Right-hand diagnostics show solid monochrome silhouettes and an approximate full-deuteranopia simulation; these are visual checks, not accessibility certification.
+
+### Verification and remaining decisions
+
+Export checks pass for dimensions, palette membership, binary alpha and every pixel of the exact 2× export. Native-size proof inspected: three different silhouettes, no opaque background squares. SVGs are below 2KB each. Optical balance has been reviewed visually; final acceptance in the real leaderboard remains Claude/Karin's integration review.
+
+The PNG request is an explicit exception to the original SVG-only delivery contract, per Claude's review accepted by Karin. Editable SVG pixel equivalents are also included to support the self-contained HTML requirement. No new hues. Yellow/red reuse as dojo identity follows the previously approved direction and Claude's exact requested palette; rank and loss signalling still need care during integration. These are small badges, not replacements for the approved detailed large crests.
+
+Only files inside `design/dojo-crests/` changed. Part of UNR-114; no game integration or release changes.
+
