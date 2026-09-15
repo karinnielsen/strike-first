@@ -154,10 +154,21 @@ README came to describe *apples* when the game had served eggs since v0.2.0,
 and to list belt ranks under "Next" as white-through-black three days after
 belts shipped ending in midnight blue.
 
-Release is the backstop, not the mechanism. And deliberately **not** every
-merge: this project commits straight to main, so per-merge would mean per-
-commit, and a check that is almost always a no-op gets rubber-stamped until it
-stops being a check at all.
+Release is the backstop, not the mechanism.
+
+**A hook enforces it, because remembering didn't.** It kept being dropped even
+with this section in place: on 15 September the branch saved runs to the
+database while the README still said signing only remembered your initials.
+`.githooks/commit-msg` refuses a commit that stages `index.html` without
+`README.md`, unless the message carries a line saying why not:
+
+    README: unchanged - a refactor, nothing a player sees
+
+It fires only when the game itself changed, which is what keeps it from
+being the almost-always-no-op check that gets rubber-stamped. Skipping is
+still allowed; it just has to be a written decision. Merges are exempt. It
+needs enabling once per clone — `git config core.hooksPath .githooks` — and
+never bypass it with `--no-verify`.
 
 ## Running it
 

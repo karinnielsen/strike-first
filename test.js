@@ -1528,7 +1528,18 @@ describe('version', () => {
 
 // ---- report ---------------------------------------------------------
 
+// A test whose promise never settles leaves nothing for Node to wait on,
+// and Node then exits 0 without printing a report - which looks like a
+// pass. Found when a fake network answered one request of three.
+let reported = false;
+process.on('exit', () => {
+  if (reported) return;
+  console.log('\nFAIL  a test never finished, so there is no report');
+  process.exitCode = 1;
+});
+
 Promise.all(pending).then(() => {
+  reported = true;
   console.log('\n' + '-'.repeat(40));
   console.log(`${passed} passed, ${failed} failed`);
   process.exit(failed > 0 ? 1 : 0);
