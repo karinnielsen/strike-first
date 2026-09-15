@@ -159,7 +159,9 @@ globalThis.game = {
   get best() { return best }, set best(v) { best = v },
   get moves() { return moves }, get runMs() { return runMs },
   get pausedMs() { return pausedMs }, toggleMercy, gameOver,
-  SCORE_SERVICE, DOJO_IDS, runDuration, scoreRecord, runRecord, scoreRequest, submitScore
+  SCORE_SERVICE, DOJO_IDS, runDuration, scoreRecord, runRecord, scoreRequest, submitScore,
+  wantsInitials, cleanInitials,
+  get entry() { return entry }, set entry(v) { entry = v }
 };`;
 
 vm.createContext(sandbox);
@@ -1395,6 +1397,35 @@ describe('scores - how a run is measured, UNR-106', () => {
     let sent = false;
     await game.submitScore(null, async () => { sent = true; });
     is(sent, false, 'not sent');
+  });
+});
+
+
+describe('initials', () => {
+  test('only a new hi-score asks for them', () => {
+    is(game.wantsInitials(12, 11), true, 'beat it');
+    is(game.wantsInitials(11, 11), false, 'matched it');
+    is(game.wantsInitials(5, 40), false, 'short of it');
+    is(game.wantsInitials(0, 0), false, 'scored nothing');
+    is(game.wantsInitials(1, 0), true, 'a first run with any points');
+  });
+
+  test('anything typed becomes three capitals at most', () => {
+    is(game.cleanInitials('kar'), 'KAR', 'lower case');
+    is(game.cleanInitials('k 4-r!z'), 'KRZ', 'junk removed');
+    is(game.cleanInitials('abcdef'), 'ABC', 'cut to three');
+    is(game.cleanInitials(null), '', 'nothing');
+  });
+
+  test('while initials are open, game keys do not restart', () => {
+    freshGame();
+    game.phase = 'over';
+    game.entry = { value: '', focus() {}, blur() {} };
+    pressKey('r');
+    pressKey(' ');
+    is(game.phase, 'over', 'still on the verdict');
+    is(game.entry.value, 'R', 'r went into the initials');
+    game.entry = null;
   });
 });
 

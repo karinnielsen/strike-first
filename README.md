@@ -118,6 +118,13 @@ Space, **R** or a tap skips it once the first moment has passed, so the key you
 were hammering when you died does not restart the game by accident. Reduced
 motion keeps the flash and the drain, and nothing moves.
 
+After a new hi-score the defeat screen asks you to **sign the board** with
+three letters, the way an arcade cabinet did. Last time's initials come back
+filled in, so signing again is Enter or a single tap on **Sign**, and typing
+over them starts afresh. **Escape** or **skip** passes. On a tablet, tap the
+letters to bring up the keyboard. For now signing only remembers your
+initials in this browser; the leaderboard they are for is still being built.
+
 ### Sound
 
 80s/90s arcade sound, generated in the page from square and pulse waves rather
@@ -195,9 +202,9 @@ No framework and nothing to install, same as the game. The harness reads
 `index.html`, pulls the inline script out and runs it against a stubbed
 browser, so the game stays a single file with nothing to install.
 
-151 tests, covering the grid, the speed curve, collisions, growth, scoring, the
-visitor countdown, the input rules for keys and swipes, and how a run becomes a
-score record. None of them touch the network. They cannot tell you
+154 tests, covering the grid, the speed curve, collisions, growth, scoring, the
+visitor countdown, the input rules for keys and swipes, how a run becomes a
+score record, and the initials entry. None of them touch the network. They cannot tell you
 whether the game is *fun* — that still needs playing.
 
 Needs Node 15 or newer.

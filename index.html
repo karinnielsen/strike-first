@@ -271,6 +271,61 @@
   .sound-btn:hover  { background: transparent; color: var(--text); }
   .sound-btn:active { transform: none; box-shadow: none; }
 
+  /* INITIALS. Asked for only after a new hi-score, between the verdict and
+     the call to action, which reads "Sign" until you sign or skip. Chosen
+     over three arcade slots you roll through, which needed up to thirteen
+     taps a letter on a tablet. UNR-108. */
+  .initials { display: grid; justify-items: center; gap: 8px; margin-top: 18px; }
+  .initials[hidden] { display: none; }
+  .initials-label { font-size: 12px; }
+  .overlay .initials-done { font-size: 36px; font-weight: bold; letter-spacing: 0.6ch; margin-right: -0.6ch; color: var(--text); }
+
+  /* A real field, letter-spaced so each letter sits on its own underline,
+     the way an arcade table prints them. The board above it turns text
+     selection off, and Safari will not type into a field inside that
+     unless the field turns it back on. */
+  .initials-input {
+    box-sizing: content-box;
+    width: 4.8ch;        /* three letters and their spacing, so it never scrolls */
+    padding: 0 0 6px 0.6ch;
+    font: inherit;
+    font-size: 36px;
+    font-weight: bold;
+    letter-spacing: 0.6ch;
+    text-transform: uppercase;
+    color: var(--text);
+    caret-color: var(--yellow);
+    background:
+      linear-gradient(var(--dim), var(--dim)) 0.6ch 100% / 1ch 2px no-repeat,
+      linear-gradient(var(--dim), var(--dim)) 2.2ch 100% / 1ch 2px no-repeat,
+      linear-gradient(var(--dim), var(--dim)) 3.8ch 100% / 1ch 2px no-repeat;
+    border: 0;
+    outline: none;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  .overlay #play-btn:disabled { opacity: 0.35; cursor: default; animation: none; }
+
+  /* Under Sign, so a tablet's keyboard covers it once the field is tapped.
+     Accepted: skip is on screen until you choose to type, and backing out
+     after that is two taps - hide the keyboard, then skip. */
+  .skip-btn {
+    justify-self: center;
+    min-height: 44px;
+    margin-top: 8px;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: normal;
+    color: var(--dim);
+    background: transparent;
+    box-shadow: none;
+    animation: none;
+  }
+  .skip-btn[hidden] { display: none; }
+  .skip-btn:hover  { background: transparent; color: var(--text); }
+  .skip-btn:active { transform: none; box-shadow: none; }
+
 
   /* The one thing the screen wants you to do, so it should look like a
      button on a cabinet rather than a rectangle: a solid slab with a hard
@@ -542,7 +597,9 @@
     <div class="overlay" id="overlay">
       <h2 id="overlay-title">Strike hard. No mercy.</h2>
       <p  id="overlay-text">arrows or wasd to move</p>
+      <div class="initials" id="initials" hidden></div>
       <button id="play-btn">Enter the dojo</button>
+      <button class="skip-btn" id="skip-btn" type="button" hidden>skip</button>
       <button class="sound-btn" id="sound-btn" type="button">sound on</button>
     </div>
   </div>
@@ -1018,6 +1075,7 @@ function showVerdict() {
   // to say, so it may as well be worth reading.
   lastDefeatLine = defeatLine(defeat.cause, score, bestAtStart, Math.random(), lastDefeatLine);
   showOverlay('DEFEATED', lastDefeatLine, 'Again');
+  if (wantsInitials(score, bestAtStart)) openInitials();
 }
 
 
@@ -2158,6 +2216,10 @@ const KEYS = {
 };
 
 document.addEventListener('keydown', (event) => {
+  // While initials are being entered, every key belongs to them: r, wasd,
+  // m and space are letters or nothing, never a restart behind your back.
+  if (entry) { initialsKeydown(event); return; }
+
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
 
   // Stop arrows and space from scrolling the page underneath us.
@@ -2476,6 +2538,7 @@ function startGame() {
   endArrival();
   audio();    // always a click or a key, so the browser will allow it
   reset();
+  hideInitials();
   overlay.classList.add('hidden');
   if (REDUCED_MOTION.matches) {
     phase = 'playing';
@@ -2510,7 +2573,9 @@ function bowFrame() {
 // Continue goes through toggleMercy() like space does, so the time spent
 // paused is counted the same way whichever you used.
 playBtn.addEventListener('click', () => {
-  if (phase === 'paused') {
+  if (entry) {
+    signInitials();
+  } else if (phase === 'paused') {
     toggleMercy();
   } else {
     startGame();
@@ -2788,6 +2853,118 @@ async function submitScore(record, send = globalThis.fetch) {
     return null;
   }
 }
+
+// ---- initials ---------------------------------------------------------
+// Three letters, the way every arcade cabinet did it. UNR-108.
+//
+// A real text field, chosen over three arcade slots you roll through: the
+// slots took up to thirteen taps a letter on a tablet, and a real field
+// gets hardware keyboards, paste and screen readers for nothing.
+//
+// Safari only opens a tablet's keyboard for a focus that happens inside a
+// tap, and this field appears at the end of the defeat with no tap in
+// sight. So on a touch screen it waits to be tapped rather than grabbing
+// focus it cannot use. Most players never need the keyboard anyway: last
+// time's initials come back filled in, and signing again is one tap.
+//
+// Nothing is sent to the board yet: signing only remembers the initials.
+const INITIALS_KEY = 'strikeFirstInitials';
+
+const initialsEl = document.getElementById('initials');
+const skipBtn    = document.getElementById('skip-btn');
+
+// The initials field while it is open, and null otherwise - which is what
+// hands the keyboard back to the game.
+let entry = null;
+
+// Only a run that beats your own hi-score asks. Most runs go straight to
+// Again, and a first run with any points at all is always a hi-score, so a
+// new player still signs the board after one run.
+function wantsInitials(points, bestBefore) {
+  return points > 0 && points > bestBefore;
+}
+
+// Anything typed or pasted, as initials: capitals only, three at most.
+function cleanInitials(text) {
+  return String(text || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+}
+
+function openInitials() {
+  initialsEl.innerHTML =
+    '<p class="initials-label">Sign the board.</p>' +
+    '<input class="initials-input" id="initials-input" ' +
+    'autocomplete="off" autocorrect="off" autocapitalize="characters" ' +
+    'spellcheck="false" enterkeyhint="done" aria-label="initials">';
+  entry = document.getElementById('initials-input');
+  entry.value = cleanInitials(localStorage.getItem(INITIALS_KEY));
+  // Last time's initials fill the field, and a full field used to refuse
+  // another letter, so typing did nothing until you deleted first. Found on
+  // the iPad simulator. Now a letter typed into a full field starts over,
+  // the way an arcade cabinet's entry did. There is no maxlength for the
+  // same reason: Safari drops the extra letter before the page ever hears
+  // about it, which leaves nothing to start over from.
+  entry.addEventListener('input', (event) => {
+    const typed = entry.value.toUpperCase().replace(/[^A-Z]/g, '');
+    entry.value = typed.length > 3 && event.data ? cleanInitials(event.data) : cleanInitials(typed);
+    showInitials();
+  });
+  initialsEl.hidden = false;
+  skipBtn.hidden = false;
+  playBtn.textContent = 'Sign';
+  showInitials();
+  if (!matchMedia('(pointer: coarse)').matches) entry.focus({ preventScroll: true });
+}
+
+// Output only: reflects the field, decides nothing.
+function showInitials() {
+  playBtn.disabled = cleanInitials(entry.value).length !== 3;
+}
+
+function initialsKeydown(event) {
+  // preventDefault on Enter also stops a focused button from turning the
+  // same key press into a click, which would sign and then start a run.
+  if (event.key === 'Enter') { event.preventDefault(); signInitials(); return; }
+  if (event.key === 'Escape') { event.preventDefault(); skipInitials(); return; }
+
+  // A keyboard on a tablet: the field was never focused, so the first
+  // letter focuses it and goes in, rather than vanishing.
+  if (document.activeElement !== entry && /^[a-z]$/i.test(event.key)) {
+    event.preventDefault();
+    entry.value = cleanInitials((entry.value.length < 3 ? entry.value : '') + event.key);
+    entry.focus({ preventScroll: true });
+    showInitials();
+  }
+}
+
+function signInitials() {
+  const initials = cleanInitials(entry && entry.value);
+  if (initials.length !== 3) return;
+  localStorage.setItem(INITIALS_KEY, initials);
+  initialsEl.innerHTML =
+    '<p class="initials-label">Signed.</p>' +
+    `<p class="initials-done">${initials}</p>`;
+  endEntry();
+}
+
+function skipInitials() {
+  hideInitials();
+}
+
+function endEntry() {
+  if (entry) entry.blur();
+  entry = null;
+  skipBtn.hidden = true;
+  playBtn.disabled = false;
+  playBtn.textContent = 'Again';
+}
+
+function hideInitials() {
+  endEntry();
+  initialsEl.hidden = true;
+  initialsEl.innerHTML = '';
+}
+
+skipBtn.addEventListener('click', skipInitials);
 </script>
 
 </body>
