@@ -121,7 +121,8 @@ motion keeps the flash and the drain, and nothing moves.
 After a new hi-score the defeat screen asks you to **sign the board** with
 three letters, the way an arcade cabinet did. Last time's initials come back
 filled in, so signing again is Enter or a single tap on **Sign**, and typing
-over them starts afresh. **Escape** or **skip** passes. On a tablet, tap the
+over them starts afresh. **Escape** or **skip** passes. A short list of rude
+initials is refused, in the page and in the database. On a tablet, tap the
 letters to bring up the keyboard. For now signing only remembers your
 initials in this browser; the leaderboard they are for is still being built.
 
@@ -202,9 +203,10 @@ No framework and nothing to install, same as the game. The harness reads
 `index.html`, pulls the inline script out and runs it against a stubbed
 browser, so the game stays a single file with nothing to install.
 
-154 tests, covering the grid, the speed curve, collisions, growth, scoring, the
+157 tests, covering the grid, the speed curve, collisions, growth, scoring, the
 visitor countdown, the input rules for keys and swipes, how a run becomes a
-score record, and the initials entry. None of them touch the network. They cannot tell you
+score record, and the initials entry, including a check that the page and
+the database refuse the same initials. None of them touch the network. They cannot tell you
 whether the game is *fun* — that still needs playing.
 
 Needs Node 15 or newer.

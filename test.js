@@ -160,7 +160,7 @@ globalThis.game = {
   get moves() { return moves }, get runMs() { return runMs },
   get pausedMs() { return pausedMs }, toggleMercy, gameOver,
   SCORE_SERVICE, DOJO_IDS, runDuration, scoreRecord, runRecord, scoreRequest, submitScore,
-  wantsInitials, cleanInitials,
+  wantsInitials, cleanInitials, BLOCKED_INITIALS, signInitials,
   get entry() { return entry }, set entry(v) { entry = v }
 };`;
 
@@ -1415,6 +1415,26 @@ describe('initials', () => {
     is(game.cleanInitials('k 4-r!z'), 'KRZ', 'junk removed');
     is(game.cleanInitials('abcdef'), 'ABC', 'cut to three');
     is(game.cleanInitials(null), '', 'nothing');
+  });
+
+  test('the page and the database block the same initials', () => {
+    const sql = fs.readFileSync(path.join(__dirname, 'db', 'scores.sql'), 'utf8');
+    const list = sql.match(/initials not in \(([^)]*)\)/);
+    const inDatabase = list ? list[1].match(/[A-Z]{3}/g).sort().join(' ') : '';
+    is([...game.BLOCKED_INITIALS].sort().join(' '), inDatabase, 'blocklists');
+  });
+
+  test('blocked initials never become a score record', () => {
+    const run = { dojo: 'cobra-kai', score: 10, best: 10, length: 5, moves: 40, durationMs: 9000 };
+    is(game.scoreRecord({ ...run, initials: 'KKK' }), null, 'blocked');
+    is(game.scoreRecord({ ...run, initials: 'wtf' }).initials, 'WTF', 'cheek is allowed');
+  });
+
+  test('blocked initials cannot be signed', () => {
+    game.entry = { value: 'KYS', focus() {}, blur() {} };
+    game.signInitials();
+    is(game.entry && game.entry.value, 'KYS', 'still open, not signed');
+    game.entry = null;
   });
 
   test('while initials are open, game keys do not restart', () => {

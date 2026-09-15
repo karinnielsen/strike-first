@@ -2770,6 +2770,19 @@ const SCORE_TIMEOUT_MS = 8000;
 // (UNR-114) should use these ids; the database refuses any other.
 const DOJO_IDS = ['cobra-kai', 'miyagi-do', 'eagle-fang'];
 
+// Initials the dojo will not print. Slurs, hate, sexual terms and
+// self-harm; mild cheek like WTF is allowed, as arcades always did, and
+// identities are not on it, because blocking them treats the identity as
+// the insult. The database holds the same list and is the real rule -
+// this copy only lets the player hear it before signing. test.js fails if
+// the two differ. Decided in UNR-108.
+const BLOCKED_INITIALS = [
+  'KKK', 'NIG', 'NGR', 'FAG', 'NAZ',
+  'CUM', 'SEX', 'TIT', 'DIK', 'DIC', 'COK',
+  'FUK', 'FCK', 'FUC', 'CNT', 'SHT', 'ASS',
+  'KYS'
+];
+
 // First move to death, with time spent in mercy taken out. Not a mechanic -
 // nothing in play depends on it - so wall-clock time is right here. A tab
 // in the background slows the heartbeat, which can only make a run look
@@ -2788,7 +2801,7 @@ function runDuration(startedAt, endedAt, paused) {
 function scoreRecord({ initials, dojo, score, best, length, moves, durationMs }) {
   initials = String(initials || '').trim().toUpperCase();
   const whole = (n, min) => Number.isInteger(n) && n >= min;
-  if (!/^[A-Z]{3}$/.test(initials)) return null;
+  if (!/^[A-Z]{3}$/.test(initials) || BLOCKED_INITIALS.includes(initials)) return null;
   if (!DOJO_IDS.includes(dojo)) return null;
   if (!whole(score, 0) || !whole(best, 0) || !whole(length, 3) ||
       !whole(moves, 0) || !whole(durationMs, 0)) return null;
@@ -2891,7 +2904,7 @@ function cleanInitials(text) {
 
 function openInitials() {
   initialsEl.innerHTML =
-    '<p class="initials-label">Sign the board.</p>' +
+    '<p class="initials-label" id="initials-label">Sign the board.</p>' +
     '<input class="initials-input" id="initials-input" ' +
     'autocomplete="off" autocorrect="off" autocapitalize="characters" ' +
     'spellcheck="false" enterkeyhint="done" aria-label="initials">';
@@ -2917,7 +2930,11 @@ function openInitials() {
 
 // Output only: reflects the field, decides nothing.
 function showInitials() {
-  playBtn.disabled = cleanInitials(entry.value).length !== 3;
+  const initials = cleanInitials(entry.value);
+  const blocked = BLOCKED_INITIALS.includes(initials);
+  playBtn.disabled = initials.length !== 3 || blocked;
+  document.getElementById('initials-label').textContent =
+    blocked ? 'The dojo will not print that.' : 'Sign the board.';
 }
 
 function initialsKeydown(event) {
@@ -2938,7 +2955,7 @@ function initialsKeydown(event) {
 
 function signInitials() {
   const initials = cleanInitials(entry && entry.value);
-  if (initials.length !== 3) return;
+  if (initials.length !== 3 || BLOCKED_INITIALS.includes(initials)) return;
   localStorage.setItem(INITIALS_KEY, initials);
   initialsEl.innerHTML =
     '<p class="initials-label">Signed.</p>' +
