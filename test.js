@@ -60,6 +60,9 @@ function makeElement() {
     addEventListener() {},
     focus() {},
     blur() {},
+    append() {},
+    replaceChildren() {},
+    insertRow: () => makeElement(),
     getContext: () => makeCanvasContext()
   };
   el.parentElement = el;   // addScore() reaches for scoreEl.parentElement
@@ -165,7 +168,12 @@ globalThis.game = {
   wantsInitials, cleanInitials, BLOCKED_INITIALS, signInitials, hideInitials,
   dojoFor, currentDojo,
   get entry() { return entry }, set entry(v) { entry = v },
-  get lastRunId() { return lastRunId }
+  get lastRunId() { return lastRunId },
+  BOARD_TEAM, PODIUM, PODIUM_REACH, boardRequests, neighbourRequest,
+  podiumRows, dojoStandings, studentsLabel, readRows, fetchBoard, loadBoard,
+  dropBoard, dueBoard, skipInitials,
+  get board() { return board }, get boardDue() { return boardDue },
+  get boardShown() { return !boardEl.hidden }
 };`;
 
 vm.createContext(sandbox);
@@ -1464,7 +1472,7 @@ describe('initials', () => {
     signable('KAR');
     let body = null;
     const send = async (url, options) => {
-      body = JSON.parse(options.body);
+      if (options.method === 'POST') body = JSON.parse(options.body);
       return { ok: true, status: 201, json: async () => [{ id: 42 }] };
     };
     const saving = game.signInitials(send);
@@ -1507,6 +1515,139 @@ describe('initials', () => {
     is(game.phase, 'over', 'still on the verdict');
     is(game.entry.value, 'R', 'r went into the initials');
     game.entry = null;
+  });
+});
+
+
+describe('the board', () => {
+  // A run as the leaderboard view returns it.
+  const at = (place, id = 100 + place) =>
+    ({ id, initials: 'AAA', dojo: 'cobra-kai', score: 300 - place, belt: 'White', place });
+  const top = [1, 2, 3, 4, 5].map(p => at(p));
+  const places = (rows) => rows.map(r => r === null ? '-' : r.you ? r.place + '*' : r.near ? r.place + '~' : r.place);
+
+  test('far down: the podium, a gap, then either side of you', () => {
+    const you = at(17);
+    is(places(game.podiumRows(top, [at(16), you, at(18)], you)), [1, 2, 3, '-', '16~', '17*', '18~'], 'rows');
+  });
+
+  test('on the podium or just under it: only the top five', () => {
+    is(places(game.podiumRows(top, [], top[1])), [1, '2*', 3, 4, 5], 'second');
+    is(places(game.podiumRows(top, [], top[4])), [1, 2, 3, 4, '5*'], 'fifth');
+  });
+
+  test('sixth: no row repeats and the gap still shows', () => {
+    const you = at(6);
+    is(places(game.podiumRows(top, [at(5), you, at(7)], you)), [1, 2, 3, '-', '5~', '6*', '7~'], 'rows');
+  });
+
+  test('last: only the run above you', () => {
+    const you = at(9);
+    is(places(game.podiumRows(top, [at(8), you], you)), [1, 2, 3, '-', '8~', '9*'], 'rows');
+  });
+
+  test('no run of yours: the top three, nothing highlighted', () => {
+    is(places(game.podiumRows(top, [], null)), [1, 2, 3], 'rows');
+    is(places(game.podiumRows(top.slice(0, 2), [], null)), [1, 2], 'a young board');
+  });
+
+  test('initials are not unique: yours is found by id', () => {
+    const you = { ...at(2), id: 999 };
+    const rows = game.podiumRows([at(1), you, at(3)], [], you);
+    is(rows.filter(r => r.you).map(r => r.id), [999], 'one highlight');
+  });
+
+  test('dojos: best three summed, every dojo listed, best first', () => {
+    const player = (dojo, best, place, students) => ({ dojo, initials: 'AAA', best, place, students });
+    const standings = game.dojoStandings([
+      player('cobra-kai', 50, 1, 9), player('cobra-kai', 40, 2, 9), player('cobra-kai', 30, 3, 9),
+      player('miyagi-do', 200, 1, 1),
+      player('cobra-kai', 20, 4, 9)                // off the team
+    ], game.BOARD_TEAM);
+    is(standings, [
+      { dojo: 'miyagi-do', total: 200, students: 1 },
+      { dojo: 'cobra-kai', total: 120, students: 9 },
+      { dojo: 'eagle-fang', total: 0, students: 0 }
+    ], 'standings');
+  });
+
+  test('students, counted in words', () => {
+    is([0, 1, 12].map(game.studentsLabel), ['no students yet', '1 student', '12 students'], 'labels');
+  });
+
+  test('the requests read the views, and only your run by id', () => {
+    const ask = game.boardRequests(game.SCORE_SERVICE, 42);
+    const rest = game.SCORE_SERVICE.url + '/rest/v1/';
+    is(ask.top.startsWith(rest + 'leaderboard?') && ask.top.includes('order=place&limit=5'), true, 'top');
+    is(ask.dojos.startsWith(rest + 'dojo_players?') && ask.dojos.includes('place=lte.3'), true, 'dojos');
+    is(ask.you.endsWith('&id=eq.42'), true, 'yours');
+    is(game.boardRequests(game.SCORE_SERVICE, null).you, null, 'no run, no request');
+    is(game.neighbourRequest(game.SCORE_SERVICE, 17).includes('place=gte.16&place=lte.18'), true, 'neighbours');
+  });
+
+  // A pretend database answering the board's reads.
+  const database = (runs, players = []) => async (url, options) => {
+    const q = new URL(url);
+    let rows = q.pathname.endsWith('dojo_players') ? players : runs;
+    for (const [key, value] of q.searchParams) {
+      const [op, n] = value.split('.');
+      if (op === 'eq') rows = rows.filter(r => r[key] === Number(n));
+      if (op === 'gte') rows = rows.filter(r => r[key] >= Number(n));
+      if (op === 'lte') rows = rows.filter(r => r[key] <= Number(n));
+    }
+    if (q.searchParams.get('limit')) rows = rows.slice(0, Number(q.searchParams.get('limit')));
+    return { ok: options.headers.apikey === game.SCORE_SERVICE.key, status: 200, json: async () => rows };
+  };
+  const forty = Array.from({ length: 40 }, (_, i) => at(i + 1));
+
+  testAsyncInOrder('board: loads the podium and your neighbourhood', async () => {
+    const loaded = await game.fetchBoard(117, database(forty));
+    is(places(loaded.rows), [1, 2, 3, '-', '16~', '17*', '18~'], 'rows');
+    is(loaded.you.id, 117, 'you');
+  });
+
+  testAsyncInOrder('board: a run the database has lost is no highlight, not an error', async () => {
+    const loaded = await game.fetchBoard(5000, database(forty));
+    is(places(loaded.rows), [1, 2, 3], 'rows');
+  });
+
+  testAsyncInOrder('board: offline is no board, not an error', async () => {
+    is(await quietly(() => game.fetchBoard(117, async () => { throw new Error('offline'); })), null, 'offline');
+  });
+
+  testAsyncInOrder('board: never shown alongside the initials entry', async () => {
+    freshGame();
+    game.phase = 'over';
+    game.entry = { value: 'KAR', focus() {}, blur() {} };
+    await game.loadBoard(117, database(forty));
+    game.dueBoard();
+    is(game.board !== null, true, 'loaded');
+    is(game.boardShown, false, 'hidden while the entry is open');
+    game.entry = null;
+    game.dueBoard();
+    is(game.boardShown, true, 'shown once it closes');
+    game.dropBoard();
+    is(game.boardShown, false, 'gone on Again');
+  });
+
+  testAsyncInOrder('board: a load overtaken by the next run lands nowhere', async () => {
+    const held = [];
+    const loading = game.loadBoard(117, (url, options) =>
+      new Promise(r => held.push(() => r(database(forty)(url, options)))));
+    game.dropBoard();                          // Again pressed
+    // Answer everything, including the neighbours asked for after the first three.
+    for (let i = 0; i < 10; i++) {
+      while (held.length) held.shift()();
+      await new Promise(r => setImmediate(r));
+    }
+    await loading;
+    is(game.board, null, 'nothing kept');
+  });
+
+  testAsyncInOrder('board: skipping the initials makes it due', async () => {
+    game.skipInitials();
+    is(game.boardDue, true, 'due');
+    game.dropBoard();
   });
 });
 

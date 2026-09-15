@@ -326,6 +326,63 @@
   .skip-btn:hover  { background: transparent; color: var(--text); }
   .skip-btn:active { transform: none; box-shadow: none; }
 
+  /* THE BOARD, on the defeat screen only. A podium - the top three, a gap,
+     then the run above yours, yours and the one below - and the dojos
+     beneath it. Never alongside the initials entry. UNR-108.
+
+     Spacing is small inside a group and large between groups, which is
+     what makes it skimmable: 10px from title to line, 52px from the line
+     to the podium and from the dojos to Again. Settled side by side at
+     actual size. The overlay is its own container so the short step below
+     can ask how much room there is. */
+  .overlay { container: overlay / size; }
+  .overlay.with-board { gap: 0; }
+  .overlay.with-board h2 { margin-bottom: 10px; }
+  .overlay.with-board #play-btn { margin-top: 52px; justify-self: center; }
+  .overlay.with-board .sound-btn { margin-top: 12px; }
+
+  .board { margin-top: 52px; font-size: 12px; }
+  .board[hidden] { display: none; }
+  .board table { border-collapse: collapse; margin: 0 auto; width: 280px; text-align: left; }
+  .board td { padding: 0 6px; height: 30px; color: var(--text); white-space: nowrap; }
+  .board .gap td { height: 22px; padding: 0; }
+  .board .place { color: var(--dim); text-align: right; width: 2ch; }
+  .board .score { text-align: right; }
+  .board .belt-swatch { display: inline-block; vertical-align: middle; }
+  .board .you td { color: var(--yellow); font-weight: bold; }
+
+  /* STAND-IN until UNR-114's badges: the dojo's initials, dim, where an
+     18px crest will go. */
+  .dojo-badge {
+    display: inline-block;
+    width: 18px;
+    color: var(--dim);
+    font-size: 11px;
+    font-weight: normal;
+    text-align: center;
+  }
+  .board .you .dojo-badge { color: var(--yellow); }
+
+  .dojos { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 26px; margin-top: 40px; padding: 0 16px; color: var(--dim); }
+  .dojos b { color: var(--text); font-weight: normal; }
+  .dojos .mine, .dojos .mine b, .dojos .mine .dojo-badge { color: var(--yellow); }
+
+  /* SHORT. When the board is drawn small the podium loses the runs either
+     side of yours - never yours - and the spacing tightens to the
+     comfortable set that was compared against this one. Fewer rows rather
+     than smaller ones: text and buttons stay a size a finger and an eye
+     can use. */
+  @container overlay (max-height: 540px) {
+    .overlay.with-board h2 { margin-bottom: 8px; }
+    .overlay.with-board #play-btn { margin-top: 28px; }
+    .overlay.with-board .sound-btn { margin-top: 0; }
+    .board { margin-top: 28px; }
+    .board td { height: 26px; }
+    .board .gap td { height: 14px; }
+    .board .near { display: none; }
+    .dojos { margin-top: 20px; gap: 2px 18px; }
+  }
+
 
   /* The one thing the screen wants you to do, so it should look like a
      button on a cabinet rather than a rectangle: a solid slab with a hard
@@ -598,6 +655,7 @@
       <h2 id="overlay-title">Strike hard. No mercy.</h2>
       <p  id="overlay-text">arrows or wasd to move</p>
       <div class="initials" id="initials" hidden></div>
+      <div class="board" id="board" hidden></div>
       <button id="play-btn">Enter the dojo</button>
       <button class="skip-btn" id="skip-btn" type="button" hidden>skip</button>
       <button class="sound-btn" id="sound-btn" type="button">sound on</button>
@@ -1035,6 +1093,7 @@ function gameOver(cause, at) {
   defeat = { cause, at, dir: direction, time: performance.now() };
   runMs  = runDuration(runStartedAt, defeat.time, pausedMs);
   playSound('defeat');
+  loadBoard(lastRunId);                      // while the defeat plays
   requestAnimationFrame(dyingFrame);
 }
 
@@ -1076,6 +1135,7 @@ function showVerdict() {
   lastDefeatLine = defeatLine(defeat.cause, score, bestAtStart, Math.random(), lastDefeatLine);
   showOverlay('DEFEATED', lastDefeatLine, 'Again');
   if (wantsInitials(score, bestAtStart)) openInitials();
+  else dueBoard();
 }
 
 
@@ -2539,6 +2599,7 @@ function startGame() {
   audio();    // always a click or a key, so the browser will allow it
   reset();
   hideInitials();
+  dropBoard();
   overlay.classList.add('hidden');
   if (REDUCED_MOTION.matches) {
     phase = 'playing';
@@ -2989,7 +3050,8 @@ function initialsKeydown(event) {
 // change what gets saved. While it saves the entry is closed, so Enter or a
 // second tap can't send it twice, and Again works: a run never waits on the
 // network. If it fails, the entry comes back filled in, and Sign is the
-// retry - no extra button. Resolves once the save has settled, for tests.
+// retry - no extra button. Resolves once the save, and the board it
+// reloads, have settled, for tests.
 async function signInitials(send = globalThis.fetch) {
   const initials = cleanInitials(entry && entry.value);
   if (initials.length !== 3 || BLOCKED_INITIALS.includes(initials)) return;
@@ -3006,8 +3068,11 @@ async function signInitials(send = globalThis.fetch) {
   }
   if (signing !== record) return;            // the verdict has gone
   signing = null;
-  if (saved) showSigned('Signed.', initials);
-  else openInitials('Not saved. Sign again to try once more.');
+  if (!saved) return openInitials('Not saved. Sign again to try once more.');
+  showSigned('Signed.', initials);
+  // The places have moved now your run is on it, so load it again.
+  boardDue = true;
+  await loadBoard(saved.id, send);
 }
 
 // Output only.
@@ -3019,6 +3084,7 @@ function showSigned(label, initials) {
 
 function skipInitials() {
   hideInitials();
+  dueBoard();
 }
 
 function endEntry() {
@@ -3037,6 +3103,217 @@ function hideInitials() {
 }
 
 skipBtn.addEventListener('click', skipInitials);
+
+// ---- the board --------------------------------------------------------
+// Seen between runs, on the defeat screen, never over a live run. UNR-108.
+//
+// A podium rather than a top ten: sixteen rows were too busy for the
+// overlay. The top three, then the run above yours, yours and the one
+// below, so you can always find yourself however far down you are. Your
+// run is found by its id, because initials are not unique. Under it, the
+// dojos, each counted at its best three players.
+//
+// It starts loading the moment you die, so it has the defeat to arrive in.
+// If it is late it appears when it lands, and if it fails it never
+// appears: the board is something to look at, and a run never waits for
+// it. The full board - top ten, teams, filters - is UNR-134.
+
+// A dojo's standing is the sum of its best this many players.
+const BOARD_TEAM = 3;
+// The podium is the top this many...
+const PODIUM = 3;
+// ...unless your run is at or above this place, when it is just the top
+// this many, since your neighbourhood is already on it.
+const PODIUM_REACH = 5;
+
+const DOJO_NAMES = { 'cobra-kai': 'Cobra Kai', 'miyagi-do': 'Miyagi-Do', 'eagle-fang': 'Eagle Fang' };
+// STAND-IN until UNR-114's badges.
+const DOJO_TAGS  = { 'cobra-kai': 'CK', 'miyagi-do': 'MD', 'eagle-fang': 'EF' };
+
+const boardEl = document.getElementById('board');
+
+// What the board holds right now, or null: { rows, you, standings }.
+let board = null;
+// Whether the screen is at the point where the board belongs: after a
+// defeat with nothing to sign, or after signing or skipping.
+let boardDue = false;
+// Counts loads, so a slow one that is overtaken - or outlived by the
+// verdict it was for - lands nowhere.
+let boardLoads = 0;
+
+// What to ask for, without asking. The run's own row only if there is a
+// run to look for.
+function boardRequests(service, runId) {
+  const rest = service.url + '/rest/v1/';
+  const run = 'select=id,initials,dojo,score,belt,place';
+  return {
+    top:   `${rest}leaderboard?${run}&order=place&limit=${PODIUM_REACH}`,
+    dojos: `${rest}dojo_players?select=dojo,initials,best,place,students&place=lte.${BOARD_TEAM}`,
+    you:   runId ? `${rest}leaderboard?${run}&id=eq.${runId}` : null
+  };
+}
+
+function neighbourRequest(service, place) {
+  return `${service.url}/rest/v1/leaderboard?select=id,initials,dojo,score,belt,place` +
+    `&place=gte.${place - 1}&place=lte.${place + 1}&order=place`;
+}
+
+// The rows to show, top to bottom. null is the gap between the podium and
+// your neighbourhood. Rows either side of yours are marked near, which is
+// what the short layout leaves out. Pure.
+function podiumRows(top, near, you) {
+  const high = you && you.place <= PODIUM_REACH;
+  const rows = top.filter(r => r.place <= (high ? PODIUM_REACH : PODIUM))
+    .map(r => ({ ...r, you: !!you && r.id === you.id, near: false }));
+  if (!you || high) return rows;
+  const around = near.some(r => r.id === you.id) ? near : [...near, you];
+  rows.push(null, ...around
+    .filter(r => r.place > PODIUM)
+    .sort((a, b) => a.place - b.place)
+    .map(r => ({ ...r, you: r.id === you.id, near: r.id !== you.id })));
+  return rows;
+}
+
+// Every dojo, best total first, from the dojo_players rows already cut to
+// each dojo's team. A dojo with nobody is still listed. Pure.
+function dojoStandings(players, team) {
+  return DOJO_IDS.map(dojo => {
+    const mine = players.filter(p => p.dojo === dojo && p.place <= team);
+    return {
+      dojo,
+      total: mine.reduce((sum, p) => sum + p.best, 0),
+      students: mine.length ? mine[0].students : 0
+    };
+  }).sort((a, b) => b.total - a.total);
+}
+
+function studentsLabel(n) {
+  return n === 0 ? 'no students yet' : n === 1 ? '1 student' : `${n} students`;
+}
+
+// Read rows. Resolves to an array, or null if anything went wrong; never
+// throws, like submitScore.
+async function readRows(url, send = globalThis.fetch) {
+  if (!send) return null;
+  const options = { headers: { apikey: SCORE_SERVICE.key } };
+  if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
+    options.signal = AbortSignal.timeout(SCORE_TIMEOUT_MS);
+  }
+  try {
+    const response = await send(url, options);
+    if (!response.ok) {
+      console.warn('Board not loaded:', response.status, await response.text());
+      return null;
+    }
+    const rows = await response.json();
+    return Array.isArray(rows) ? rows : null;
+  } catch (err) {
+    console.warn('Board not loaded:', err);
+    return null;
+  }
+}
+
+// Everything the board shows, or null. A run id nobody has - a database
+// that was reset - just means no highlight.
+async function fetchBoard(runId, send = globalThis.fetch) {
+  const ask = boardRequests(SCORE_SERVICE, runId);
+  const [top, players, mine] = await Promise.all([
+    readRows(ask.top, send),
+    readRows(ask.dojos, send),
+    ask.you ? readRows(ask.you, send) : []
+  ]);
+  if (!top || !players || !mine) return null;
+  const you = mine[0] || null;
+  let near = [];
+  if (you && you.place > PODIUM_REACH) {
+    near = await readRows(neighbourRequest(SCORE_SERVICE, you.place), send);
+    if (!near) return null;
+  }
+  return { rows: podiumRows(top, near, you), you, standings: dojoStandings(players, BOARD_TEAM) };
+}
+
+// Load the board for a run and show it if it is still wanted. Resolves
+// once it has settled, for tests.
+async function loadBoard(runId, send = globalThis.fetch) {
+  const load = ++boardLoads;
+  board = null;
+  const loaded = await fetchBoard(runId, send);
+  if (load !== boardLoads) return;
+  board = loaded;
+  showBoard();
+}
+
+function dueBoard() {
+  boardDue = true;
+  showBoard();
+}
+
+function dropBoard() {
+  boardLoads++;
+  board = null;
+  boardDue = false;
+  showBoard();
+}
+
+// Output only: shows what board and boardDue say, decides nothing.
+function showBoard() {
+  const shown = boardDue && board !== null && entry === null && signing === null;
+  boardEl.hidden = !shown;
+  overlay.classList.toggle('with-board', shown);
+  if (!shown) return;
+  initialsEl.hidden = true;
+
+  const cell = (text, className) => {
+    const td = document.createElement('td');
+    if (className) td.className = className;
+    if (text !== null) td.textContent = text;
+    return td;
+  };
+  const badge = (dojo) => {
+    const span = document.createElement('span');
+    span.className = 'dojo-badge';
+    span.textContent = DOJO_TAGS[dojo];
+    span.title = DOJO_NAMES[dojo];
+    return span;
+  };
+
+  const table = document.createElement('table');
+  for (const r of board.rows) {
+    const tr = table.insertRow();
+    if (r === null) {
+      tr.className = 'gap';
+      const td = cell(null);
+      td.colSpan = 5;
+      tr.append(td);
+      continue;
+    }
+    tr.className = r.you ? 'you' : r.near ? 'near' : '';
+    const swatch = document.createElement('span');
+    const belt = BELTS.find(b => b.name === r.belt) || BELTS[0];
+    swatch.className = 'belt-swatch';
+    swatch.style.setProperty('--belt', belt.colour);
+    swatch.title = belt.name;
+    const dojo = cell(null);
+    dojo.append(badge(r.dojo));
+    const beltCell = cell(null);
+    beltCell.append(swatch);
+    tr.append(cell(String(r.place), 'place'), cell(r.initials), dojo, beltCell, cell(String(r.score), 'score'));
+  }
+
+  const yours = board.you ? board.you.dojo : currentDojo();
+  const dojos = document.createElement('div');
+  dojos.className = 'dojos';
+  for (const d of board.standings) {
+    const div = document.createElement('div');
+    if (d.dojo === yours) div.className = 'mine';
+    const total = document.createElement('b');
+    total.textContent = d.students ? String(d.total) : '—';
+    div.append(badge(d.dojo), ' ', total, ` · ${studentsLabel(d.students)}`);
+    dojos.append(div);
+  }
+
+  boardEl.replaceChildren(table, dojos);
+}
 </script>
 
 </body>

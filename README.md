@@ -123,8 +123,26 @@ three letters, the way an arcade cabinet did. Last time's initials come back
 filled in, so signing again is Enter or a single tap on **Sign**, and typing
 over them starts afresh. **Escape** or **skip** passes. A short list of rude
 initials is refused, in the page and in the database. On a tablet, tap the
-letters to bring up the keyboard. For now signing only remembers your
-initials in this browser; the leaderboard they are for is still being built.
+letters to bring up the keyboard. Signing saves the run to a shared
+leaderboard. If the save fails the entry comes back, and **Sign** tries again.
+
+### The board
+
+The defeat screen shows the leaderboard whenever there is nothing to sign, and
+once you have signed or skipped. It is a podium: the top three, then the run
+above yours, yours in yellow, and the run below. If you are fifth or higher it
+is just the top five. Each row is the place, the initials, the dojo, the belt
+and the score. Your run is the one you just signed, or your last signed run
+if this one wasn't a hi-score.
+
+Under it are the dojos, each scored as the total of its best three players,
+with how many students it has. Every score counts for you and for your dojo.
+There is no way to pick a dojo yet, so every signed run counts for Cobra Kai unless
+the address says otherwise, such as `?dojo=miyagi-do`.
+
+When the board is drawn small, the runs either side of yours are left out
+rather than squeezing the rest. If the leaderboard can't be reached, there is
+no board, and nothing else waits for it.
 
 ### Sound
 
@@ -148,12 +166,13 @@ motion turns it off.
 
 Each is a milestone, and each ships as a version.
 
-- **Make it sing** — sound and motion, built once the layout has settled
-- **Dojo recruitment** — a challenge link that carries your score and belt
-- **Choose your fighter** — pick a dojo, then a character
+- **The All Valley** — the tournament: pick a dojo, sign the board, and every
+  score counts for your dojo as well as for you
+- **Dojo recruitment** — a challenge link that points at your place on the board
+- **Choose your fighter** — pick a character
 - **Forbidden techniques** — secrets, and modes you earn rather than pick
-- **The All Valley** — a tournament: accounts, and a leaderboard that outlives
-  one browser
+- **Sekai Taikai** — the world stage: accounts behind the initials, and one day
+  multiplayer
 
 ## How it's made
 
