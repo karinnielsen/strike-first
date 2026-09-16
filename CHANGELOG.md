@@ -16,6 +16,12 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-09-16
+
+Scores you can trust. The board only takes runs the game could have
+produced. The one thing a player might notice is a beat after mercy, so it
+is a patch.
+
 ### Added
 - **Scores you can trust.** The database refuses a run the game could not
   have produced. Score, length, moves and time are checked against each
@@ -403,7 +409,9 @@ First playable version.
   gradient.
 - **The version number** in the footer.
 
-[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.4.6...HEAD
+[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/karinnielsen/strike-first/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/karinnielsen/strike-first/compare/v0.4.6...v0.5.0
 [0.4.6]: https://github.com/karinnielsen/strike-first/compare/v0.4.5...v0.4.6
 [0.4.5]: https://github.com/karinnielsen/strike-first/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/karinnielsen/strike-first/compare/v0.4.3...v0.4.4
