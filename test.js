@@ -58,6 +58,15 @@ function makeElement() {
     setAttribute() {},
     remove() {},
     addEventListener() {},
+    querySelector: () => makeElement(),
+    querySelectorAll: () => [],
+    getBoundingClientRect: () => ({ top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 }),
+    dataset: {},
+    focus() {},
+    blur() {},
+    append() {},
+    replaceChildren() {},
+    insertRow: () => makeElement(),
     getContext: () => makeCanvasContext()
   };
   el.parentElement = el;   // addScore() reaches for scoreEl.parentElement
@@ -86,9 +95,14 @@ const sandbox = {
   // Swallowing the timer stops it spinning forever inside the test run.
   setTimeout: () => 0,
   clearTimeout: () => {},
+  setInterval: () => 0,
+  clearInterval: () => {},
   requestAnimationFrame: () => 0,
   cancelAnimationFrame: () => {},
   performance: { now: () => 0 },
+  // The window, a laptop's worth, for the code that sizes dojo select.
+  innerWidth: 1280,
+  innerHeight: 800,
   Math,
   Date,
   console
@@ -159,7 +173,19 @@ globalThis.game = {
   get best() { return best }, set best(v) { best = v },
   get moves() { return moves }, get runMs() { return runMs },
   get pausedMs() { return pausedMs }, toggleMercy, gameOver,
-  SCORE_SERVICE, DOJO_IDS, runDuration, scoreRecord, runRecord, scoreRequest, submitScore
+  SCORE_SERVICE, DOJO_IDS, runDuration, scoreRecord, runRecord, scoreRequest, submitScore,
+  wantsInitials, cleanInitials, BLOCKED_INITIALS, signInitials, hideInitials,
+  currentDojo, commitDojo, dojoOrNull, DOJO_KEY, DOJO_SECONDS, DOJO_CREEDS, DOJO_SENSEIS,
+  DOJO_GLOWS, dojoStart, dojoStep, dojoBacks, closeDojoSelect,
+  get dojoPhase() { return dojoPhase }, get dojoAt() { return dojoAt },
+  get entry() { return entry }, set entry(v) { entry = v },
+  get titling() { return titling }, pressStart,
+  get lastRunId() { return lastRunId },
+  BOARD_TEAM, PODIUM, PODIUM_REACH, boardRequests, neighbourRequest,
+  podiumRows, dojoStandings, studentsLabel, readRows, fetchBoard, loadBoard,
+  dropBoard, dueBoard, skipInitials, DOJO_BADGES, badgeSvg, ordinal,
+  get board() { return board }, get boardDue() { return boardDue },
+  get boardShown() { return !boardEl.hidden }
 };`;
 
 vm.createContext(sandbox);
@@ -202,6 +228,22 @@ function testAsync(name, fn) {
   ));
 }
 
+// For async tests that share the game's state, such as the open initials
+// entry: each waits for the one before, pass or fail.
+let inOrder = Promise.resolve();
+function testAsyncInOrder(name, fn) {
+  const run = inOrder.then(() => fn(), () => fn());
+  inOrder = run;
+  testAsync(name, () => run);
+}
+
+// Code that warns on purpose, run without the noise.
+async function quietly(fn) {
+  const warn = console.warn;
+  console.warn = () => {};
+  try { return await fn(); } finally { console.warn = warn; }
+}
+
 function is(actual, expected, what) {
   const a = JSON.stringify(actual);
   const e = JSON.stringify(expected);
@@ -236,6 +278,105 @@ describe('the grid', () => {
   test('is 21 squares across and down', () => {
     is(game.COLS, 21, 'columns');
     is(game.ROWS, 21, 'rows');
+  });
+});
+
+
+// First of the tests that press keys, because the game opens on the title
+// screen and every key before start belongs to it.
+describe('the title screen', () => {
+  test('the game opens on it', () => {
+    is(game.titling, true, 'titling');
+  });
+
+  test('any key presses start, and does nothing else', () => {
+    game.phase = 'ready';
+    pressKey(' ');
+    is(game.titling, false, 'titling');
+    is(game.phase, 'ready', 'phase - Space must not also start a run');
+  });
+
+  test('with no dojo chosen, start opens dojo select', () => {
+    is(game.currentDojo(), null, 'no dojo yet');
+    is(game.dojoPhase, 'open', 'dojo select');
+  });
+
+  test('pressing start again does nothing', () => {
+    game.pressStart();
+    is(game.titling, false, 'titling');
+  });
+});
+
+
+// Straight after the title screen, because the select it opened is still
+// up and every key belongs to it until it closes.
+describe('dojo select', () => {
+  test('keys choose, wrapping at either end, and never start a run', () => {
+    const start = game.dojoAt;
+    pressKey('ArrowRight');
+    is(game.dojoAt, game.dojoStep(start, 1), 'right');
+    pressKey('ArrowLeft');
+    pressKey('ArrowLeft');
+    is(game.dojoAt, game.dojoStep(start, -1), 'left twice from one right');
+    pressKey('r');
+    is(game.phase, 'ready', 'r does not restart behind the select');
+  });
+
+  test('closing it hands the keys back to the game', () => {
+    game.commitDojo('eagle-fang');
+    game.closeDojoSelect();
+    is(game.dojoPhase, 'closed', 'closed');
+    is(game.currentDojo(), 'eagle-fang', 'the dojo chosen');
+  });
+
+  test('the highlight starts on your dojo, or a random one', () => {
+    is(game.dojoStart('miyagi-do', 0.99), 1, 'yours, whatever the dice say');
+    is(game.dojoStart(null, 0), 0, 'random, low');
+    is(game.dojoStart(null, 0.99), 2, 'random, high');
+    is(game.dojoStart('dragon', 0.5), 1, 'an unknown dojo counts as none');
+  });
+
+  test('a step wraps both ways', () => {
+    is(game.dojoStep(2, 1), 0, 'right from the end');
+    is(game.dojoStep(0, -1), 2, 'left from the start');
+  });
+
+  test('only a known dojo is committed, and it is remembered', () => {
+    game.commitDojo('dragon');
+    is(game.currentDojo(), 'eagle-fang', 'unknown ignored');
+    game.commitDojo('miyagi-do');
+    is(game.currentDojo(), 'miyagi-do', 'chosen');
+    is(sandbox.localStorage.getItem(game.DOJO_KEY), 'miyagi-do', 'remembered');
+  });
+
+  test('every dojo has a creed, a sensei and a light', () => {
+    for (const dojo of game.DOJO_IDS) {
+      if (!game.DOJO_CREEDS[dojo] || !game.DOJO_SENSEIS[dojo] || !game.DOJO_GLOWS[dojo]) {
+        throw new Error(`${dojo} is missing something`);
+      }
+    }
+  });
+
+  test('the creeds keep the house style: sentence case, full stops', () => {
+    for (const creed of Object.values(game.DOJO_CREEDS)) {
+      if (!/^[A-Z][^A-Z]*(\. [A-Z][^A-Z]*)*\.$/.test(creed)) throw new Error(`not house style: ${creed}`);
+    }
+  });
+
+  test('a card back reads from the same rows as the board', () => {
+    const players = [
+      { dojo: 'cobra-kai', initials: 'JLR', best: 260, place: 1, students: 14 },
+      { dojo: 'cobra-kai', initials: 'KAR', best: 200, place: 2, students: 14 },
+      { dojo: 'miyagi-do', initials: 'DAN', best: 254, place: 1, students: 9 }
+    ];
+    const backs = game.dojoBacks(players);
+    is(backs['cobra-kai'], { place: '1st of 3', team: '460', students: '14', top: 'JLR · 260' }, 'cobra kai');
+    is(backs['miyagi-do'].place, '2nd of 3', 'miyagi-do');
+    is(backs['eagle-fang'], { place: '—', team: '—', students: '0', top: '—' }, 'a dojo with nobody');
+  });
+
+  test('a card back with no database is blank, not wrong', () => {
+    is(game.dojoBacks(null)['cobra-kai'], { place: '—', team: '—', students: '—', top: '—' }, 'blank');
   });
 });
 
@@ -1371,11 +1512,6 @@ describe('scores - how a run is measured, UNR-106', () => {
     ok, status: ok ? 201 : 400,
     json: async () => body, text: async () => JSON.stringify(body)
   });
-  const quietly = async (fn) => {
-    const warn = console.warn;
-    console.warn = () => {};
-    try { return await fn(); } finally { console.warn = warn; }
-  };
 
   testAsync('scores: a saved score comes back with its id', async () => {
     const saved = await game.submitScore(game.scoreRecord(run), reply(true, [{ id: 7 }]));
@@ -1399,6 +1535,254 @@ describe('scores - how a run is measured, UNR-106', () => {
 });
 
 
+describe('initials', () => {
+  test('only a new hi-score asks for them', () => {
+    is(game.wantsInitials(12, 11), true, 'beat it');
+    is(game.wantsInitials(11, 11), false, 'matched it');
+    is(game.wantsInitials(5, 40), false, 'short of it');
+    is(game.wantsInitials(0, 0), false, 'scored nothing');
+    is(game.wantsInitials(1, 0), true, 'a first run with any points');
+  });
+
+  test('anything typed becomes three capitals at most', () => {
+    is(game.cleanInitials('kar'), 'KAR', 'lower case');
+    is(game.cleanInitials('k 4-r!z'), 'KRZ', 'junk removed');
+    is(game.cleanInitials('abcdef'), 'ABC', 'cut to three');
+    is(game.cleanInitials(null), '', 'nothing');
+  });
+
+  test('the page and the database block the same initials', () => {
+    const sql = fs.readFileSync(path.join(__dirname, 'db', 'scores.sql'), 'utf8');
+    const list = sql.match(/initials not in \(([^)]*)\)/);
+    const inDatabase = list ? list[1].match(/[A-Z]{3}/g).sort().join(' ') : '';
+    is([...game.BLOCKED_INITIALS].sort().join(' '), inDatabase, 'blocklists');
+  });
+
+  test('blocked initials never become a score record', () => {
+    const run = { dojo: 'cobra-kai', score: 10, best: 10, length: 5, moves: 40, durationMs: 9000 };
+    is(game.scoreRecord({ ...run, initials: 'KKK' }), null, 'blocked');
+    is(game.scoreRecord({ ...run, initials: 'wtf' }).initials, 'WTF', 'cheek is allowed');
+  });
+
+  test('blocked initials cannot be signed', () => {
+    game.entry = { value: 'KYS', focus() {}, blur() {} };
+    game.signInitials();
+    is(game.entry && game.entry.value, 'KYS', 'still open, not signed');
+    game.entry = null;
+  });
+
+  // A run that just ended, with the initials field open on it.
+  const signable = (initials) => {
+    freshGame({ score: 12 });
+    game.best = 12;
+    game.phase = 'over';
+    game.entry = { value: initials, focus() {}, blur() {} };
+  };
+
+  testAsyncInOrder('signing sends the run, under your dojo, and keeps its id', async () => {
+    signable('KAR');
+    game.commitDojo('eagle-fang');
+    let body = null;
+    const send = async (url, options) => {
+      if (options.method === 'POST') body = JSON.parse(options.body);
+      return { ok: true, status: 201, json: async () => [{ id: 42 }] };
+    };
+    const saving = game.signInitials(send);
+    is(game.entry, null, 'entry closed while saving, so it cannot send twice');
+    await saving;
+    is([body.initials, body.dojo, body.score], ['KAR', 'eagle-fang', 12], 'row sent');
+    is(game.lastRunId, 42, 'id kept');
+    is(sandbox.localStorage.getItem('strikeFirstLastRun'), '42', 'id remembered');
+  });
+
+  testAsyncInOrder('a failed save opens the entry again, filled in', async () => {
+    signable('KAR');
+    await quietly(() => game.signInitials(async () => { throw new Error('offline'); }));
+    is(game.entry && game.entry.value, 'KAR', 'Sign is the retry');
+    game.hideInitials();
+  });
+
+  testAsyncInOrder('a save that fails after the next run started reopens nothing', async () => {
+    signable('KAR');
+    let fail;
+    const saving = game.signInitials(() => new Promise((_, reject) => { fail = reject; }));
+    game.hideInitials();                       // Again pressed
+    fail(new Error('offline'));
+    await quietly(() => saving);
+    is(game.entry, null, 'no entry over the new run');
+  });
+
+  test('while initials are open, game keys do not restart', () => {
+    freshGame();
+    game.phase = 'over';
+    game.entry = { value: '', focus() {}, blur() {} };
+    pressKey('r');
+    pressKey(' ');
+    is(game.phase, 'over', 'still on the verdict');
+    is(game.entry.value, 'R', 'r went into the initials');
+    game.entry = null;
+  });
+});
+
+
+describe('the board', () => {
+  // A run as the leaderboard view returns it.
+  const at = (place, id = 100 + place) =>
+    ({ id, initials: 'AAA', dojo: 'cobra-kai', score: 300 - place, belt: 'White', place });
+  const top = [1, 2, 3, 4, 5].map(p => at(p));
+  const places = (rows) => rows.map(r => r === null ? '-' : r.you ? r.place + '*' : r.near ? r.place + '~' : r.place);
+
+  test('far down: the podium, a gap, then either side of you', () => {
+    const you = at(17);
+    is(places(game.podiumRows(top, [at(16), you, at(18)], you)), [1, 2, 3, '-', '16~', '17*', '18~'], 'rows');
+  });
+
+  test('on the podium or just under it: only the top five', () => {
+    is(places(game.podiumRows(top, [], top[1])), [1, '2*', 3, 4, 5], 'second');
+    is(places(game.podiumRows(top, [], top[4])), [1, 2, 3, 4, '5*'], 'fifth');
+  });
+
+  test('sixth: no row repeats and the gap still shows', () => {
+    const you = at(6);
+    is(places(game.podiumRows(top, [at(5), you, at(7)], you)), [1, 2, 3, '-', '5~', '6*', '7~'], 'rows');
+  });
+
+  test('last: only the run above you', () => {
+    const you = at(9);
+    is(places(game.podiumRows(top, [at(8), you], you)), [1, 2, 3, '-', '8~', '9*'], 'rows');
+  });
+
+  test('no run of yours: the top three, nothing highlighted', () => {
+    is(places(game.podiumRows(top, [], null)), [1, 2, 3], 'rows');
+    is(places(game.podiumRows(top.slice(0, 2), [], null)), [1, 2], 'a young board');
+  });
+
+  test('initials are not unique: yours is found by id', () => {
+    const you = { ...at(2), id: 999 };
+    const rows = game.podiumRows([at(1), you, at(3)], [], you);
+    is(rows.filter(r => r.you).map(r => r.id), [999], 'one highlight');
+  });
+
+  test('dojos: best three summed, every dojo listed, best first', () => {
+    const player = (dojo, best, place, students) => ({ dojo, initials: 'AAA', best, place, students });
+    const standings = game.dojoStandings([
+      player('cobra-kai', 50, 1, 9), player('cobra-kai', 40, 2, 9), player('cobra-kai', 30, 3, 9),
+      player('miyagi-do', 200, 1, 1),
+      player('cobra-kai', 20, 4, 9)                // off the team
+    ], game.BOARD_TEAM);
+    is(standings, [
+      { dojo: 'miyagi-do', total: 200, students: 1, place: 1 },
+      { dojo: 'cobra-kai', total: 120, students: 9, place: 2 },
+      { dojo: 'eagle-fang', total: 0, students: 0, place: 3 }
+    ], 'standings');
+  });
+
+  test('dojos level on points share a place', () => {
+    const player = (dojo, best) => ({ dojo, initials: 'AAA', best, place: 1, students: 1 });
+    const standings = game.dojoStandings([player('cobra-kai', 90), player('miyagi-do', 90), player('eagle-fang', 40)], 3);
+    is(standings.map(d => d.place), [1, 1, 3], 'places');
+  });
+
+  test('places in words', () => {
+    is([1, 2, 3, 4, 11, 12, 13, 21, 22, 101].map(game.ordinal),
+      ['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd', '101st'], 'ordinals');
+  });
+
+  test('every dojo has a badge, on the 18px grid, in the palette', () => {
+    const palette = ['#ffff00', '#7a7a00', '#ece6da', '#7b7480', '#2a2a30', '#d3262f'];
+    for (const dojo of game.DOJO_IDS) {
+      const paths = game.DOJO_BADGES[dojo];
+      is(Array.isArray(paths) && paths.length > 0, true, dojo + ' has a badge');
+      for (const [fill, d] of paths) {
+        is(palette.includes(fill), true, `${dojo} fill ${fill}`);
+        const numbers = d.match(/-?\d+/g).map(Number);
+        is(numbers.every(n => Number.isInteger(n) && Math.abs(n) <= 18), true, `${dojo} stays on the grid`);
+      }
+      is(game.badgeSvg(dojo).startsWith('<svg viewBox="0 0 18 18"'), true, dojo + ' svg');
+    }
+  });
+
+  test('students, counted in words', () => {
+    is([0, 1, 12].map(game.studentsLabel), ['no students yet', '1 student', '12 students'], 'labels');
+  });
+
+  test('the requests read the views, and only your run by id', () => {
+    const ask = game.boardRequests(game.SCORE_SERVICE, 42);
+    const rest = game.SCORE_SERVICE.url + '/rest/v1/';
+    is(ask.top.startsWith(rest + 'leaderboard?') && ask.top.includes('order=place&limit=5'), true, 'top');
+    is(ask.dojos.startsWith(rest + 'dojo_players?') && ask.dojos.includes('place=lte.3'), true, 'dojos');
+    is(ask.you.endsWith('&id=eq.42'), true, 'yours');
+    is(game.boardRequests(game.SCORE_SERVICE, null).you, null, 'no run, no request');
+    is(game.neighbourRequest(game.SCORE_SERVICE, 17).includes('place=gte.16&place=lte.18'), true, 'neighbours');
+  });
+
+  // A pretend database answering the board's reads.
+  const database = (runs, players = []) => async (url, options) => {
+    const q = new URL(url);
+    let rows = q.pathname.endsWith('dojo_players') ? players : runs;
+    for (const [key, value] of q.searchParams) {
+      const [op, n] = value.split('.');
+      if (op === 'eq') rows = rows.filter(r => r[key] === Number(n));
+      if (op === 'gte') rows = rows.filter(r => r[key] >= Number(n));
+      if (op === 'lte') rows = rows.filter(r => r[key] <= Number(n));
+    }
+    if (q.searchParams.get('limit')) rows = rows.slice(0, Number(q.searchParams.get('limit')));
+    return { ok: options.headers.apikey === game.SCORE_SERVICE.key, status: 200, json: async () => rows };
+  };
+  const forty = Array.from({ length: 40 }, (_, i) => at(i + 1));
+
+  testAsyncInOrder('board: loads the podium and your neighbourhood', async () => {
+    const loaded = await game.fetchBoard(117, database(forty));
+    is(places(loaded.rows), [1, 2, 3, '-', '16~', '17*', '18~'], 'rows');
+    is(loaded.you.id, 117, 'you');
+  });
+
+  testAsyncInOrder('board: a run the database has lost is no highlight, not an error', async () => {
+    const loaded = await game.fetchBoard(5000, database(forty));
+    is(places(loaded.rows), [1, 2, 3], 'rows');
+  });
+
+  testAsyncInOrder('board: offline is no board, not an error', async () => {
+    is(await quietly(() => game.fetchBoard(117, async () => { throw new Error('offline'); })), null, 'offline');
+  });
+
+  testAsyncInOrder('board: never shown alongside the initials entry', async () => {
+    freshGame();
+    game.phase = 'over';
+    game.entry = { value: 'KAR', focus() {}, blur() {} };
+    await game.loadBoard(117, database(forty));
+    game.dueBoard();
+    is(game.board !== null, true, 'loaded');
+    is(game.boardShown, false, 'hidden while the entry is open');
+    game.entry = null;
+    game.dueBoard();
+    is(game.boardShown, true, 'shown once it closes');
+    game.dropBoard();
+    is(game.boardShown, false, 'gone on Again');
+  });
+
+  testAsyncInOrder('board: a load overtaken by the next run lands nowhere', async () => {
+    const held = [];
+    const loading = game.loadBoard(117, (url, options) =>
+      new Promise(r => held.push(() => r(database(forty)(url, options)))));
+    game.dropBoard();                          // Again pressed
+    // Answer everything, including the neighbours asked for after the first three.
+    for (let i = 0; i < 10; i++) {
+      while (held.length) held.shift()();
+      await new Promise(r => setImmediate(r));
+    }
+    await loading;
+    is(game.board, null, 'nothing kept');
+  });
+
+  testAsyncInOrder('board: skipping the initials makes it due', async () => {
+    game.skipInitials();
+    is(game.boardDue, true, 'due');
+    game.dropBoard();
+  });
+});
+
+
 describe('version', () => {
   test('matches the changelog', () => {
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
@@ -1416,7 +1800,18 @@ describe('version', () => {
 
 // ---- report ---------------------------------------------------------
 
+// A test whose promise never settles leaves nothing for Node to wait on,
+// and Node then exits 0 without printing a report - which looks like a
+// pass. Found when a fake network answered one request of three.
+let reported = false;
+process.on('exit', () => {
+  if (reported) return;
+  console.log('\nFAIL  a test never finished, so there is no report');
+  process.exitCode = 1;
+});
+
 Promise.all(pending).then(() => {
+  reported = true;
   console.log('\n' + '-'.repeat(40));
   console.log(`${passed} passed, ${failed} failed`);
   process.exit(failed > 0 ? 1 : 0);

@@ -6,10 +6,11 @@ Snake, as a dojo. Eat eggs, chase mice, dodge rotten ones and earn your belt.
 
 [![The Strike First cobra crest beside a game board, with a snake wearing an orange belt, a mouse and an egg](og-image.png)](https://karinnielsen.github.io/strike-first/)
 
-One HTML file, no build step and nothing to install — open it and play. Its one
+One HTML file of code, no build step and nothing to install — open it and play.
+Beside it sit a few images: the dojo crests and the sharing preview. Its one
 outside connection is a hosted database for scores. Made for desktop and tablet.
 
-Current version: **v0.4.6** — see [CHANGELOG.md](CHANGELOG.md).
+Current version: **v0.5.0** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Play
 
@@ -88,10 +89,36 @@ A small `+1` for an egg, a big electric-yellow `+5` for a mouse. The size
 difference is the message: you see the value before you read it. A loss is
 red and always carries its minus sign, so it never relies on colour alone.
 
+### The title screen
+
+The game opens the way an arcade cabinet does: the crest, large and alone,
+a blinking **Press start**, and along the foot, who made it and *free play*.
+Any key, click or tap presses start, and does nothing else, so Space here
+never also starts a run. A touch screen is told to tap rather than press a
+key. It shows every time the page loads. With reduced motion it holds still
+instead of blinking.
+
+### Dojo select
+
+Every run counts for a dojo, so the first time you press start you choose one:
+**Cobra Kai**, **Miyagi-Do** or **Eagle Fang**, each a card with its crest. It
+is an arcade select screen, so there are 30 seconds on the clock, and when it
+runs out the lit dojo is chosen for you. The highlight starts on a random dojo,
+so no dojo is everyone's default.
+
+- **← →** or **Tab** to choose, **Enter** or **Space** to bow in
+- **↑ ↓** to flip a card. The back shows where the dojo stands, its team score,
+  its students, its top student and its sensei. On a touch screen, tap a card
+  to choose it and tap its turned-down corner to flip it
+
+Choosing lands like a kick, and the dojo's creed comes up with its name. The
+choice is remembered. After that, the start screen says which dojo you are in,
+and **change** brings the select back.
+
 ### Arrival
 
-The first time you open the game in a session, it arrives rather than just
-being there. The crest settles and flicks its tongue, the grid on the mat
+The first time you reach the start screen in a session, the game arrives rather
+than just being there. The crest settles and flicks its tongue, the grid on the mat
 lights up from the middle outward, and the snake slides in from the left wall
 a cell at a time. Then the egg, then the menu. About a second and a half. Any
 key, click or tap skips straight to the start screen and still does what it
@@ -118,6 +145,33 @@ Space, **R** or a tap skips it once the first moment has passed, so the key you
 were hammering when you died does not restart the game by accident. Reduced
 motion keeps the flash and the drain, and nothing moves.
 
+After a new hi-score the defeat screen asks you to **sign the board** with
+three letters, the way an arcade cabinet did. Last time's initials come back
+filled in, so signing again is Enter or a single tap on **Sign**, and typing
+over them starts afresh. **Escape** or **skip** passes. A short list of rude
+initials is refused, in the page and in the database. On a tablet, tap the
+letters to bring up the keyboard. Signing saves the run to a shared
+leaderboard. If the save fails the entry comes back, and **Sign** tries again.
+
+### The board
+
+The defeat screen shows the leaderboard whenever there is nothing to sign, and
+once you have signed or skipped. It is a podium: the top three, then the run
+above yours, yours in yellow, and the run below. If you are fifth or higher it
+is just the top five. Each row is the place, the initials, the dojo's pixel
+badge, the belt and the score. Your run is the one you just signed, or your last signed run
+if this one wasn't a hi-score.
+
+Under it are the dojos, each scored as the total of its best three players,
+with how many students it has. Every score counts for you and for your dojo.
+A run counts for the dojo you were in when you signed it, even if you change
+later.
+
+When the board is drawn small, the runs either side of yours are left out
+rather than squeezing the rest, and the dojos come down to one line: yours,
+with where it stands, such as `708 · 2nd of 3 · 9 students`. If the leaderboard can't be reached, there is
+no board, and nothing else waits for it.
+
 ### Sound
 
 80s/90s arcade sound, generated in the page from square and pulse waves rather
@@ -140,12 +194,13 @@ motion turns it off.
 
 Each is a milestone, and each ships as a version.
 
-- **Make it sing** — sound and motion, built once the layout has settled
-- **Dojo recruitment** — a challenge link that carries your score and belt
-- **Choose your fighter** — pick a dojo, then a character
+- **The All Valley** — shipped as v0.5.0 with dojo select and the board. Still
+  to come as patches: scores you can trust, and the full board
+- **Dojo recruitment** — a challenge link that points at your place on the board
+- **Choose your fighter** — pick a character
 - **Forbidden techniques** — secrets, and modes you earn rather than pick
-- **The All Valley** — a tournament: accounts, and a leaderboard that outlives
-  one browser
+- **Sekai Taikai** — the world stage: accounts behind the initials, and one day
+  multiplayer
 
 ## How it's made
 
@@ -195,9 +250,10 @@ No framework and nothing to install, same as the game. The harness reads
 `index.html`, pulls the inline script out and runs it against a stubbed
 browser, so the game stays a single file with nothing to install.
 
-151 tests, covering the grid, the speed curve, collisions, growth, scoring, the
-visitor countdown, the input rules for keys and swipes, and how a run becomes a
-score record. None of them touch the network. They cannot tell you
+157 tests, covering the grid, the speed curve, collisions, growth, scoring, the
+visitor countdown, the input rules for keys and swipes, how a run becomes a
+score record, and the initials entry, including a check that the page and
+the database refuse the same initials. None of them touch the network. They cannot tell you
 whether the game is *fun* — that still needs playing.
 
 Needs Node 15 or newer.

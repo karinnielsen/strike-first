@@ -16,6 +16,41 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-09-16
+
+The All Valley: pick a dojo, sign the board, and every score counts for your
+dojo as well as for you. A new thing to do, so it is a minor. The milestone's
+last two pieces, scores you can trust and the full board, follow as patches,
+since neither changes what the player does.
+
+### Added
+- **A title screen.** The game opens the way an arcade cabinet does: the crest
+  large and alone, a blinking *Press start* in the wordmark's offset lettering,
+  and along the foot, *@pushinpixls 2026* and *free play*. Any key, click or
+  tap presses start and does nothing else. A touch screen is told to tap.
+  Chosen from mocks over keeping the crest above the select screens.
+- **Dojo select.** The first time you press start you choose Cobra Kai,
+  Miyagi-Do or Eagle Fang, on an arcade select screen with 30 seconds on the
+  clock; when it runs out, the lit dojo is chosen for you. Each card carries
+  its crest, drawn by Astra, and flips to show where the dojo stands, its
+  team score, students, top student and founding sensei. The pick lands like
+  a kick with the dojo's creed under its name. The choice is remembered, and
+  the start screen offers to change it.
+- **Sign the board.** After a new hi-score the defeat screen asks for three
+  initials, arcade style. Last time's come back filled in, a short list of
+  rude ones is refused in the page and in the database, and signing saves the
+  run to a shared leaderboard under your dojo.
+- **The board on the defeat screen.** A podium - the top three, then the runs
+  either side of yours - with each dojo's pixel badge, and under it the dojos,
+  each scored as its best three players. When drawn small it comes down to
+  your neighbourhood and your dojo's standing.
+- **Scores that outlive the browser.** Runs are stored in a hosted database.
+  The page's public key can only add a score and read them back.
+
+### Changed
+- The game is no longer one file on its own: beside it sit the three dojo
+  crests, as 320px WebP, fetched only when the select might be shown.
+
 ## [0.4.6] — 2026-09-15
 
 Reduced motion now covers the whole game. Nothing plays differently, and no

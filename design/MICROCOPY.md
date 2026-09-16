@@ -257,6 +257,20 @@ The same death, three senseis:
 If a line could be moved to another dojo's column without anyone noticing,
 it has no voice yet.
 
+### Welcome lines — parked
+
+Written for the banner that confirms a dojo pick, then set aside on 16
+September when that banner took the dojo's creed instead. Kept for another
+moment that says hello, such as switching dojos:
+
+| Cobra Kai | Miyagi-Do | Eagle Fang |
+| -- | -- | -- |
+| `Welcome to Cobra Kai.` | `Wax on, wax off.` | `Eagle Fang. Badass.` |
+
+Before any of them ships: `Wax on, wax off.` is the series' own line, which
+the Miyagi-Do brief above asks us not to borrow, and Eagle Fang's was already
+the weakest of the three.
+
 ### Open questions
 
 * **Which strings change with the dojo?** Defeat lines and the promotion are
@@ -312,6 +326,17 @@ The complete inventory, so nothing drifts unnoticed.
 | String | Voice |
 | -- | -- |
 | `Strike First` — wordmark, page title | — |
+| `Press start` — title screen, shown in voice caps | Utility |
+| `any key` — title screen | Utility |
+| `tap to start` — title screen, touch screens | Utility |
+| `@pushinpixls 2026` / `free play` — title screen foot | Utility |
+| `Choose your dojo` — dojo select, shown in voice caps | Utility |
+| `← → or tab to choose · ↑ ↓ to flip · enter to bow in` — dojo select | Utility |
+| `tap a dojo to bow in · tap its corner to flip` — dojo select, touch screens | Utility |
+| `place` `team score` `students` `top` `Sensei` — a dojo card's back | Utility |
+| `<DOJO>` / the dojo's creed — the banner confirming a pick, in voice caps | Dojo |
+| `Too slow. Sensei chose for you.` — the banner, when the clock runs out | Dojo |
+| `Dojo: <dojo> · change` — start overlay | Utility |
 | `Strike hard. No mercy.` — start overlay | Dojo |
 | `arrows or wasd to move` — start overlay | Utility |
 | `swipe to move` — start overlay, touch screens | Utility |

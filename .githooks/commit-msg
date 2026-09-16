@@ -1,0 +1,31 @@
+#!/bin/sh
+# Keep the README true as you go - see CLAUDE.md.
+#
+# A commit that touches index.html must either touch README.md too, or say
+# in its message why the README doesn't change:
+#
+#     README: unchanged - a refactor, nothing a player sees
+#
+# Remembering kept failing, so skipping is now a decision that gets written
+# down rather than something that gets forgotten. It fires only when the
+# game changed, so it is rarely a no-op to wave through.
+#
+# Enabled once per clone:  git config core.hooksPath .githooks
+
+# Merges carry changes already checked on their own branch.
+[ -f "$(git rev-parse --git-dir)/MERGE_HEAD" ] && exit 0
+
+staged=$(git diff --cached --name-only)
+echo "$staged" | grep -qx 'index.html' || exit 0
+echo "$staged" | grep -qx 'README.md' && exit 0
+grep -qiE '^README: unchanged *(-|—|–) *[^ ]' "$1" && exit 0
+
+cat >&2 <<'EOF'
+Commit refused: index.html changed but README.md did not.
+
+If a player would notice this change, update the README in this commit.
+If not, add a line to the message saying why:
+
+    README: unchanged - <why>
+EOF
+exit 1

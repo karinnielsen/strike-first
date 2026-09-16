@@ -10,7 +10,7 @@
 create table public.scores (
   id          bigint generated always as identity primary key,
   created_at  timestamptz not null default now(),
-  initials    text not null check (initials ~ '^[A-Z]{3}$'),
+  initials    text not null check (initials ~ '^[A-Z]{3}$'),  -- and not blocked, below
   dojo        text not null check (dojo in ('cobra-kai', 'miyagi-do', 'eagle-fang')),
   score       int  not null check (score >= 0),
   belt        text not null,  -- rank held when the run ended
@@ -37,3 +37,46 @@ create policy "anyone can read scores" on public.scores
   for select to anon using (true);
 create policy "anyone can submit a score" on public.scores
   for insert to anon with check (true);
+
+-- ---------------------------------------------------------------------
+-- The leaderboard. UNR-108.
+-- ---------------------------------------------------------------------
+
+-- Rude initials. The page carries the same list so the player hears about
+-- it before signing, and test.js fails if the two ever differ.
+alter table public.scores add constraint scores_initials_not_blocked
+  check (initials not in (
+    'KKK', 'NIG', 'NGR', 'FAG', 'NAZ',
+    'CUM', 'SEX', 'TIT', 'DIK', 'DIC', 'COK',
+    'FUK', 'FCK', 'FUC', 'CNT', 'SHT', 'ASS',
+    'KYS'
+  ));
+
+-- Views run with the permissions of whoever reads them
+-- (security_invoker), so row-level security above still applies. Without
+-- it a view reads as its owner and would bypass every policy. Each needs
+-- its own grant to anon.
+
+-- The players' board. Every run is a row, placed by score; on a tie the
+-- earlier run places higher, as it did on an arcade table.
+create view public.leaderboard with (security_invoker = true) as
+select id, created_at, initials, dojo, score, belt,
+       row_number() over (order by score desc, id) as place
+from public.scores;
+
+-- Each dojo's players: a set of initials within a dojo, at their best,
+-- placed within the dojo, with how many students the dojo has. A dojo's
+-- standing is the sum of its best three, added up in the page, where the
+-- team size is a named constant - it decides only what is displayed.
+create view public.dojo_players with (security_invoker = true) as
+select dojo, initials, best, place, students
+from (
+  select dojo, initials, max(score) as best,
+         row_number() over (partition by dojo order by max(score) desc, min(id)) as place,
+         count(*) over (partition by dojo) as students
+  from public.scores
+  group by dojo, initials
+) players;
+
+grant select on public.leaderboard  to anon;
+grant select on public.dojo_players to anon;

@@ -271,6 +271,121 @@
   .sound-btn:hover  { background: transparent; color: var(--text); }
   .sound-btn:active { transform: none; box-shadow: none; }
 
+  /* INITIALS. Asked for only after a new hi-score, between the verdict and
+     the call to action, which reads "Sign" until you sign or skip. Chosen
+     over three arcade slots you roll through, which needed up to thirteen
+     taps a letter on a tablet. UNR-108. */
+  .initials { display: grid; justify-items: center; gap: 8px; margin-top: 18px; }
+  .initials[hidden] { display: none; }
+  .initials-label { font-size: 12px; }
+  .overlay .initials-done { font-size: 36px; font-weight: bold; letter-spacing: 0.6ch; margin-right: -0.6ch; color: var(--text); }
+
+  /* A real field, letter-spaced so each letter sits on its own underline,
+     the way an arcade table prints them. The board above it turns text
+     selection off, and Safari will not type into a field inside that
+     unless the field turns it back on. */
+  .initials-input {
+    box-sizing: content-box;
+    width: 4.8ch;        /* three letters and their spacing, so it never scrolls */
+    padding: 0 0 6px 0.6ch;
+    font: inherit;
+    font-size: 36px;
+    font-weight: bold;
+    letter-spacing: 0.6ch;
+    text-transform: uppercase;
+    color: var(--text);
+    caret-color: var(--yellow);
+    background:
+      linear-gradient(var(--dim), var(--dim)) 0.6ch 100% / 1ch 2px no-repeat,
+      linear-gradient(var(--dim), var(--dim)) 2.2ch 100% / 1ch 2px no-repeat,
+      linear-gradient(var(--dim), var(--dim)) 3.8ch 100% / 1ch 2px no-repeat;
+    border: 0;
+    outline: none;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  .overlay #play-btn:disabled { opacity: 0.35; cursor: default; animation: none; }
+
+  /* Under Sign, so a tablet's keyboard covers it once the field is tapped.
+     Accepted: skip is on screen until you choose to type, and backing out
+     after that is two taps - hide the keyboard, then skip. */
+  .skip-btn {
+    justify-self: center;
+    min-height: 44px;
+    margin-top: 8px;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: normal;
+    color: var(--dim);
+    background: transparent;
+    box-shadow: none;
+    animation: none;
+  }
+  .skip-btn[hidden] { display: none; }
+  .skip-btn:hover  { background: transparent; color: var(--text); }
+  .skip-btn:active { transform: none; box-shadow: none; }
+
+  /* THE BOARD, on the defeat screen only. A podium - the top three, a gap,
+     then the run above yours, yours and the one below - and the dojos
+     beneath it. Never alongside the initials entry. UNR-108.
+
+     Spacing is small inside a group and large between groups, which is
+     what makes it skimmable: 10px from title to line, 52px from the line
+     to the podium and from the dojos to Again. Settled side by side at
+     actual size. The overlay is its own container so the short step below
+     can ask how much room there is. */
+  .overlay { container: overlay / size; }
+  .overlay.with-board { gap: 0; }
+  .overlay.with-board h2 { margin-bottom: 10px; }
+  .overlay.with-board #play-btn { margin-top: 52px; justify-self: center; }
+  .overlay.with-board .sound-btn { margin-top: 12px; }
+
+  .board { margin-top: 52px; font-size: 12px; }
+  .board[hidden] { display: none; }
+  .board table { border-collapse: collapse; margin: 0 auto; width: 280px; text-align: left; }
+  .board td { padding: 0 6px; height: 30px; color: var(--text); white-space: nowrap; }
+  .board .gap td { height: 22px; padding: 0; }
+  .board .place { color: var(--dim); text-align: right; width: 2ch; }
+  .board .score { text-align: right; }
+  .board .belt-swatch { display: inline-block; vertical-align: middle; }
+  .board .you td { color: var(--yellow); font-weight: bold; }
+
+  /* Each dojo's badge: a native 18x18 pixel sprite, drawn at exactly
+     18px so every square lands on a pixel. Scaled from the large crests
+     they were illegible, and pixel and silhouette versions looked the
+     same. Commissioned for UNR-114. */
+  .dojo-badge { display: inline-block; width: 18px; height: 18px; vertical-align: middle; }
+  .dojo-badge svg { display: block; width: 18px; height: 18px; }
+
+  .dojos { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 26px; margin-top: 40px; padding: 0 16px; color: var(--dim); }
+  .dojos b { color: var(--text); font-weight: normal; }
+  .dojos .mine, .dojos .mine b { color: var(--yellow); }
+  .dojos .standing { display: none; }
+
+  /* SHORT. When the board is drawn small the podium loses the runs either
+     side of yours - never yours - and the spacing tightens to the
+     comfortable set that was compared against this one. Fewer rows rather
+     than smaller ones: text and buttons stay a size a finger and an eye
+     can use.
+
+     The dojos shrink to yours alone, with where it stands, on one line.
+     Three dojos wrapped onto two lines at this width, and the one left on
+     its own line read as overflow rather than third place. The other two
+     are in the full view (UNR-134). */
+  @container overlay (max-height: 540px) {
+    .overlay.with-board h2 { margin-bottom: 8px; }
+    .overlay.with-board #play-btn { margin-top: 28px; }
+    .overlay.with-board .sound-btn { margin-top: 0; }
+    .board { margin-top: 28px; }
+    .board td { height: 26px; }
+    .board .gap td { height: 14px; }
+    .board .near { display: none; }
+    .dojos { margin-top: 20px; }
+    .dojos > :not(.mine) { display: none; }
+    .dojos .standing { display: inline; }
+  }
+
 
   /* The one thing the screen wants you to do, so it should look like a
      button on a cabinet rather than a rectangle: a solid slab with a hard
@@ -507,11 +622,241 @@
     15%  { opacity: 1; transform: translateY(  0px) scale(1.1); }
     100% { opacity: 0; transform: translateY(-24px) scale(1);   }
   }
+
+  /* THE TITLE SCREEN. The crest as large as the window allows, alone, with
+     one instruction under it - the arcade front door. Board, stats and
+     hints step aside until start is pressed. Last in the sheet, and flex
+     rather than grid, so nothing from the short-window layout above can
+     reach it: that layout's two columns once put the crest in one and the
+     instruction in the other. */
+  .wrap.titling {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100svh;
+    box-sizing: border-box;
+  }
+  .wrap.titling header { display: block; margin: 0; }
+  .wrap.titling .scores,
+  .wrap.titling .stage,
+  .wrap.titling .hint,
+  .wrap.titling .version { display: none; }
+  .wrap.titling h1.crest { margin: 0 0 52px; }
+  .wrap.titling h1.crest svg { width: min(88vw, 780px, calc((100svh - 220px) / 0.36)); }
+
+  .title-screen { display: grid; justify-items: center; gap: 10px; }
+  .title-screen[hidden] { display: none; }
+  .title-screen p { margin: 0; font-size: 13px; color: var(--dim); }
+
+  /* Not the slab: that is for actions on a panel, and here the whole screen
+     is the target. So it takes the other house treatment, the one for
+     things that address the whole screen - the wordmark's hard offset
+     behind the letters and a bloom around them - and blinks, the arcade's
+     own way of saying press me. Chosen 16 September over plain glowing
+     text and over pixel lettering, which was too much beside the crest. */
+  .title-screen button {
+    all: unset;
+    cursor: pointer;
+    font-size: 30px;
+    font-weight: bold;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--yellow);
+    text-shadow: 0 4px 0 var(--yellow-deep), 0 0 24px rgba(255, 255, 0, 0.3);
+    animation: press-start 1.1s steps(1, end) infinite;
+  }
+
+  /* An arcade title's foot: who made it, and the coin state. This one has
+     no coin slot, which is what "free play" says on a cabinet. */
+  .title-screen .title-foot {
+    position: fixed;
+    left: 24px;
+    right: 24px;
+    bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    letter-spacing: 1px;
+  }
+  .title-screen button:focus-visible { outline: 2px solid var(--text); outline-offset: 8px; }
+  @keyframes press-start { 60% { opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .title-screen button { animation: none; }
+  }
+  /* DOJO SELECT. UNR-114. A screen of its own after the title, like an
+     arcade select: the crest, board, stats and hints all step aside and
+     the select has the page. Settled across 15 and 16 September from a
+     mock; its README, recording what each choice beat, is in the history
+     at commit 09df41e (design/dojo-select-compare/). Last in the sheet for the same reason as the title. */
+  .wrap.selecting {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100svh;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 1;
+  }
+  .wrap.selecting header,
+  .wrap.selecting .scores,
+  .wrap.selecting .stage,
+  .wrap.selecting .hint,
+  .wrap.selecting .version { display: none; }
+
+  /* The room takes on the lit dojo's light, from below, like a stage. */
+  .dojo-aura {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0;
+    background: radial-gradient(ellipse 70% 55% at 50% 72%, rgba(var(--glow), 0.16), transparent 70%);
+    transition: opacity 0.35s;
+  }
+  .dojo-aura.on { opacity: 1; }
+
+  /* Three groups - the heading and clock, the cards, the keys - 80px apart
+     so the screen breathes. */
+  .dojo-select { display: grid; justify-items: center; text-align: center; gap: 80px; }
+  .dojo-select[hidden] { display: none; }
+  .dojo-select .group { display: grid; justify-items: center; gap: 16px; }
+  .dojo-select .heading { gap: 32px; }
+  /* The monospace set big and bold in the wordmark's language - a hard
+     offset and a bloom - as Press start is. */
+  .dojo-select h2 {
+    margin: 0; font-size: clamp(30px, 4.6vw, 52px); font-weight: bold; letter-spacing: 0.16em;
+    color: var(--yellow); text-transform: uppercase;
+    text-shadow: 0 5px 0 var(--yellow-deep), 0 0 28px rgba(255, 255, 0, 0.3);
+  }
+  /* The clock with no label: a big number counting down says what it is. */
+  .dojo-select .count {
+    font-size: 44px; font-weight: bold; line-height: 1.05;
+    color: var(--text); font-variant-numeric: tabular-nums;
+  }
+  .dojo-select .count.late { color: var(--red); text-shadow: 0 0 16px rgba(211, 38, 47, 0.6); }
+  .dojo-select .count.beat { animation: count-beat 0.35s ease-out; }
+  @keyframes count-beat { from { transform: scale(1.35); } to { transform: scale(1); } }
+  /* The keys are what the eye hunts for: bone and bold, the words dim. */
+  .dojo-select .how { margin: 0; font-size: 14px; letter-spacing: 0.5px; color: var(--dim); }
+  .dojo-select .how kbd { font: inherit; font-weight: bold; color: var(--text); }
+
+  .dojo-select ul {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; grid-template-columns: repeat(3, auto); gap: var(--gap, 32px);
+  }
+  .dojo-select li {
+    position: relative; display: grid; justify-items: center;
+    color: var(--dim); transition: color 0.15s, opacity 0.3s;
+  }
+  /* No scale and no lift: scaled text renders between pixels and blurs. */
+  .dojo-select li.on { color: rgb(var(--glow)); }
+
+  .dojo-select .pick { all: unset; display: block; cursor: pointer; }
+  .dojo-select .pick:focus-visible { outline: none; }
+  /* The card turns as a whole, like a real one. It is only 3D while it
+     turns; at rest it is flat and sharp. */
+  .dojo-select .card { display: grid; }
+  .dojo-select .face.back,
+  .dojo-select li.flipped .face.front { visibility: hidden; }
+  .dojo-select li.flipped .face.back { visibility: visible; }
+  .dojo-select li.tease .card { animation: card-tease 0.9s ease-in-out; }
+  @keyframes card-tease {
+    35% { transform: perspective(900px) rotateY(-32deg); }
+    65% { transform: perspective(900px) rotateY(8deg); }
+  }
+
+  .dojo-select .face {
+    grid-area: 1 / 1; position: relative; box-sizing: border-box;
+    display: grid; justify-items: center; align-content: center; gap: 18px;
+    padding: 21px 20px;
+    border: 3px solid transparent; border-radius: 12px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  /* Room at the foot of the back, so the fold never covers the sensei. */
+  .dojo-select .face.back { gap: 16px; padding-bottom: 36px; background: rgba(9, 9, 11, 0.55); }
+  .dojo-select li.on .face {
+    border-color: rgb(var(--glow));
+    box-shadow: 0 0 32px rgba(var(--glow), 0.4), inset 0 0 22px rgba(var(--glow), 0.14);
+  }
+
+  .dojo-select .name { font-size: 20px; letter-spacing: 3px; text-transform: uppercase; }
+  .dojo-select .art {
+    width: var(--art, 160px); height: var(--art, 160px);
+    filter: brightness(0.4) grayscale(0.6); transition: filter 0.15s;
+  }
+  .dojo-select .art img { display: block; width: 100%; height: 100%; }
+  .dojo-select li.on .art { filter: none; }
+
+  /* The back is the stats list the short layout already uses. */
+  .dojo-select .stats { margin: 0; width: max(var(--art, 160px), 160px); font-size: 13px; }
+  .dojo-select .stats div {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 9px 0; border-bottom: 1px solid var(--line);
+  }
+  .dojo-select .stats dt { color: var(--dim); white-space: nowrap; }
+  .dojo-select .stats dd { white-space: nowrap; margin: 0 0 0 12px; font-weight: bold; color: var(--text); font-size: 15px; }
+  .dojo-select .sensei {
+    display: grid; gap: 4px; font-size: 11px; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--dim);
+  }
+  .dojo-select .sensei b { font-size: 16px; letter-spacing: 1px; text-transform: none; color: rgb(var(--glow)); }
+
+  /* Flipping on touch, since a tap on the card picks: the lit card's corner
+     is turned down, a flap in its colour over a cut-away, drawn on the face
+     so it turns with the card. The hit area is a finger's 44px. */
+  .dojo-select li.on .face::after {
+    content: ''; position: absolute; right: -3px; bottom: -3px; width: 30px; height: 30px;
+    background: linear-gradient(315deg, var(--bg) 0 50%, rgba(var(--glow), 0.9) 50% 100%);
+    border-top-left-radius: 3px;
+  }
+  .dojo-select .corner {
+    all: unset; position: absolute; right: -4px; bottom: -4px;
+    width: 44px; height: 44px; cursor: pointer;
+  }
+  .dojo-select li:not(.on) .corner { display: none; }
+
+  /* The screen fades in as one piece, lit card and all. */
+  .dojo-select.arrive { animation: select-in 0.35s ease-out backwards; }
+  @keyframes select-in { from { opacity: 0; } }
+
+  /* The pick is choreographed in chooseDojo(); here only the part CSS can
+     own - the other two dojos step out of the way. */
+  .dojo-select.chosen li:not(.picked) { opacity: 0; transition: opacity 0.25s ease-out; }
+  .dojo-select.chosen .corner { display: none; }
+
+  /* The banner that confirms the pick. Pinned to the window, outside
+     .wrap, so nothing the page does can re-anchor it. */
+  .dojo-verdict {
+    position: fixed; inset: 0; z-index: 5; pointer-events: none;
+    display: grid; align-content: center;
+  }
+  .dojo-verdict[hidden] { display: none; }
+  .dojo-verdict .band {
+    display: grid; justify-items: center; gap: 10px;
+    padding: 28px 16px 32px; background: rgba(9, 9, 11, 0.9);
+    border-block: 2px solid rgba(var(--glow), 0.7);
+  }
+  .dojo-verdict b {
+    font-size: clamp(40px, 8vw, 96px); letter-spacing: 0.12em;
+    color: rgb(var(--glow)); text-transform: uppercase;
+    text-shadow: 0 0 30px rgba(var(--glow), 0.6), 0 6px 0 rgba(0, 0, 0, 0.8);
+  }
+  .dojo-verdict span { font-size: 16px; color: var(--text); }
+
+  /* No turning and no fades: the back simply replaces the front. */
+  @media (prefers-reduced-motion: reduce) {
+    .dojo-select *, .dojo-select.arrive, .dojo-verdict * { animation: none !important; transition: none !important; }
+  }
+
+  /* On the start screen: which dojo you are in, and the way to change it. */
+  .overlay .dojo-line a { color: var(--dim); text-decoration: underline; cursor: pointer; }
 </style>
 </head>
 <body>
 
-<div class="wrap">
+<div class="dojo-aura" id="dojo-aura"></div>
+
+<!-- Starts on the title screen, in the markup rather than from the script,
+     so the board never flashes up before it. -->
+<div class="wrap titling" id="page">
   <header>
     <!-- The wordmark is artwork now, not styled text. The SVG carries its
          own <title>, which describes the drawing - right for the file on
@@ -536,13 +881,32 @@
     </div>
   </header>
 
+  <div class="title-screen" id="title-screen">
+    <button id="start-btn" type="button">Press start</button>
+    <p id="start-how">any key</p>
+    <p class="title-foot"><span>@pushinpixls 2026</span><span>free play</span></p>
+  </div>
+
+  <section class="dojo-select" id="dojo-select" aria-labelledby="dojo-heading" hidden>
+    <div class="group heading">
+      <h2 id="dojo-heading">Choose your dojo</h2>
+      <div class="count" id="dojo-count" role="timer" aria-label="seconds left"></div>
+    </div>
+    <ul id="dojo-cards"></ul>
+    <div class="group"><p class="how" id="dojo-how"><kbd>&larr; &rarr;</kbd> or <kbd>tab</kbd> to choose &middot; <kbd>&uarr; &darr;</kbd> to flip &middot; <kbd>enter</kbd> to bow in</p></div>
+  </section>
+
   <div class="stage" id="stage">
     <canvas id="game" width="630" height="630"></canvas>
 
     <div class="overlay" id="overlay">
       <h2 id="overlay-title">Strike hard. No mercy.</h2>
       <p  id="overlay-text">arrows or wasd to move</p>
+      <p class="dojo-line" id="dojo-line" hidden>Dojo: <span id="dojo-line-name"></span> &middot; <a href="#" id="dojo-change">change</a></p>
+      <div class="initials" id="initials" hidden></div>
+      <div class="board" id="board" hidden></div>
       <button id="play-btn">Enter the dojo</button>
+      <button class="skip-btn" id="skip-btn" type="button" hidden>skip</button>
       <button class="sound-btn" id="sound-btn" type="button">sound on</button>
     </div>
   </div>
@@ -552,6 +916,8 @@
   <p class="hint" id="hint">arrows&nbsp;/&nbsp;wasd &middot; space&nbsp;=&nbsp;mercy &middot; r&nbsp;=&nbsp;restart &middot; m&nbsp;=&nbsp;sound</p>
   <p class="version" id="version"></p>
 </div>
+
+<div class="dojo-verdict" id="dojo-verdict" hidden><div class="band"><b></b><span></span></div></div>
 
 <script>
 // =====================================================================
@@ -571,7 +937,7 @@ const ROWS = canvas.height / CELL;    // 21 rows down
 // Single source of truth for the version. Bump this, add a CHANGELOG entry,
 // update the Current version line in README.md, and tag the commit - those
 // four go together, always.
-const VERSION = '0.4.6';
+const VERSION = '0.5.0';
 document.getElementById('version').textContent = 'v' + VERSION;
 
 // Handy references to the bits of HTML we update as the game runs.
@@ -587,6 +953,7 @@ const stageEl   = document.getElementById('stage');
 const hintEl    = document.getElementById('hint');
 const mercyBtn  = document.getElementById('mercy-btn');
 const playBtn   = document.getElementById('play-btn');
+const dojoLineEl = document.getElementById('dojo-line');
 const soundBtn  = document.getElementById('sound-btn');
 
 // Can this screen be touched? `any-pointer` rather than `pointer`, so an
@@ -599,6 +966,8 @@ const TOUCH = window.matchMedia('(any-pointer: coarse)').matches;
 if (TOUCH) {
   hintEl.textContent = 'swipe to move · ❚❚ = mercy';
   document.getElementById('overlay-text').textContent = 'swipe to move';
+  document.getElementById('start-how').textContent = 'tap to start';
+  document.getElementById('dojo-how').textContent = 'tap a dojo to bow in · tap its corner to flip';
   mercyBtn.hidden = false;
 }
 const HINT_TEXT = hintEl.textContent;
@@ -978,6 +1347,7 @@ function gameOver(cause, at) {
   defeat = { cause, at, dir: direction, time: performance.now() };
   runMs  = runDuration(runStartedAt, defeat.time, pausedMs);
   playSound('defeat');
+  loadBoard(lastRunId);                      // while the defeat plays
   requestAnimationFrame(dyingFrame);
 }
 
@@ -1018,6 +1388,8 @@ function showVerdict() {
   // to say, so it may as well be worth reading.
   lastDefeatLine = defeatLine(defeat.cause, score, bestAtStart, Math.random(), lastDefeatLine);
   showOverlay('DEFEATED', lastDefeatLine, 'Again');
+  if (wantsInitials(score, bestAtStart)) openInitials();
+  else dueBoard();
 }
 
 
@@ -2158,6 +2530,27 @@ const KEYS = {
 };
 
 document.addEventListener('keydown', (event) => {
+  // On the title screen any key presses start, and does nothing else: Space
+  // there must not also start a run on the screen that follows.
+  if (titling) {
+    if (!['Shift', 'Control', 'Alt', 'Meta', 'Tab'].includes(event.key)) {
+      event.preventDefault();
+      pressStart();
+    }
+    return;
+  }
+
+  // While dojo select is up every key is its own, and while the pick plays
+  // out no key does anything.
+  if (dojoPhase !== 'closed') {
+    if (dojoPhase === 'open') dojoKeydown(event);
+    return;
+  }
+
+  // While initials are being entered, every key belongs to them: r, wasd,
+  // m and space are letters or nothing, never a restart behind your back.
+  if (entry) { initialsKeydown(event); return; }
+
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
 
   // Stop arrows and space from scrolling the page underneath us.
@@ -2298,6 +2691,7 @@ for (const type of ['pointerup', 'pointercancel']) {
 // telling you something you already knew. A promotion is the exception,
 // and it has its own moment below the board rather than a line in here.
 function showOverlay(title, text, buttonLabel) {
+  dojoLineEl.hidden = true;
   titleEl.textContent = title;
   textEl.textContent  = text;
   playBtn.textContent = buttonLabel;
@@ -2476,6 +2870,8 @@ function startGame() {
   endArrival();
   audio();    // always a click or a key, so the browser will allow it
   reset();
+  hideInitials();
+  dropBoard();
   overlay.classList.add('hidden');
   if (REDUCED_MOTION.matches) {
     phase = 'playing';
@@ -2510,7 +2906,9 @@ function bowFrame() {
 // Continue goes through toggleMercy() like space does, so the time spent
 // paused is counted the same way whichever you used.
 playBtn.addEventListener('click', () => {
-  if (phase === 'paused') {
+  if (entry) {
+    signInitials();
+  } else if (phase === 'paused') {
     toggleMercy();
   } else {
     startGame();
@@ -2670,14 +3068,43 @@ for (const type of ['keydown', 'pointerdown']) {
   document.addEventListener(type, endArrival, true);
 }
 
+// ---- title screen ----------------------------------------------------
+// Every page load opens on the crest alone: the arcade front door. Any key,
+// click or tap presses start, and only that - it never also starts a run.
+// Then, until a dojo has been chosen, dojo select; otherwise arrival plays
+// as it always has, so the board still arrives rather than just being there.
+// Tab and the modifiers are left alone, so keyboard users can still reach
+// the button itself.
+const pageEl        = document.getElementById('page');
+const titleScreenEl = document.getElementById('title-screen');
+let titling = true;
+
+function pressStart() {
+  if (!titling) return;
+  titling = false;
+  if (!currentDojo()) return openDojoSelect(true);
+  leaveTitle();
+  startArrival();
+}
+
+function leaveTitle() {
+  titleScreenEl.hidden = true;
+  pageEl.classList.remove('titling');
+}
+
+document.getElementById('start-btn').addEventListener('click', pressStart);
+document.addEventListener('pointerdown', (event) => {
+  if (titling && event.button === 0) pressStart();
+});
+
 // Set up an opening position to look at behind the menu, then start the
 // heartbeat. Nothing moves until phase becomes 'playing'.
 reset();
 phase = 'ready';
 showBestBelt();
-startArrival();
 loop();
-setTimeout(idleTongue, TONGUE_PAUSE_MIN + (arrivalStart === null ? 0 : ARRIVAL_MS));
+setTimeout(() => flickTongue(2), ARRIVAL_CREST_MS);   // the crest smells the room
+setTimeout(idleTongue, TONGUE_PAUSE_MIN + ARRIVAL_CREST_MS);
 
 // =====================================================================
 //  10. SCORES - runs that outlive the browser
@@ -2701,9 +3128,46 @@ const SCORE_SERVICE = {
 // A slow database must never hold up a game. After this long, give up.
 const SCORE_TIMEOUT_MS = 8000;
 
-// The dojos a score can belong to, as the database names them. Dojo select
-// (UNR-114) should use these ids; the database refuses any other.
+// The dojos a score can belong to, as the database names them, in the
+// order dojo select lays them out. The database refuses any other.
 const DOJO_IDS = ['cobra-kai', 'miyagi-do', 'eagle-fang'];
+
+// The dojo you chose on dojo select, remembered between visits. A known
+// dojo, or null. localStorage can throw or forget (a private window), so
+// the choice is also kept for the rest of the visit, which is all a run
+// needs to be signed.
+const DOJO_KEY = 'strikeFirstDojo';
+
+function dojoOrNull(value) {
+  return DOJO_IDS.includes(value) ? value : null;
+}
+
+let chosenDojo = (() => {
+  try { return dojoOrNull(localStorage.getItem(DOJO_KEY)); } catch (e) { return null; }
+})();
+
+function currentDojo() {
+  return chosenDojo;
+}
+
+function commitDojo(dojo) {
+  if (!dojoOrNull(dojo)) return;
+  chosenDojo = dojo;
+  try { localStorage.setItem(DOJO_KEY, dojo); } catch (e) {}
+}
+
+// Initials the dojo will not print. Slurs, hate, sexual terms and
+// self-harm; mild cheek like WTF is allowed, as arcades always did, and
+// identities are not on it, because blocking them treats the identity as
+// the insult. The database holds the same list and is the real rule -
+// this copy only lets the player hear it before signing. test.js fails if
+// the two differ. Decided in UNR-108.
+const BLOCKED_INITIALS = [
+  'KKK', 'NIG', 'NGR', 'FAG', 'NAZ',
+  'CUM', 'SEX', 'TIT', 'DIK', 'DIC', 'COK',
+  'FUK', 'FCK', 'FUC', 'CNT', 'SHT', 'ASS',
+  'KYS'
+];
 
 // First move to death, with time spent in mercy taken out. Not a mechanic -
 // nothing in play depends on it - so wall-clock time is right here. A tab
@@ -2723,7 +3187,7 @@ function runDuration(startedAt, endedAt, paused) {
 function scoreRecord({ initials, dojo, score, best, length, moves, durationMs }) {
   initials = String(initials || '').trim().toUpperCase();
   const whole = (n, min) => Number.isInteger(n) && n >= min;
-  if (!/^[A-Z]{3}$/.test(initials)) return null;
+  if (!/^[A-Z]{3}$/.test(initials) || BLOCKED_INITIALS.includes(initials)) return null;
   if (!DOJO_IDS.includes(dojo)) return null;
   if (!whole(score, 0) || !whole(best, 0) || !whole(length, 3) ||
       !whole(moves, 0) || !whole(durationMs, 0)) return null;
@@ -2786,6 +3250,783 @@ async function submitScore(record, send = globalThis.fetch) {
   } catch (err) {
     console.warn('Score not saved:', err);
     return null;
+  }
+}
+
+// ---- initials ---------------------------------------------------------
+// Three letters, the way every arcade cabinet did it. UNR-108.
+//
+// A real text field, chosen over three arcade slots you roll through: the
+// slots took up to thirteen taps a letter on a tablet, and a real field
+// gets hardware keyboards, paste and screen readers for nothing.
+//
+// Safari only opens a tablet's keyboard for a focus that happens inside a
+// tap, and this field appears at the end of the defeat with no tap in
+// sight. So on a touch screen it waits to be tapped rather than grabbing
+// focus it cannot use. Most players never need the keyboard anyway: last
+// time's initials come back filled in, and signing again is one tap.
+//
+// Signing sends the run. The id the database hands back is kept, because
+// that is how the board finds your run: initials are not unique.
+const INITIALS_KEY = 'strikeFirstInitials';
+const LAST_RUN_KEY = 'strikeFirstLastRun';
+
+// Your last saved run, so the board can highlight it even after a run that
+// didn't ask for initials. Survives a reload, like the initials do.
+let lastRunId = Number(localStorage.getItem(LAST_RUN_KEY)) || null;
+
+// The row being saved right now, or null. Leaving the verdict clears it,
+// which is how a save that finishes late knows not to reopen the entry
+// over a run that has already started.
+let signing = null;
+
+const initialsEl = document.getElementById('initials');
+const skipBtn    = document.getElementById('skip-btn');
+
+// The initials field while it is open, and null otherwise - which is what
+// hands the keyboard back to the game.
+let entry = null;
+
+// Only a run that beats your own hi-score asks. Most runs go straight to
+// Again, and a first run with any points at all is always a hi-score, so a
+// new player still signs the board after one run.
+function wantsInitials(points, bestBefore) {
+  return points > 0 && points > bestBefore;
+}
+
+// Anything typed or pasted, as initials: capitals only, three at most.
+function cleanInitials(text) {
+  return String(text || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+}
+
+// A note replaces "Sign the board." until the player types.
+function openInitials(note) {
+  initialsEl.innerHTML =
+    '<p class="initials-label" id="initials-label">Sign the board.</p>' +
+    '<input class="initials-input" id="initials-input" ' +
+    'autocomplete="off" autocorrect="off" autocapitalize="characters" ' +
+    'spellcheck="false" enterkeyhint="done" aria-label="initials">';
+  entry = document.getElementById('initials-input');
+  entry.value = cleanInitials(localStorage.getItem(INITIALS_KEY));
+  // Last time's initials fill the field, and a full field used to refuse
+  // another letter, so typing did nothing until you deleted first. Found on
+  // the iPad simulator. Now a letter typed into a full field starts over,
+  // the way an arcade cabinet's entry did. There is no maxlength for the
+  // same reason: Safari drops the extra letter before the page ever hears
+  // about it, which leaves nothing to start over from.
+  entry.addEventListener('input', (event) => {
+    const typed = entry.value.toUpperCase().replace(/[^A-Z]/g, '');
+    entry.value = typed.length > 3 && event.data ? cleanInitials(event.data) : cleanInitials(typed);
+    showInitials();
+  });
+  initialsEl.hidden = false;
+  skipBtn.hidden = false;
+  playBtn.textContent = 'Sign';
+  showInitials();
+  if (note) document.getElementById('initials-label').textContent = note;
+  if (!matchMedia('(pointer: coarse)').matches) entry.focus({ preventScroll: true });
+}
+
+// Output only: reflects the field, decides nothing.
+function showInitials() {
+  const initials = cleanInitials(entry.value);
+  const blocked = BLOCKED_INITIALS.includes(initials);
+  playBtn.disabled = initials.length !== 3 || blocked;
+  document.getElementById('initials-label').textContent =
+    blocked ? 'The dojo will not print that.' : 'Sign the board.';
+}
+
+function initialsKeydown(event) {
+  // preventDefault on Enter also stops a focused button from turning the
+  // same key press into a click, which would sign and then start a run.
+  if (event.key === 'Enter') { event.preventDefault(); signInitials(); return; }
+  if (event.key === 'Escape') { event.preventDefault(); skipInitials(); return; }
+
+  // A keyboard on a tablet: the field was never focused, so the first
+  // letter focuses it and goes in, rather than vanishing.
+  if (document.activeElement !== entry && /^[a-z]$/i.test(event.key)) {
+    event.preventDefault();
+    entry.value = cleanInitials((entry.value.length < 3 ? entry.value : '') + event.key);
+    entry.focus({ preventScroll: true });
+    showInitials();
+  }
+}
+
+// The row is built before anything waits, so pressing Again mid-save can't
+// change what gets saved. While it saves the entry is closed, so Enter or a
+// second tap can't send it twice, and Again works: a run never waits on the
+// network. If it fails, the entry comes back filled in, and Sign is the
+// retry - no extra button. Resolves once the save, and the board it
+// reloads, have settled, for tests.
+async function signInitials(send = globalThis.fetch) {
+  const initials = cleanInitials(entry && entry.value);
+  if (initials.length !== 3 || BLOCKED_INITIALS.includes(initials)) return;
+  localStorage.setItem(INITIALS_KEY, initials);
+  const record = runRecord(initials, currentDojo());
+  signing = record;
+  showSigned('Signing…', initials);
+  endEntry();
+
+  const saved = await submitScore(record, send);
+  if (saved && saved.id) {
+    lastRunId = saved.id;
+    localStorage.setItem(LAST_RUN_KEY, saved.id);
+  }
+  if (signing !== record) return;            // the verdict has gone
+  signing = null;
+  if (!saved) return openInitials('Not saved. Sign again to try once more.');
+  showSigned('Signed.', initials);
+  // The places have moved now your run is on it, so load it again.
+  boardDue = true;
+  await loadBoard(saved.id, send);
+}
+
+// Output only.
+function showSigned(label, initials) {
+  initialsEl.innerHTML =
+    `<p class="initials-label">${label}</p>` +
+    `<p class="initials-done">${initials}</p>`;
+}
+
+function skipInitials() {
+  hideInitials();
+  dueBoard();
+}
+
+function endEntry() {
+  if (entry) entry.blur();
+  entry = null;
+  skipBtn.hidden = true;
+  playBtn.disabled = false;
+  playBtn.textContent = 'Again';
+}
+
+function hideInitials() {
+  endEntry();
+  signing = null;
+  initialsEl.hidden = true;
+  initialsEl.innerHTML = '';
+}
+
+skipBtn.addEventListener('click', skipInitials);
+
+// ---- the board --------------------------------------------------------
+// Seen between runs, on the defeat screen, never over a live run. UNR-108.
+//
+// A podium rather than a top ten: sixteen rows were too busy for the
+// overlay. The top three, then the run above yours, yours and the one
+// below, so you can always find yourself however far down you are. Your
+// run is found by its id, because initials are not unique. Under it, the
+// dojos, each counted at its best three players.
+//
+// It starts loading the moment you die, so it has the defeat to arrive in.
+// If it is late it appears when it lands, and if it fails it never
+// appears: the board is something to look at, and a run never waits for
+// it. The full board - top ten, teams, filters - is UNR-134.
+
+// A dojo's standing is the sum of its best this many players.
+const BOARD_TEAM = 3;
+// The podium is the top this many...
+const PODIUM = 3;
+// ...unless your run is at or above this place, when it is just the top
+// this many, since your neighbourhood is already on it.
+const PODIUM_REACH = 5;
+
+const DOJO_NAMES = { 'cobra-kai': 'Cobra Kai', 'miyagi-do': 'Miyagi-Do', 'eagle-fang': 'Eagle Fang' };
+// Each dojo's 18px badge, as [fill, path] pairs on an 18x18 grid: one
+// unit is one pixel. Drawn natively at that size rather than shrunk from
+// the crests, and only in the game's own palette. Kept as path data so
+// the page stays one file. UNR-114; the sources are design/dojo-crests/.
+const DOJO_BADGES = {
+  'cobra-kai': [
+    ['#ffff00', 'M7 2h4v1h-4ZM6 3h6v1h-6ZM5 4h2v1h-2ZM8 4h2v1h-2ZM11 4h2v1h-2ZM4 5h3v1h-3ZM11 5h3v1h-3ZM3 6h3v1h-3ZM7 6h4v1h-4ZM12 6h3v1h-3ZM3 7h2v1h-2ZM6 7h1v1h-1ZM11 7h1v1h-1ZM13 7h2v1h-2ZM3 8h2v1h-2ZM6 8h1v1h-1ZM11 8h1v1h-1ZM13 8h2v1h-2ZM4 9h1v1h-1ZM7 9h1v1h-1ZM10 9h1v1h-1ZM13 9h1v1h-1ZM5 10h1v1h-1ZM7 10h4v1h-4ZM12 10h1v1h-1ZM7 11h1v1h-1ZM10 11h1v1h-1ZM7 12h4v1h-4ZM7 13h1v1h-1ZM10 13h1v1h-1ZM4 14h10v1h-10ZM3 15h2v1h-2ZM7 15h4v1h-4ZM13 15h2v1h-2Z'],
+    ['#7a7a00', 'M5 3h1v1h-1ZM12 3h1v1h-1ZM4 4h1v1h-1ZM13 4h1v1h-1ZM3 5h1v1h-1ZM14 5h1v1h-1ZM6 6h1v1h-1ZM11 6h1v1h-1ZM5 7h1v1h-1ZM12 7h1v1h-1ZM5 8h1v1h-1ZM12 8h1v1h-1ZM3 9h1v1h-1ZM5 9h2v1h-2ZM11 9h2v1h-2ZM14 9h1v1h-1ZM4 10h1v1h-1ZM6 10h1v1h-1ZM11 10h1v1h-1ZM13 10h1v1h-1ZM5 11h2v1h-2ZM8 11h2v1h-2ZM11 11h2v1h-2ZM8 13h2v1h-2ZM5 15h2v1h-2ZM11 15h2v1h-2ZM4 16h10v1h-10Z'],
+    ['#ece6da', 'M8 7h2v1h-2Z'],
+    ['#2a2a30', 'M7 4h1v1h-1ZM10 4h1v1h-1ZM8 5h2v1h-2ZM7 7h1v1h-1ZM10 7h1v1h-1ZM7 8h1v1h-1ZM10 8h1v1h-1Z'],
+    ['#d3262f', 'M7 5h1v1h-1ZM10 5h1v1h-1ZM8 8h2v1h-2ZM8 9h2v1h-2Z']
+  ],
+  'miyagi-do': [
+    ['#ece6da', 'M3 4h4v1h-4ZM11 4h3v1h-3ZM2 5h6v1h-6ZM10 5h5v1h-5ZM1 6h16v1h-16ZM2 7h5v1h-5ZM11 7h5v1h-5ZM1 8h5v1h-5ZM12 8h5v1h-5Z'],
+    ['#7b7480', 'M7 7h1v1h-1ZM10 7h1v1h-1ZM6 8h1v1h-1ZM11 8h1v1h-1ZM2 9h3v1h-3ZM7 9h1v1h-1ZM10 9h1v1h-1ZM13 9h3v1h-3ZM8 10h2v1h-2ZM8 11h2v1h-2ZM7 12h2v1h-2ZM6 13h3v1h-3ZM7 14h2v1h-2ZM5 15h6v1h-6ZM3 16h4v1h-4ZM9 16h4v1h-4Z'],
+    ['#d3262f', 'M7 2h4v1h-4ZM5 3h8v1h-8ZM7 4h4v1h-4ZM8 5h2v1h-2ZM8 7h2v1h-2ZM7 8h4v1h-4ZM5 9h2v1h-2ZM8 9h2v1h-2ZM11 9h2v1h-2ZM3 10h5v1h-5ZM10 10h5v1h-5ZM4 11h4v1h-4ZM10 11h4v1h-4ZM5 12h2v1h-2ZM9 12h4v1h-4ZM9 13h2v1h-2Z']
+  ],
+  'eagle-fang': [
+    ['#ffff00', 'M4 7h1v1h-1ZM13 7h1v1h-1ZM7 8h4v1h-4ZM6 9h6v1h-6ZM7 10h4v1h-4ZM8 11h2v1h-2Z'],
+    ['#ece6da', 'M6 2h6v1h-6ZM4 3h10v1h-10ZM3 4h12v1h-12ZM2 5h14v1h-14ZM3 6h1v1h-1ZM6 6h6v1h-6ZM14 6h1v1h-1ZM2 7h2v1h-2ZM7 7h4v1h-4ZM14 7h2v1h-2ZM3 8h3v1h-3ZM12 8h3v1h-3ZM2 9h4v1h-4ZM12 9h4v1h-4ZM3 10h4v1h-4ZM11 10h4v1h-4ZM4 11h2v1h-2ZM12 11h2v1h-2ZM3 12h4v1h-4ZM11 12h4v1h-4ZM4 13h3v1h-3ZM11 13h3v1h-3ZM5 14h2v1h-2ZM11 14h2v1h-2ZM6 15h1v1h-1ZM8 15h2v1h-2ZM11 15h1v1h-1ZM7 16h4v1h-4Z'],
+    ['#2a2a30', 'M4 6h2v1h-2ZM12 6h2v1h-2ZM5 7h2v1h-2ZM11 7h2v1h-2ZM6 8h1v1h-1ZM11 8h1v1h-1ZM6 11h1v1h-1ZM11 11h1v1h-1ZM7 12h1v1h-1ZM10 12h1v1h-1ZM7 13h1v1h-1ZM10 13h1v1h-1ZM7 14h1v1h-1ZM10 14h1v1h-1ZM7 15h1v1h-1ZM10 15h1v1h-1Z'],
+    ['#d3262f', 'M7 11h1v1h-1ZM10 11h1v1h-1ZM8 12h2v1h-2ZM8 13h2v1h-2ZM8 14h2v1h-2Z']
+  ]
+};
+
+function badgeSvg(dojo) {
+  return '<svg viewBox="0 0 18 18" shape-rendering="crispEdges" aria-hidden="true">' +
+    DOJO_BADGES[dojo].map(([fill, d]) => `<path fill="${fill}" d="${d}"/>`).join('') +
+    '</svg>';
+}
+
+const boardEl = document.getElementById('board');
+
+// What the board holds right now, or null: { rows, you, standings }.
+let board = null;
+// Whether the screen is at the point where the board belongs: after a
+// defeat with nothing to sign, or after signing or skipping.
+let boardDue = false;
+// Counts loads, so a slow one that is overtaken - or outlived by the
+// verdict it was for - lands nowhere.
+let boardLoads = 0;
+
+// What to ask for, without asking. The run's own row only if there is a
+// run to look for.
+function boardRequests(service, runId) {
+  const rest = service.url + '/rest/v1/';
+  const run = 'select=id,initials,dojo,score,belt,place';
+  return {
+    top:   `${rest}leaderboard?${run}&order=place&limit=${PODIUM_REACH}`,
+    dojos: `${rest}dojo_players?select=dojo,initials,best,place,students&place=lte.${BOARD_TEAM}`,
+    you:   runId ? `${rest}leaderboard?${run}&id=eq.${runId}` : null
+  };
+}
+
+function neighbourRequest(service, place) {
+  return `${service.url}/rest/v1/leaderboard?select=id,initials,dojo,score,belt,place` +
+    `&place=gte.${place - 1}&place=lte.${place + 1}&order=place`;
+}
+
+// The rows to show, top to bottom. null is the gap between the podium and
+// your neighbourhood. Rows either side of yours are marked near, which is
+// what the short layout leaves out. Pure.
+function podiumRows(top, near, you) {
+  const high = you && you.place <= PODIUM_REACH;
+  const rows = top.filter(r => r.place <= (high ? PODIUM_REACH : PODIUM))
+    .map(r => ({ ...r, you: !!you && r.id === you.id, near: false }));
+  if (!you || high) return rows;
+  const around = near.some(r => r.id === you.id) ? near : [...near, you];
+  rows.push(null, ...around
+    .filter(r => r.place > PODIUM)
+    .sort((a, b) => a.place - b.place)
+    .map(r => ({ ...r, you: r.id === you.id, near: r.id !== you.id })));
+  return rows;
+}
+
+// Every dojo, best total first, from the dojo_players rows already cut to
+// each dojo's team. A dojo with nobody is still listed. Pure.
+// Dojos level on points share a place, the way a tie does on any table.
+function dojoStandings(players, team) {
+  const standings = DOJO_IDS.map(dojo => {
+    const mine = players.filter(p => p.dojo === dojo && p.place <= team);
+    return {
+      dojo,
+      total: mine.reduce((sum, p) => sum + p.best, 0),
+      students: mine.length ? mine[0].students : 0
+    };
+  }).sort((a, b) => b.total - a.total);
+  return standings.map(d => ({ ...d, place: 1 + standings.filter(o => o.total > d.total).length }));
+}
+
+function ordinal(n) {
+  const teen = n % 100 >= 11 && n % 100 <= 13;
+  return n + (teen ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+}
+
+function studentsLabel(n) {
+  return n === 0 ? 'no students yet' : n === 1 ? '1 student' : `${n} students`;
+}
+
+// Read rows. Resolves to an array, or null if anything went wrong; never
+// throws, like submitScore.
+async function readRows(url, send = globalThis.fetch) {
+  if (!send) return null;
+  const options = { headers: { apikey: SCORE_SERVICE.key } };
+  if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
+    options.signal = AbortSignal.timeout(SCORE_TIMEOUT_MS);
+  }
+  try {
+    const response = await send(url, options);
+    if (!response.ok) {
+      console.warn('Board not loaded:', response.status, await response.text());
+      return null;
+    }
+    const rows = await response.json();
+    return Array.isArray(rows) ? rows : null;
+  } catch (err) {
+    console.warn('Board not loaded:', err);
+    return null;
+  }
+}
+
+// Everything the board shows, or null. A run id nobody has - a database
+// that was reset - just means no highlight.
+async function fetchBoard(runId, send = globalThis.fetch) {
+  const ask = boardRequests(SCORE_SERVICE, runId);
+  const [top, players, mine] = await Promise.all([
+    readRows(ask.top, send),
+    readRows(ask.dojos, send),
+    ask.you ? readRows(ask.you, send) : []
+  ]);
+  if (!top || !players || !mine) return null;
+  const you = mine[0] || null;
+  let near = [];
+  if (you && you.place > PODIUM_REACH) {
+    near = await readRows(neighbourRequest(SCORE_SERVICE, you.place), send);
+    if (!near) return null;
+  }
+  return { rows: podiumRows(top, near, you), you, standings: dojoStandings(players, BOARD_TEAM) };
+}
+
+// Load the board for a run and show it if it is still wanted. Resolves
+// once it has settled, for tests.
+async function loadBoard(runId, send = globalThis.fetch) {
+  const load = ++boardLoads;
+  board = null;
+  const loaded = await fetchBoard(runId, send);
+  if (load !== boardLoads) return;
+  board = loaded;
+  showBoard();
+}
+
+function dueBoard() {
+  boardDue = true;
+  showBoard();
+}
+
+function dropBoard() {
+  boardLoads++;
+  board = null;
+  boardDue = false;
+  showBoard();
+}
+
+// Output only: shows what board and boardDue say, decides nothing.
+function showBoard() {
+  const shown = boardDue && board !== null && entry === null && signing === null;
+  boardEl.hidden = !shown;
+  overlay.classList.toggle('with-board', shown);
+  if (!shown) return;
+  initialsEl.hidden = true;
+
+  const cell = (text, className) => {
+    const td = document.createElement('td');
+    if (className) td.className = className;
+    if (text !== null) td.textContent = text;
+    return td;
+  };
+  const badge = (dojo) => {
+    const span = document.createElement('span');
+    span.className = 'dojo-badge';
+    span.innerHTML = badgeSvg(dojo);           // constants, never data
+    span.setAttribute('role', 'img');
+    span.setAttribute('aria-label', DOJO_NAMES[dojo]);
+    span.title = DOJO_NAMES[dojo];
+    return span;
+  };
+
+  const table = document.createElement('table');
+  for (const r of board.rows) {
+    const tr = table.insertRow();
+    if (r === null) {
+      tr.className = 'gap';
+      const td = cell(null);
+      td.colSpan = 5;
+      tr.append(td);
+      continue;
+    }
+    tr.className = r.you ? 'you' : r.near ? 'near' : '';
+    const swatch = document.createElement('span');
+    const belt = BELTS.find(b => b.name === r.belt) || BELTS[0];
+    swatch.className = 'belt-swatch';
+    swatch.style.setProperty('--belt', belt.colour);
+    swatch.title = belt.name;
+    const dojo = cell(null);
+    dojo.append(badge(r.dojo));
+    const beltCell = cell(null);
+    beltCell.append(swatch);
+    tr.append(cell(String(r.place), 'place'), cell(r.initials), dojo, beltCell, cell(String(r.score), 'score'));
+  }
+
+  const yours = board.you ? board.you.dojo : currentDojo();
+  const dojos = document.createElement('div');
+  dojos.className = 'dojos';
+  for (const d of board.standings) {
+    const div = document.createElement('div');
+    if (d.dojo === yours) div.className = 'mine';
+    const total = document.createElement('b');
+    total.textContent = d.students ? String(d.total) : '—';
+    // Where it stands, shown only in the short layout, where yours is the
+    // only dojo left. A dojo with nobody has no standing to state.
+    const standing = document.createElement('span');
+    standing.className = 'standing';
+    if (d.students) standing.textContent = ` · ${ordinal(d.place)} of ${board.standings.length}`;
+    div.append(badge(d.dojo), ' ', total, standing, ` · ${studentsLabel(d.students)}`);
+    dojos.append(div);
+  }
+
+  boardEl.replaceChildren(table, dojos);
+}
+
+// =====================================================================
+//  11. DOJO SELECT - choose a side. UNR-114
+// =====================================================================
+// A screen of its own after the title, the first time only: every run
+// counts for a dojo, so there is no dojo-less player. The start screen
+// says which dojo you are in and offers to change it. Settled from a mock
+// whose README records each choice: design/dojo-select-compare/ at 09df41e.
+//
+// Arcade rules: 30 seconds on the clock, and when it runs out the lit dojo
+// is chosen for you. The highlight starts on the dojo you had, or a random
+// one - never always the same card, because whichever starts lit gets
+// picked more and dojos compete as teams.
+
+const DOJO_SECONDS = 30;
+const DOJO_CREEDS = {
+  'cobra-kai':  'Strike first. Strike hard. No mercy.',
+  'miyagi-do':  'Karate is for defence only.',
+  'eagle-fang': 'Bite like an eagle.'
+};
+// Always the dojo's founder: one clear rule, where Cobra Kai alone has had
+// three senseis.
+const DOJO_SENSEIS = { 'cobra-kai': 'John Kreese', 'miyagi-do': 'Mr. Miyagi', 'eagle-fang': 'Johnny Lawrence' };
+// Each dojo's light, as r, g, b for rgba(): the card, the room, the banner.
+const DOJO_GLOWS = { 'cobra-kai': '255, 255, 0', 'miyagi-do': '211, 38, 47', 'eagle-fang': '236, 230, 218' };
+// Until someone has flipped a card, the lit one turns a little, once.
+const FLIPPED_KEY = 'strikeFirstFlipped';
+// The art: 320px WebP, made from Astra's crests in PR #6.
+const DOJO_ART_MAX = 160;
+const DOJO_ART_MIN = 120;
+
+// 'closed', 'open' (choosing), or 'choosing' (the pick is playing out).
+let dojoPhase = 'closed';
+let dojoAt = -1;          // index into DOJO_IDS of the lit card
+let dojoLeft = 0;         // seconds on the clock
+let dojoTimer = 0;
+
+// Where the highlight starts: the dojo you had, else a random one. Pure.
+function dojoStart(had, random) {
+  const i = DOJO_IDS.indexOf(had);
+  return i >= 0 ? i : Math.floor(random * DOJO_IDS.length);
+}
+
+// One step left or right, wrapping. Pure.
+function dojoStep(at, delta) {
+  const n = DOJO_IDS.length;
+  return ((at + delta) % n + n) % n;
+}
+
+// What each card's back says, from the same dojo_players rows the board
+// reads. Null rows - the database could not be reached - leave the back
+// blank rather than wrong. Pure.
+function dojoBacks(players) {
+  const backs = {};
+  const standings = players ? dojoStandings(players, BOARD_TEAM) : null;
+  for (const dojo of DOJO_IDS) {
+    const s = standings && standings.find(d => d.dojo === dojo);
+    const top = players && players.find(p => p.dojo === dojo && p.place === 1);
+    backs[dojo] = {
+      place:    s && s.students ? `${ordinal(s.place)} of ${DOJO_IDS.length}` : '—',
+      team:     s && s.students ? String(s.total) : '—',
+      students: s ? String(s.students) : '—',
+      top:      top ? `${top.initials} · ${top.best}` : '—'
+    };
+  }
+  return backs;
+}
+
+const dojoSelectEl = document.getElementById('dojo-select');
+const dojoCountEl  = document.getElementById('dojo-count');
+const dojoAuraEl   = document.getElementById('dojo-aura');
+const dojoVerdict  = document.getElementById('dojo-verdict');
+
+// The cards, built once from constants - never from data.
+document.getElementById('dojo-cards').innerHTML = DOJO_IDS.map(dojo => `
+  <li style="--glow:${DOJO_GLOWS[dojo]}">
+    <button class="pick" type="button" aria-label="${DOJO_NAMES[dojo]}">
+      <span class="card">
+        <span class="face front">
+          <span class="art"><img alt="" width="320" height="320" data-src="assets/crests/${dojo}.webp"></span>
+          <span class="name">${DOJO_NAMES[dojo]}</span>
+        </span>
+        <span class="face back" aria-hidden="true">
+          <span class="name">${DOJO_NAMES[dojo]}</span>
+          <dl class="stats">
+            <div><dt>place</dt><dd data-back="place">—</dd></div>
+            <div><dt>team score</dt><dd data-back="team">—</dd></div>
+            <div><dt>students</dt><dd data-back="students">—</dd></div>
+            <div><dt>top</dt><dd data-back="top">—</dd></div>
+          </dl>
+          <span class="sensei">Sensei<b>${DOJO_SENSEIS[dojo]}</b></span>
+        </span>
+      </span>
+    </button>
+    <button class="corner" type="button" tabindex="-1" aria-label="flip ${DOJO_NAMES[dojo]}"></button>
+  </li>`).join('');
+const dojoCards = [...dojoSelectEl.querySelectorAll('li')];
+
+// The art is only fetched when it might be shown: straight away for someone
+// who has not chosen, since the title screen leads to the select and that
+// gives it time to arrive; otherwise when they ask to change.
+function loadDojoArt() {
+  for (const img of dojoSelectEl.querySelectorAll('img[data-src]')) {
+    img.src = img.dataset.src;
+    img.removeAttribute('data-src');
+  }
+}
+if (!currentDojo()) loadDojoArt();
+
+// Size the art from the room left once everything else is laid out.
+function fitDojoSelect() {
+  if (dojoSelectEl.hidden) return;
+  dojoSelectEl.style.setProperty('--art', '0px');
+  pageEl.style.minHeight = '0';                 // measure the content, not the centring
+  const rest = pageEl.getBoundingClientRect().height;
+  pageEl.style.minHeight = '';
+  const gap = Math.max(16, Math.min(56, innerWidth * 0.035));
+  const byHeight = innerHeight - rest - 24;
+  const byWidth = (innerWidth - 48 - gap * 2) / 3 - 60;
+  const art = Math.round(Math.max(DOJO_ART_MIN, Math.min(DOJO_ART_MAX, byHeight, byWidth)));
+  dojoSelectEl.style.setProperty('--art', art + 'px');
+  dojoSelectEl.style.setProperty('--gap', gap + 'px');
+}
+if (typeof addEventListener === 'function') addEventListener('resize', fitDojoSelect);
+
+function showDojoLine() {
+  const dojo = currentDojo();
+  dojoLineEl.hidden = !dojo;
+  if (dojo) document.getElementById('dojo-line-name').textContent = DOJO_NAMES[dojo];
+}
+showDojoLine();
+document.getElementById('dojo-change').addEventListener('click', (event) => {
+  event.preventDefault();
+  openDojoSelect(false);
+});
+
+// Output only: lights the card at dojoAt and the room behind it.
+function showDojoHighlight() {
+  dojoCards.forEach((li, i) => {
+    const on = i === dojoAt;
+    // A card turns face-up again when the highlight leaves it.
+    if (!on && li.classList.contains('flipped')) turnDojoCard(li);
+    li.classList.toggle('on', on);
+  });
+  if (dojoAt < 0) return;
+  dojoAuraEl.style.setProperty('--glow', DOJO_GLOWS[DOJO_IDS[dojoAt]]);
+  const pick = dojoCards[dojoAt] && dojoCards[dojoAt].querySelector('.pick');
+  if (pick && dojoPhase === 'open') pick.focus({ preventScroll: true });
+}
+
+function highlightDojo(i) {
+  if (dojoPhase !== 'open' || i === dojoAt) return;
+  dojoAt = i;
+  showDojoHighlight();
+}
+
+function flipDojo(i) {
+  if (dojoPhase !== 'open') return;
+  highlightDojo(i);
+  if (dojoCards[dojoAt]) turnDojoCard(dojoCards[dojoAt]);
+  try { localStorage.setItem(FLIPPED_KEY, '1'); } catch (e) {}
+}
+
+// Half a turn away, swap the face while it is edge-on, half a turn back.
+// 3D only for those 400ms, so nothing at rest sits in a blurred 3D layer.
+function turnDojoCard(li) {
+  if (REDUCED_MOTION.matches || !li.animate) { li.classList.toggle('flipped'); return; }
+  if (li.turning) return;
+  li.turning = true;
+  const card = li.querySelector('.card');
+  const edge = (deg) => ({ transform: `perspective(900px) rotateY(${deg}deg)` });
+  card.animate([edge(0), edge(90)], { duration: 170, easing: 'ease-in' }).finished
+    .then(() => {
+      li.classList.toggle('flipped');
+      return card.animate([edge(-90), edge(0)], { duration: 230, easing: 'ease-out' }).finished;
+    })
+    .finally(() => { li.turning = false; });
+}
+
+function tickDojoClock() {
+  dojoCountEl.textContent = String(dojoLeft);
+  dojoCountEl.classList.toggle('late', dojoLeft <= 5);
+  if (dojoLeft <= 5) {
+    dojoCountEl.classList.remove('beat');
+    void dojoCountEl.offsetWidth;
+    dojoCountEl.classList.add('beat');
+  }
+}
+
+// Open the select, from the title screen or from the start screen's
+// change link. The title fades out first; the select fades in as one
+// piece with the lit card already lit.
+function openDojoSelect(fromTitle) {
+  if (dojoPhase !== 'closed') return;
+  dojoPhase = 'open';
+  loadDojoArt();
+  const fading = fromTitle && !REDUCED_MOTION.matches && crestEl.animate
+    ? [crestEl, titleScreenEl].map(el =>
+        el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, easing: 'ease-in', fill: 'forwards' }))
+    : [];
+  const show = () => {
+    if (fromTitle) leaveTitle();
+    dojoAt = -1;
+    dojoLeft = DOJO_SECONDS;
+    dojoCards.forEach(li => li.classList.remove('picked', 'on', 'flipped', 'tease'));
+    dojoSelectEl.classList.remove('chosen');
+    pageEl.classList.add('selecting');
+    dojoSelectEl.hidden = false;
+    dojoAuraEl.classList.add('on');
+    fitDojoSelect();
+    dojoSelectEl.classList.remove('arrive');
+    void dojoSelectEl.offsetWidth;
+    dojoSelectEl.classList.add('arrive');
+    tickDojoClock();
+    highlightDojo(dojoStart(currentDojo(), Math.random()));
+    // Held at nothing until the swap, then let go, so the crest can come
+    // back above the board later.
+    fading.forEach(f => f.cancel());
+    let flipped = null;
+    try { flipped = localStorage.getItem(FLIPPED_KEY); } catch (e) {}
+    if (!flipped && !REDUCED_MOTION.matches) {
+      setTimeout(() => { if (dojoPhase === 'open' && dojoCards[dojoAt]) dojoCards[dojoAt].classList.add('tease'); }, 1000);
+    }
+    clearInterval(dojoTimer);
+    dojoTimer = setInterval(() => {
+      if (document.hidden) return;              // stopped while the tab is hidden
+      dojoLeft -= 1;
+      tickDojoClock();
+      if (dojoLeft <= 0) chooseDojo(dojoAt, true);
+    }, 1000);
+    // What each dojo's back says. The select never waits for it.
+    readRows(boardRequests(SCORE_SERVICE).dojos).then(players => {
+      const backs = dojoBacks(players);
+      dojoCards.forEach((li, i) => {
+        for (const dd of li.querySelectorAll('[data-back]')) dd.textContent = backs[DOJO_IDS[i]][dd.dataset.back];
+      });
+    });
+  };
+  if (!fading.length) return show();
+  Promise.all(fading.map(f => f.finished)).then(show);
+}
+
+// Keys while the select is open. Arrows or a/d choose, Tab walks the dojos
+// and wraps rather than leaving the screen, up or down flips, Enter or
+// Space picks.
+function dojoKeydown(event) {
+  const key = event.key;
+  const from = dojoAt < 0 ? 0 : dojoAt;
+  if (key === 'ArrowLeft' || key === 'a') highlightDojo(dojoStep(from, -1));
+  else if (key === 'ArrowRight' || key === 'd') highlightDojo(dojoStep(from, 1));
+  else if (key === 'Tab') highlightDojo(dojoStep(from, event.shiftKey ? -1 : 1));
+  else if (key === 'ArrowUp' || key === 'ArrowDown' || key === 'w' || key === 's') flipDojo(from);
+  else if (key === 'Enter' || key === ' ') chooseDojo(from, false);
+  else return;
+  event.preventDefault();
+}
+
+dojoCards.forEach((li, i) => {
+  li.addEventListener('mouseenter', () => highlightDojo(i));
+  li.addEventListener('animationend', (e) => { if (e.animationName === 'card-tease') li.classList.remove('tease'); });
+  li.querySelector('.pick').addEventListener('click', () => chooseDojo(i, false));
+  li.querySelector('.corner').addEventListener('click', () => flipDojo(i));
+});
+
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// The pick lands like a kick, in beats:
+//   chamber  the card draws back, the others step away    (anticipation)
+//   strike   the band snaps out of the card, accelerating  (fast, ease-in)
+//   impact   a held frame, a flash, the band gives         (hit-stop)
+//   settle   the name comes down to size, the creed follows
+//   hold     long enough to read the creed
+//   leave    the band closes to a line, the select fades, the game arrives
+// The impact lives on the band, never the page: a page shake caused
+// motion sickness.
+async function chooseDojo(i, timedOut) {
+  if (dojoPhase !== 'open') return;
+  highlightDojo(i);
+  dojoPhase = 'choosing';
+  clearInterval(dojoTimer);
+  const dojo = DOJO_IDS[i];
+  commitDojo(dojo);
+
+  const li = dojoCards[i];
+  const glow = DOJO_GLOWS[dojo];
+  const band = dojoVerdict.querySelector('.band');
+  const name = dojoVerdict.querySelector('b');
+  const line = dojoVerdict.querySelector('span');
+  li.classList.add('picked');
+  dojoSelectEl.classList.add('chosen');
+  dojoVerdict.style.setProperty('--glow', glow);
+  name.textContent = DOJO_NAMES[dojo];     // never an exclamation mark
+  // The creed is said once, as you commit to it.
+  line.textContent = timedOut ? 'Too slow. Sensei chose for you.' : DOJO_CREEDS[dojo];
+  const hold = timedOut ? 1000 : 1800;
+
+  if (REDUCED_MOTION.matches || !band.animate) {
+    dojoVerdict.hidden = false;
+    await wait(hold + 400);
+    return closeDojoSelect();
+  }
+
+  const settle = 'cubic-bezier(.2, .8, .2, 1)';
+  const card = li.querySelector('.card');
+  await card.animate([{ transform: 'none', filter: 'none' }, { transform: 'scale(.94)', filter: 'brightness(1.35)' }],
+    { duration: 150, easing: 'cubic-bezier(.3, 0, .2, 1)', fill: 'forwards' }).finished;
+
+  dojoVerdict.hidden = false;
+  name.style.opacity = 0;
+  line.style.opacity = 0;
+  const c = card.getBoundingClientRect();
+  const b = band.getBoundingClientRect();
+  const dy = (c.top + c.height / 2) - (b.top + b.height / 2);
+  li.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 90, easing: 'linear', fill: 'forwards' });
+  await band.animate([
+    { transform: `translateY(${dy}px) scaleY(${c.height / b.height})`,
+      clipPath: `inset(0px ${c.left}px 0px ${innerWidth - c.right}px round 12px)` },
+    { transform: 'none', clipPath: 'inset(0px 0px 0px 0px round 0px)' }
+  ], { duration: 120, easing: 'cubic-bezier(.6, 0, 1, .5)', fill: 'both' }).finished;
+
+  name.style.opacity = '';
+  line.style.opacity = '';
+  band.animate([{ transform: 'scaleY(1.1)' }, { transform: 'none' }], { duration: 220, easing: settle });
+  band.animate([{ backgroundColor: `rgba(${glow}, .55)`, borderColor: `rgb(${glow})` },
+                { backgroundColor: 'rgba(9, 9, 11, .9)', borderColor: `rgba(${glow}, .7)` }],
+    { duration: 320, easing: 'ease-out' });
+  await Promise.all([
+    name.animate([{ opacity: 1, transform: 'scale(1.14)' }, { opacity: 1, transform: 'scale(1.14)', offset: .22 },
+                  { opacity: 1, transform: 'none' }], { duration: 280, easing: settle, fill: 'both' }).finished,
+    line.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }],
+      { duration: 260, delay: 220, easing: settle, fill: 'both' }).finished
+  ]);
+
+  await wait(hold);
+
+  const out = { duration: 280, easing: 'ease-in', fill: 'forwards' };
+  await Promise.all([
+    band.animate([{ clipPath: 'inset(0% 0px 0% 0px)' }, { clipPath: 'inset(50% 0px 50% 0px)' }], out).finished,
+    name.animate([{ opacity: 1 }, { opacity: 0 }], { ...out, duration: 180 }).finished,
+    line.animate([{ opacity: 1 }, { opacity: 0 }], { ...out, duration: 180 }).finished,
+    dojoSelectEl.animate([{ opacity: 1 }, { opacity: 0 }], out).finished
+  ]);
+  closeDojoSelect();
+}
+
+// Back to the game: the start screen, with the dojo you chose on it. The
+// first time, arrival brings the board in; after a change, it fades back.
+function closeDojoSelect() {
+  dojoPhase = 'closed';
+  clearInterval(dojoTimer);
+  dojoSelectEl.hidden = true;
+  dojoVerdict.hidden = true;
+  dojoAuraEl.classList.remove('on');
+  pageEl.classList.remove('selecting');
+  for (const el of [dojoSelectEl, dojoVerdict.querySelector('.band'), dojoVerdict.querySelector('b'),
+                    dojoVerdict.querySelector('span'), ...dojoCards, ...dojoCards.map(li => li.querySelector('.card'))]) {
+    if (el.getAnimations) el.getAnimations().filter(a => !(a instanceof CSSAnimation) && !(a instanceof CSSTransition)).forEach(a => a.cancel());
+  }
+  showDojoLine();
+  startArrival();
+  if (arrivalStart !== null) return;
+  if (REDUCED_MOTION.matches) return;
+  flickTongue(2);
+  for (const el of [crestEl, stageEl, document.querySelector('.scores'), hintEl]) {
+    if (el && el.animate) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 360, easing: 'ease-out' });
   }
 }
 </script>
