@@ -10,7 +10,7 @@ One HTML file of code, no build step and nothing to install — open it and play
 Beside it sit a few images: the dojo crests and the sharing preview. Its one
 outside connection is a hosted database for scores. Made for desktop and tablet.
 
-Current version: **v0.4.6** — see [CHANGELOG.md](CHANGELOG.md).
+Current version: **v0.5.0** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Play
 
@@ -194,8 +194,8 @@ motion turns it off.
 
 Each is a milestone, and each ships as a version.
 
-- **The All Valley** — the tournament: pick a dojo, sign the board, and every
-  score counts for your dojo as well as for you
+- **The All Valley** — shipped as v0.5.0 with dojo select and the board. Still
+  to come as patches: scores you can trust, and the full board
 - **Dojo recruitment** — a challenge link that points at your place on the board
 - **Choose your fighter** — pick a character
 - **Forbidden techniques** — secrets, and modes you earn rather than pick
