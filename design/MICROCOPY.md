@@ -257,6 +257,20 @@ The same death, three senseis:
 If a line could be moved to another dojo's column without anyone noticing,
 it has no voice yet.
 
+### Welcome lines — parked
+
+Written for the banner that confirms a dojo pick, then set aside on 16
+September when that banner took the dojo's creed instead. Kept for another
+moment that says hello, such as switching dojos:
+
+| Cobra Kai | Miyagi-Do | Eagle Fang |
+| -- | -- | -- |
+| `Welcome to Cobra Kai.` | `Wax on, wax off.` | `Eagle Fang. Badass.` |
+
+Before any of them ships: `Wax on, wax off.` is the series' own line, which
+the Miyagi-Do brief above asks us not to borrow, and Eagle Fang's was already
+the weakest of the three.
+
 ### Open questions
 
 * **Which strings change with the dojo?** Defeat lines and the promotion are

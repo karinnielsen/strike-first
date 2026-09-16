@@ -1,12 +1,16 @@
 
 // ---- MOCK: dojo select as a screen of its own (UNR-114). Not shipped. ----
-// The crest stays; everything else - board, stats, hints - steps aside and
-// the select takes the page. The art is sized to the window, not the board.
+// The crest, board, stats and hints all step aside and the select takes
+// the page. The art is sized to the window, not the board.
 // ?art=hd      PR #6's higher-density pixel crests (default)
 // ?art=square  PR #6's original square crests
 // ?art=pixel   the 18px badges scaled up by a whole number - too chunky, rejected
 // ?seconds=N   countdown length, default 30
 // ?fresh=1     forget that a card was ever flipped, to see the nudge again
+// The select comes after the game's own title screen, which it takes over:
+// press start opens the select instead of going to the start screen. The
+// crest is not on the select at all (chosen 16 Sept over the crest above it,
+// which is kept in commit cb28bee), and returns above the board after.
 addEventListener('load', () => {
   const q = new URLSearchParams(location.search);
   const art = q.get('art') || 'hd';
@@ -24,19 +28,22 @@ addEventListener('load', () => {
   // The sensei named is each dojo's founder: one clear rule, where Cobra Kai
   // alone has had three senseis.
   const DOJO = {
-    'cobra-kai':  { glow: '255, 255, 0',   creed: 'Strike first. Strike hard. No mercy.', welcome: 'Welcome to Cobra Kai.',
+    'cobra-kai':  { glow: '255, 255, 0',   creed: 'Strike first. Strike hard. No mercy.',
                     sensei: 'John Kreese',    place: '1st of 3', team: 726, students: 14, top: 'JLR · 260' },
-    'miyagi-do':  { glow: '211, 38, 47',   creed: 'Karate is for defence only.',          welcome: 'Wax on, wax off.',
+    'miyagi-do':  { glow: '211, 38, 47',   creed: 'Karate is for defence only.',
                     sensei: 'Mr. Miyagi',     place: '2nd of 3', team: 708, students: 9,  top: 'DAN · 254' },
-    'eagle-fang': { glow: '236, 230, 218', creed: 'Fear does not exist. Neither do rules.', welcome: 'Eagle Fang. Badass.',
+    'eagle-fang': { glow: '236, 230, 218', creed: 'Fear does not exist. Neither do rules.',
                     sensei: 'Johnny Lawrence', place: '3rd of 3', team: 248, students: 3,  top: 'MIG · 248' },
   };
 
   const style = document.createElement('style');
   style.textContent = `
     body.selecting .scores, body.selecting #stage, body.selecting #hint, body.selecting #version { display: none; }
-    body.selecting .wrap { display: block; width: 100vw; box-sizing: border-box; position: relative; z-index: 1; }
-    body.selecting h1.crest { margin: 0 0 52px; }
+    body.selecting header { display: none; }
+    body.selecting .wrap {
+      display: flex; flex-direction: column; justify-content: center; min-height: 100svh;
+      width: 100vw; box-sizing: border-box; position: relative; z-index: 1;
+    }
 
     /* The room takes on the highlighted dojo's light, from below, like a stage. */
     .dojo-aura {
@@ -46,22 +53,31 @@ addEventListener('load', () => {
     }
     body.selecting .dojo-aura { opacity: 1; }
 
-    /* Three groups - what to do, the choice, how - 52px apart, and 10px
-       inside each, the same rhythm as the board. */
-    .dojo-select { display: grid; justify-items: center; text-align: center; gap: 52px; }
+    /* Three groups - what to do, the choice, how - 80px apart so the
+       screen breathes, and 16px inside each. */
+    .dojo-select { display: grid; justify-items: center; text-align: center; gap: 80px; }
     .dojo-select[hidden] { display: none; }
-    .dojo-select .group { display: grid; justify-items: center; gap: 10px; }
+    .dojo-select .group { display: grid; justify-items: center; gap: 16px; }
+    /* Still the monospace - the crest is the one loud voice - but set big
+       and bold, in the wordmark's own language: a hard offset behind the
+       letters and a warm bloom around them, as the button already does. */
     .dojo-select h2 {
-      margin: 0; font-size: 26px; letter-spacing: 6px; color: var(--yellow); text-transform: uppercase;
-      text-shadow: 0 0 18px rgba(255,255,0,.35);
+      margin: 0; font-size: clamp(30px, 4.6vw, 52px); font-weight: bold; letter-spacing: .16em;
+      color: var(--yellow); text-transform: uppercase;
+      text-shadow: 0 5px 0 var(--yellow-deep), 0 0 28px rgba(255,255,0,.3);
     }
-    .dojo-select .time { display: grid; justify-items: center; gap: 2px; }
-    .dojo-select .time small { font-size: 11px; letter-spacing: 4px; color: var(--dim); }
+    /* The count is the timer on its own, with no TIME label: a big number
+       ticking down under the heading says what it is, as it does on an
+       arcade select screen. It sits clear of the heading's shadow. */
+    .dojo-select .heading { gap: 32px; }
     .dojo-select .count { font-size: 44px; font-weight: bold; line-height: 1.05; color: var(--text); font-variant-numeric: tabular-nums; }
-    .dojo-select .count.late { color: var(--yellow); text-shadow: 0 0 16px rgba(255,255,0,.5); }
+    .dojo-select .count.late { color: var(--red); text-shadow: 0 0 16px rgba(211,38,47,.6); }
     .dojo-select .count.beat { animation: beat .35s ease-out; }
     @keyframes beat { from { transform: scale(1.35); } to { transform: scale(1); } }
-    .dojo-select .how { margin: 0; font-size: 13px; color: var(--dim); }
+    /* The keys are what the eye hunts for, so they are set apart from the
+       words around them: bone and bold, where the words stay dim. */
+    .dojo-select .how { margin: 0; font-size: 14px; letter-spacing: .5px; color: var(--dim); }
+    .dojo-select .how kbd { font: inherit; font-weight: bold; color: var(--text); }
 
     /* ---- the cards ---- */
     .dojo-select ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, auto); gap: var(--gap); }
@@ -90,7 +106,11 @@ addEventListener('load', () => {
       border: 3px solid transparent; border-radius: 12px;
       transition: border-color .15s, box-shadow .15s;
     }
-    .dojo-select .face.back { align-content: center; gap: 16px; background: rgba(9, 9, 11, .55); }
+    /* The back is taller and sets the card's height, so the front's badge
+       and name sit in the middle of that room rather than at its top. */
+    .dojo-select .face.front { align-content: center; padding-block: 21px; }
+    /* Room at the foot of the back so the fold never covers the sensei. */
+    .dojo-select .face.back { align-content: center; gap: 16px; padding-bottom: 36px; background: rgba(9, 9, 11, .55); }
     .dojo-select li.on .face {
       border-color: rgb(var(--glow));
       box-shadow: 0 0 32px rgba(var(--glow), .4), inset 0 0 22px rgba(var(--glow), .14);
@@ -100,15 +120,6 @@ addEventListener('load', () => {
     .dojo-select .art { width: var(--art); height: var(--art); filter: brightness(.4) grayscale(.6); transition: filter .15s; }
     .dojo-select .art svg, .dojo-select .art img { display: block; width: 100%; height: 100%; }
     .dojo-select li.on .art { filter: none; }
-
-    /* Each dojo's creed sits on its own card, so it reads as that dojo's style.
-       Three lines are always reserved so the cards stay level. */
-    .dojo-select .creed {
-      max-width: max(var(--art), 160px); min-height: calc(3 * 1.4em); margin-top: -4px;
-      font-size: 14px; line-height: 1.4; letter-spacing: .5px; text-wrap: balance;
-      color: var(--dim); transition: color .15s;
-    }
-    .dojo-select li.on .creed { color: var(--text); }
 
     /* The back is the stats list the short-screen layout already uses:
        label left, value right, a line under each. */
@@ -122,30 +133,36 @@ addEventListener('load', () => {
     .dojo-select .sensei { display: grid; gap: 4px; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); }
     .dojo-select .sensei b { font-size: 16px; letter-spacing: 1px; text-transform: none; color: rgb(var(--glow)); }
 
-    /* The flip control, for fingers and mice: a tap on the card itself picks.
-       Under the card rather than on it, so it never crowds either face. */
-    .dojo-select .flip {
-      all: unset; cursor: pointer; padding: 6px 12px; border-radius: 999px;
-      font-size: 12px; letter-spacing: 1px; color: var(--dim); border: 1px solid var(--line);
-      transition: color .15s, border-color .15s;
+    /* The flip control, for fingers and mice, since a tap on the card itself
+       picks: the lit card's bottom-right corner is turned down - a flap in
+       the dojo's colour over a cut-away - so the card looks like it has a
+       back. Drawn on the face, so it turns with the card. The hit area is a
+       finger's 44px, larger than the corner looks. Chosen 16 Sept over a
+       "flip" button under every card, and over no back at all. */
+    .dojo-select li { position: relative; }
+    .dojo-select .face { position: relative; }
+    .dojo-select li.on .face::after {
+      content: ''; position: absolute; right: -3px; bottom: -3px; width: 30px; height: 30px;
+      background: linear-gradient(315deg, var(--bg) 0 50%, rgba(var(--glow), .9) 50% 100%);
+      border-top-left-radius: 3px;
     }
-    .dojo-select li.on .flip { color: rgb(var(--glow)); border-color: rgba(var(--glow), .5); }
-    .dojo-select .flip:hover { background: rgba(var(--glow), .15); }
+    .dojo-select .corner {
+      all: unset; position: absolute; right: -4px; bottom: -4px; width: 44px; height: 44px; cursor: pointer;
+    }
+    .dojo-select li:not(.on) .corner { display: none; }
 
-    /* Arrival: the title slams, then each dojo drops in on a beat. Filled
-       backwards only, so the lift on the lit card still applies afterwards. */
-    .dojo-select.arrive h2 { animation: slam .45s cubic-bezier(.2, 1.6, .4, 1) both; }
-    .dojo-select.arrive li { animation: drop .5s cubic-bezier(.2, 1.4, .4, 1) backwards; }
-    .dojo-select.arrive li:nth-child(1) { animation-delay: .35s; }
-    .dojo-select.arrive li:nth-child(2) { animation-delay: .55s; }
-    .dojo-select.arrive li:nth-child(3) { animation-delay: .75s; }
-    @keyframes slam { from { transform: scale(2.6); opacity: 0; letter-spacing: 30px; } }
-    @keyframes drop { from { transform: translateY(-60px) scale(.8); opacity: 0; } }
+
+    /* Arrival: the screen fades in as one piece, lit card and all. It used
+       to slam the title and drop each dojo on a beat, which measured as
+       pieces popping in around a dead gap; 16 Sept asked for it stripped
+       back to a single move. */
+    .dojo-select.arrive { animation: select-in .35s ease-out backwards; }
+    @keyframes select-in { from { opacity: 0; } }
 
     /* The pick is choreographed in choose(), one beat at a time. Here only
        the part CSS can own: the other two dojos step out of the way. */
     .dojo-select.chosen li:not(.picked) { opacity: 0; transition: opacity .25s ease-out; }
-    .dojo-select.chosen .flip { opacity: 0; }
+    .dojo-select.chosen .corner { display: none; }
 
     /* Pinned to the window and outside .wrap, so nothing the page does can
        re-anchor it. Centred by the grid, not a transform, because choose()
@@ -187,9 +204,10 @@ addEventListener('load', () => {
 
   const panel = document.createElement('section');
   panel.className = 'dojo-select';
+  panel.hidden = true;     // until press start opens it
   panel.innerHTML = `
-    <div class="group"><h2>Choose your dojo</h2>
-      <div class="time"><small>TIME</small><div class="count"></div></div></div>
+    <div class="group heading"><h2>Choose your dojo</h2>
+      <div class="count" role="timer" aria-label="seconds left"></div></div>
     <ul>${DOJO_IDS.map(id => { const d = DOJO[id]; return `
       <li style="--glow:${d.glow}">
         <button class="pick" type="button" data-dojo="${id}" aria-label="${DOJO_NAMES[id]}">
@@ -197,7 +215,6 @@ addEventListener('load', () => {
             <span class="face front">
               <span class="art">${artFor(id)}</span>
               <span class="name">${DOJO_NAMES[id]}</span>
-              <span class="creed">${d.creed}</span>
             </span>
             <span class="face back" aria-hidden="true">
               <span class="name">${DOJO_NAMES[id]}</span>
@@ -211,9 +228,9 @@ addEventListener('load', () => {
             </span>
           </span>
         </button>
-        <button class="flip" type="button" tabindex="-1" aria-label="flip ${DOJO_NAMES[id]}">↻ flip</button>
+        <button class="corner" type="button" tabindex="-1" aria-label="flip ${DOJO_NAMES[id]}"></button>
       </li>`; }).join('')}</ul>
-    <div class="group"><p class="how">← → or tab to choose · ↑ ↓ to flip · enter to bow in</p></div>`;
+    <div class="group"><p class="how"><kbd>← →</kbd> or <kbd>tab</kbd> to choose · <kbd>↑ ↓</kbd> to flip · <kbd>enter</kbd> to bow in</p></div>`;
   document.querySelector('header').after(panel);
 
   const verdict = document.createElement('div');
@@ -245,17 +262,20 @@ addEventListener('load', () => {
   sw.className = 'mock-switch';
   sw.innerHTML = 'mock art:' + [['hd', 'hi-density'], ['square', 'square']]
     .map(([k, l]) => `<a class="${k === art ? 'cur' : ''}" href="?art=${k}">${l}</a>`).join('') +
-    ' <a href="#" id="mock-replay">replay</a> <a href="?fresh=1">nudge again</a>';
+    ` · <a href="#" id="mock-replay">replay</a> <a href="?art=${art}&fresh=1">nudge again</a>`;
   document.body.appendChild(sw);
 
   // Size the art from the room actually left once everything else is laid out,
-  // but never so large the cards outweigh the crest (400x144), which stays the
-  // loudest thing on the page. ?max=N to try other caps.
-  const ART_MAX = Number(q.get('max')) || 180;
+  // but never so large the cards outweigh the heading and the clock: 16 Sept
+  // found 200px too big for the rest of the screen. ?max=N to try others.
+  const ART_MAX = Number(q.get('max')) || 160;
   function fit() {
     if (panel.hidden) return;
     panel.style.setProperty('--art', '0px');
-    const rest = document.querySelector('.wrap').getBoundingClientRect().height;
+    const wrap = document.querySelector('.wrap');
+    wrap.style.minHeight = '0';     // measure the content, not the centring
+    const rest = wrap.getBoundingClientRect().height;
+    wrap.style.minHeight = '';
     const byHeight = innerHeight - rest - 24;
     const gap = Math.max(16, Math.min(56, innerWidth * 0.035));
     const byWidth = (innerWidth - 48 - gap * 2) / 3 - 60;
@@ -322,13 +342,11 @@ addEventListener('load', () => {
     panel.hidden = false;
     fit();
     panel.classList.remove('arrive'); void panel.offsetWidth; panel.classList.add('arrive');
-    // The highlight lands once the dojos have arrived. Until someone has
+    // The highlight is on from the first frame, so it fades in with the rest
+    // rather than switching on afterwards. Until someone has
     // flipped a card, the lit one turns a little, once, to show that it can.
-    setTimeout(() => {
-      if (!open || at >= 0) return;
-      highlight(r >= 0 ? r : Math.floor(Math.random() * 3));
-      if (!still && !store.get('mockFlipped')) setTimeout(() => open && cards[at].classList.add('tease'), 700);
-    }, still ? 0 : 1100);
+    highlight(r >= 0 ? r : Math.floor(Math.random() * 3));
+    if (!still && !store.get('mockFlipped')) setTimeout(() => open && cards[at].classList.add('tease'), 1000);
     clearInterval(timer);
     timer = setInterval(() => {
       if (document.hidden) return;          // stopped while the tab is hidden
@@ -360,7 +378,9 @@ addEventListener('load', () => {
     store.set('mockDojo', id);
     verdict.style.setProperty('--glow', glow);
     vName.textContent = DOJO_NAMES[id] + '!';
-    vLine.textContent = timedOut ? 'Too slow. Sensei chose for you.' : DOJO[id].welcome;
+    // The creed is said once, as you commit to it, rather than printed on
+    // every card: chosen 16 Sept over creeds on the cards, which was too much.
+    vLine.textContent = timedOut ? 'Too slow. Sensei chose for you.' : DOJO[id].creed;
 
     if (still) { verdict.hidden = false; await wait(1400); return close(id); }
 
@@ -397,7 +417,8 @@ addEventListener('load', () => {
       { duration: 260, delay: 220, easing: SETTLE, fill: 'both' });
     await Promise.all([settle.finished, follow.finished]);
 
-    await wait(1000);   // hold
+    // hold: long enough to read the creed, a sentence rather than a glance
+    await wait(timedOut ? 1000 : 1800);
 
     const out = { duration: 280, easing: 'ease-in', fill: 'forwards' };
     await Promise.all([
@@ -407,7 +428,11 @@ addEventListener('load', () => {
       panel.animate([{ opacity: 1 }, { opacity: 0 }], out).finished,
     ]);
     close(id);
-    for (const el of [document.getElementById('stage'), document.querySelector('.scores'), document.getElementById('hint')]) {
+    const back = [document.getElementById('stage'), document.querySelector('.scores'), document.getElementById('hint')];
+    // Character select would come here. The mock goes straight to the start
+    // screen, and the crest returns and flicks.
+    back.unshift(crestEl); flickTongue(2);
+    for (const el of back) {
       el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 360, easing: 'ease-out' });
     }
   }
@@ -427,9 +452,26 @@ addEventListener('load', () => {
     c.addEventListener('mouseenter', () => open && highlight(i));
     c.addEventListener('animationend', (e) => e.animationName === 'tease' && c.classList.remove('tease'));
     picks[i].addEventListener('click', () => choose(i));
-    c.querySelector('.flip').addEventListener('click', () => flip(i));
+    c.querySelector('.corner').addEventListener('click', () => flip(i));
   });
-  document.getElementById('mock-replay').onclick = (e) => { e.preventDefault(); openSelect(); };
+  document.getElementById('mock-replay').onclick = (e) => { e.preventDefault(); location.reload(); };
+
+  // The game's title screen leads here. Its key and pointer handlers call
+  // pressStart by name, so replacing it is the whole hook.
+  pressStart = function () {
+    if (!titling) return;
+    titling = false;
+    const fading = still ? [] : [crestEl, titleScreenEl].map((el) =>
+      el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, easing: 'ease-in', fill: 'forwards' }));
+    // Held at nothing until the swap, then let go, so the crest can come
+    // back above the board later.
+    Promise.all(fading.map((f) => f.finished)).then(() => {
+      titleScreenEl.hidden = true;
+      pageEl.classList.remove('titling');
+      openSelect();
+      fading.forEach((f) => f.cancel());
+    });
+  };
 
   // Ahead of the game's own handler, and swallowed while the select is up.
   window.addEventListener('keydown', (e) => {
@@ -446,5 +488,4 @@ addEventListener('load', () => {
     e.preventDefault(); e.stopImmediatePropagation();
   }, true);
 
-  openSelect();
 });
