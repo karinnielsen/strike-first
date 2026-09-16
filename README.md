@@ -10,12 +10,13 @@ One HTML file of code, no build step and nothing to install — open it and play
 Beside it sit a few images: the dojo crests and the sharing preview. Its one
 outside connection is a hosted database for scores. Made for desktop and tablet.
 
-Current version: **v0.5.0** — see [CHANGELOG.md](CHANGELOG.md).
+Current version: **v0.5.1** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Play
 
 - **Arrow keys** or **WASD** to move
-- **Space** to pause — the game calls it mercy
+- **Space** to pause — the game calls it mercy. Continuing gives you one full
+  step before the snake moves again
 - **R** to restart
 - **M** to turn sound off or on
 
@@ -153,6 +154,11 @@ initials is refused, in the page and in the database. On a tablet, tap the
 letters to bring up the keyboard. Signing saves the run to a shared
 leaderboard. If the save fails the entry comes back, and **Sign** tries again.
 
+The database only takes runs the game could have produced. A run's score,
+length, moves and time are tied together by the rules, so a score typed in
+by hand is refused, while every run actually played is accepted, however
+good. Scores are also rate limited, so nobody can flood the board.
+
 ### The board
 
 The defeat screen shows the leaderboard whenever there is nothing to sign, and
@@ -194,8 +200,8 @@ motion turns it off.
 
 Each is a milestone, and each ships as a version.
 
-- **The All Valley** — shipped as v0.5.0 with dojo select and the board. Still
-  to come as patches: scores you can trust, and the full board
+- **The All Valley** — shipped as v0.5.0 with dojo select and the board, and
+  scores you can trust as v0.5.1. Still to come as a patch: the full board
 - **Dojo recruitment** — a challenge link that points at your place on the board
 - **Choose your fighter** — pick a character
 - **Forbidden techniques** — secrets, and modes you earn rather than pick
@@ -250,10 +256,12 @@ No framework and nothing to install, same as the game. The harness reads
 `index.html`, pulls the inline script out and runs it against a stubbed
 browser, so the game stays a single file with nothing to install.
 
-157 tests, covering the grid, the speed curve, collisions, growth, scoring, the
+199 tests, covering the grid, the speed curve, collisions, growth, scoring, the
 visitor countdown, the input rules for keys and swipes, how a run becomes a
 score record, and the initials entry, including a check that the page and
-the database refuse the same initials. None of them touch the network. They cannot tell you
+the database refuse the same initials and hold the same limits on a run.
+A bot plays the game's own loop, including the luckiest run the rules allow,
+to check that no real run is ever refused. None of them touch the network. They cannot tell you
 whether the game is *fun* — that still needs playing.
 
 Needs Node 15 or newer.
@@ -293,7 +301,8 @@ afterwards. The test is what the player has to do, not how much changed.
 
 - `index.html` — the entire game, in ten commented sections
 - `db/scores.sql` — the scores table and the rules that stop the page's public
-  key doing anything but submitting and reading scores. The record of what the
+  key doing anything but submitting and reading scores, and refusing runs no
+  game could produce. The record of what the
   database looks like: change it here, then run the change in Supabase
 - `favicon.svg`, `apple-touch-icon.png`, `og-image.png` — the tab icon, the
   home-screen icon and the link preview. Not part of the game: it plays
