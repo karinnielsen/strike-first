@@ -248,10 +248,53 @@ Things worth doing *here* rather than elsewhere: contrast and colour-blindness
 checks (Chrome DevTools emulates vision deficiencies), factual research before
 writing specifics into a spec, and anything structural in the code.
 
+## Keeping the session cheap
+
+Measured on 8 September: 70% of the cost was re-reading the conversation, once
+per turn, 600 times. What sat in that context: screenshots 34%, Linear echoes
+31%, my own writing 29%, shell 6%. **Reading files was 0.1%** — file volume is
+not the problem in a five-file repo, so nothing to gain from ignore rules.
+
+- **Screenshots are ~5k tokens each and get re-read every turn afterwards.**
+  Only take one to judge how something *looks*. To check whether something
+  *works*, read the page as text or assert in `test.js`. Use the `scale`
+  parameter when a rough look will do.
+- **Every Linear write echoes the whole issue back.** Compose the edit once
+  and save once, rather than saving then patching the wording twice. Prefer
+  `list_issues` with `fields` over `get_issue` when only a status is needed.
+- **Hand low-brow work to a cheaper subagent** — bulk search, sweeping a large
+  file for facts, mechanical verification across many places. *But size it
+  first:* spawning an agent costs more than the work when the work is one
+  command with three lines of output. Delegate when a task reads a lot to
+  produce a little. Don't delegate judgement, design, or anything where being
+  wrong is expensive and hard to spot.
+- **A fresh session is the biggest single saving.** This file and the Linear
+  project description exist so one can start cold without re-deriving
+  anything. Use them: end a long session and begin again rather than dragging
+  a morning of screenshots into the afternoon.
+
 ## Gotchas that have already cost time
 
-Notes specific to one machine — its toolchain, firewall and simulator — live
-in `CLAUDE.local.md`, which is gitignored and loads alongside this file.
+Notes specific to one machine — its toolchain, firewall and local database —
+live in `CLAUDE.local.md`, which is gitignored and loads alongside this file.
+Karin works on more than one machine, and that file exists only on the one
+that wrote it, so anything true of every clone belongs here instead.
+
+**The iPad simulator is slower than the game.** iPad Safari is tested in the
+iOS simulator (serve with the `snake` launch config and open
+`http://localhost:8765/`). Each tap or swipe the simulator tool
+sends arrives later than one game step lasts, so at real speed the snake hits
+the wall before a swipe lands, which looks exactly like broken input. Test
+swipes on a **temporary copy** that overrides `stepDelay()` to about 2500ms
+and writes `phase`, `direction`, `turnQueue` and `scrollY` into the version
+line, read it from screenshots, then delete the copy. The simulator's
+`inspect` doesn't work on Safari web content, so that readout is the only
+cheap way to see state.
+
+Two smaller traps with it. **Rotating needs Karin:** sending ⌘← to Simulator
+needs a macOS Accessibility permission, which is off limits, so ask her to
+rotate. And **opening a second URL adds a Safari tab bar**, pushing the page
+down about 35pt, so measure tap positions again.
 
 **The room above the score is load-bearing, and it lives in two places.** The
 floating `+N` rises 24px out of the score counter and collides with whatever
