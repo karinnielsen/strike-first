@@ -16,6 +16,11 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+## [0.5.2] — 2026-09-16
+
+Disqualified. A tampered run is called for what it is. No honest player can
+ever see it, so it is a patch.
+
 ### Added
 - **Disqualified.** A run the rules could not have produced, which means the
   page was tampered with, ends DISQUALIFIED instead of DEFEATED, the way a
@@ -416,7 +421,8 @@ First playable version.
   gradient.
 - **The version number** in the footer.
 
-[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/karinnielsen/strike-first/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/karinnielsen/strike-first/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/karinnielsen/strike-first/compare/v0.4.6...v0.5.0
 [0.4.6]: https://github.com/karinnielsen/strike-first/compare/v0.4.5...v0.4.6
