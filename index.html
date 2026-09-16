@@ -687,9 +687,9 @@
   }
   /* DOJO SELECT. UNR-114. A screen of its own after the title, like an
      arcade select: the crest, board, stats and hints all step aside and
-     the select has the page. Settled across 15 and 16 September from the
-     mock in design/dojo-select-compare/, whose README says what each
-     choice beat. Last in the sheet for the same reason as the title. */
+     the select has the page. Settled across 15 and 16 September from a
+     mock; its README, recording what each choice beat, is in the history
+     at commit 09df41e (design/dojo-select-compare/). Last in the sheet for the same reason as the title. */
   .wrap.selecting {
     display: flex;
     flex-direction: column;
@@ -3668,8 +3668,8 @@ function showBoard() {
 // =====================================================================
 // A screen of its own after the title, the first time only: every run
 // counts for a dojo, so there is no dojo-less player. The start screen
-// says which dojo you are in and offers to change it. Settled from the
-// mock in design/dojo-select-compare/, whose README records each choice.
+// says which dojo you are in and offers to change it. Settled from a mock
+// whose README records each choice: design/dojo-select-compare/ at 09df41e.
 //
 // Arcade rules: 30 seconds on the clock, and when it runs out the lit dojo
 // is chosen for you. The highlight starts on the dojo you had, or a random
@@ -3953,7 +3953,7 @@ async function chooseDojo(i, timedOut) {
   li.classList.add('picked');
   dojoSelectEl.classList.add('chosen');
   dojoVerdict.style.setProperty('--glow', glow);
-  name.textContent = DOJO_NAMES[dojo] + '!';
+  name.textContent = DOJO_NAMES[dojo];     // never an exclamation mark
   // The creed is said once, as you commit to it.
   line.textContent = timedOut ? 'Too slow. Sensei chose for you.' : DOJO_CREEDS[dojo];
   const hold = timedOut ? 1000 : 1800;

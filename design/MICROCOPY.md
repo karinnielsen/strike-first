@@ -334,7 +334,7 @@ The complete inventory, so nothing drifts unnoticed.
 | `← → or tab to choose · ↑ ↓ to flip · enter to bow in` — dojo select | Utility |
 | `tap a dojo to bow in · tap its corner to flip` — dojo select, touch screens | Utility |
 | `place` `team score` `students` `top` `Sensei` — a dojo card's back | Utility |
-| `<DOJO>!` / the dojo's creed — the banner confirming a pick, in voice caps | Dojo |
+| `<DOJO>` / the dojo's creed — the banner confirming a pick, in voice caps | Dojo |
 | `Too slow. Sensei chose for you.` — the banner, when the clock runs out | Dojo |
 | `Dojo: <dojo> · change` — start overlay | Utility |
 | `Strike hard. No mercy.` — start overlay | Dojo |
