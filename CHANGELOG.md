@@ -16,6 +16,21 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+### Added
+- **Scores you can trust.** The database refuses a run the game could not
+  have produced. Score, length, moves and time are checked against each
+  other using hard limits taken from the rules: at most three points a move
+  and three a square of length, and no faster than the speed curve allows.
+  A forged score is refused, and every run actually played is accepted. The
+  page runs the same check before sending. Submissions are rate limited, per
+  caller and across everyone; the caller is known only by a hashed IP address,
+  kept for ten minutes. UNR-132.
+
+### Changed
+- **Continuing from mercy gives you a full step** before the snake moves,
+  rather than whatever was left of the step mercy interrupted. It closes a
+  hole where pausing on every move shrank a run's recorded time to nothing.
+
 ## [0.5.0] — 2026-09-16
 
 The All Valley: pick a dojo, sign the board, and every score counts for your

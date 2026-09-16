@@ -2583,6 +2583,12 @@ function toggleMercy() {
     if (pausedAt !== null) pausedMs += performance.now() - pausedAt;
     pausedAt = null;
     overlay.classList.add('hidden');
+    // A full step before the snake moves again, not whatever was left of
+    // the one mercy interrupted. It gives you a beat to find the keys, and
+    // it keeps a run honest: without it, mercy on every move would take
+    // time off the clock that the moves themselves had used. UNR-132.
+    clearTimeout(loopTimer);
+    loopTimer = setTimeout(loop, stepDelay());
   }
 }
 
@@ -3178,6 +3184,63 @@ function runDuration(startedAt, endedAt, paused) {
   return Math.max(0, Math.round(endedAt - startedAt - paused));
 }
 
+// SCORES YOU CAN TRUST. UNR-132.
+//
+// The score is counted in the browser, so anything the browser sends can
+// be forged. What can't be forged is what the rules allow: a run's score,
+// length, moves and duration are tied to each other, and a row where they
+// disagree is one no game produced. The database refuses those rows -
+// that check is the real one, in db/scores.sql - and the page runs the same
+// check first, so it never sends a row it knows will bounce. test.js fails
+// if the two ever disagree about the numbers.
+//
+// Every limit is a hard one, derived from the rules rather than from how
+// people play. "Every real run is accepted" is the half that matters: a
+// player refused for a run they actually played has been called a cheat.
+// Replaying runs server-side would be tighter, and is parked until someone
+// actually cheats.
+//
+// The best a run can do is an egg and a mouse, one after the other, on
+// consecutive moves - a mouse only ever arrives after an egg. That pair is
+// six points over two moves. It also realises only two squares of length,
+// because a mouse's second square is still owed if you die straight away.
+// So neither moves nor length can buy more than three points each.
+const POINTS_PER_MOVE   = (EGG_POINTS + MOUSE_POINTS) / 2;
+const POINTS_PER_SQUARE = (EGG_POINTS + MOUSE_POINTS) / (EGG_GROWTH + MOUSE_GROWTH - 1);
+
+// Timers only ever fire late, so a real run is never faster than the speed
+// curve. The slack is for clocks that don't read exactly: some browsers
+// round performance.now() coarsely to resist fingerprinting.
+const TIMING_SLACK    = 0.95;
+const TIMING_SLACK_MS = 1000;
+
+// The shortest time a run of this many moves can take. After each move the
+// next one waits the delay for the score so far, and the score so far is at
+// most three a move and three a square of the final length - so the fastest
+// possible run climbs the curve as steeply as that allows, then holds.
+// Loops at most once per square of length, whatever `moves` claims.
+function fastestRun(moves, length) {
+  const peak = POINTS_PER_SQUARE * (length - 3);
+  let ms = 0;
+  for (let move = 1; move <= moves; move++) {
+    const most = Math.min(POINTS_PER_MOVE * move, peak);
+    const delay = LEVELS[levelFor(most) - 1].ms;
+    if (most === peak) return ms + (moves - move + 1) * delay;
+    ms += delay;
+  }
+  return ms;
+}
+
+// Could the game have produced this run? Length grows at most a square a
+// move and can't outgrow the board; score is capped by length; and the
+// moves can't have been made faster than the speed curve allows.
+function plausibleRun({ score, length, moves, durationMs }) {
+  return length <= COLS * ROWS
+      && length - 3 <= moves
+      && score <= POINTS_PER_SQUARE * (length - 3)
+      && durationMs >= fastestRun(moves, length) * TIMING_SLACK - TIMING_SLACK_MS;
+}
+
 // Build the row the database stores for one run, or null if it isn't one
 // the database would accept. The checks match the table's own, so the page
 // never sends something it knows will bounce.
@@ -3191,6 +3254,7 @@ function scoreRecord({ initials, dojo, score, best, length, moves, durationMs })
   if (!DOJO_IDS.includes(dojo)) return null;
   if (!whole(score, 0) || !whole(best, 0) || !whole(length, 3) ||
       !whole(moves, 0) || !whole(durationMs, 0)) return null;
+  if (!plausibleRun({ score, length, moves, durationMs })) return null;
   return {
     initials,
     dojo,

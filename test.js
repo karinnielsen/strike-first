@@ -171,8 +171,10 @@ globalThis.game = {
   get audioCtx() { return audioCtx }, set audioCtx(v) { audioCtx = v },
   get bestAtStart() { return bestAtStart }, set bestAtStart(v) { bestAtStart = v },
   get best() { return best }, set best(v) { best = v },
-  get moves() { return moves }, get runMs() { return runMs },
-  get pausedMs() { return pausedMs }, toggleMercy, gameOver,
+  get moves() { return moves }, set moves(v) { moves = v },
+  get runMs() { return runMs }, set runMs(v) { runMs = v },
+  get pausedMs() { return pausedMs }, toggleMercy, gameOver, loop,
+  POINTS_PER_MOVE, POINTS_PER_SQUARE, TIMING_SLACK, TIMING_SLACK_MS, fastestRun, plausibleRun,
   SCORE_SERVICE, DOJO_IDS, runDuration, scoreRecord, runRecord, scoreRequest, submitScore,
   wantsInitials, cleanInitials, BLOCKED_INITIALS, signInitials, hideInitials,
   currentDojo, commitDojo, dojoOrNull, DOJO_KEY, DOJO_SECONDS, DOJO_CREEDS, DOJO_SENSEIS,
@@ -1535,6 +1537,211 @@ describe('scores - how a run is measured, UNR-106', () => {
 });
 
 
+describe('scores you can trust', () => {
+  const sql = fs.readFileSync(path.join(__dirname, 'db', 'scores.sql'), 'utf8');
+  const constant = (name) => {
+    const found = sql.match(new RegExp(`\\b${name}\\s+constant\\s+[a-z\\[\\]]+\\s*:=\\s*([^;]+);`));
+    if (!found) throw new Error(`${name} not found in db/scores.sql`);
+    const value = found[1].trim();
+    const list = value.match(/^array\[(.*)\]$/);
+    if (!list) return Number(value);
+    return list[1].split(',').map(item => {
+      item = item.trim();
+      return item.startsWith("'") ? item.slice(1, -1) : Number(item);
+    });
+  };
+
+  test('an egg and a mouse in a row is the most a move or a square can earn', () => {
+    is(game.POINTS_PER_MOVE, 3, 'per move');
+    is(game.POINTS_PER_SQUARE, 3, 'per square');
+  });
+
+  test('the page and the database hold the same numbers', () => {
+    is(constant('levels_from'), game.LEVELS.map(l => l.from), 'level thresholds');
+    is(constant('levels_ms'), game.LEVELS.map(l => l.ms), 'level delays');
+    is(constant('belt_names'), game.BELTS.map(b => b.name), 'belt names');
+    is(constant('belt_from'), game.BELTS.map(b => b.from), 'belt thresholds');
+    is(constant('board_cells'), game.COLS * game.ROWS, 'board');
+    is(constant('points_per_move'), game.POINTS_PER_MOVE, 'points per move');
+    is(constant('points_per_square'), game.POINTS_PER_SQUARE, 'points per square');
+    is(constant('timing_slack'), game.TIMING_SLACK, 'slack');
+    is(constant('timing_slack_ms'), game.TIMING_SLACK_MS, 'slack ms');
+  });
+
+  test('the fastest run climbs the curve as steeply as the score allows', () => {
+    is(game.fastestRun(0, 3), 0, 'no moves');
+    is(game.fastestRun(10, 3), 2600, 'no growth, so level 1 throughout');
+    is(game.fastestRun(2, 5), 520, 'six points at most, still level 1');
+    is(game.fastestRun(1e9, 441) > 0, true, 'a huge claim still answers');
+  });
+
+  const honest = { score: 40, length: 30, moves: 412, durationMs: 81234 };
+
+  test('a forged run is refused', () => {
+    const forged = [
+      { score: 999999 },
+      { score: 999999, length: 999999, moves: 999999 },
+      { length: 500 },                          // more than the board
+      { moves: 20 },                            // grew faster than it moved
+      { score: 82 },                            // more than 3 a square
+      { durationMs: 1000 }                      // faster than the curve
+    ];
+    for (const change of forged) {
+      is(game.plausibleRun({ ...honest, ...change }), false, JSON.stringify(change));
+    }
+    is(game.plausibleRun(honest), true, 'the honest one');
+  });
+
+  test('the limits are inclusive, so the best possible run is allowed', () => {
+    is(game.plausibleRun({ ...honest, score: 81 }), true, 'three a square exactly');
+    is(game.plausibleRun({ ...honest, moves: 27 }), true, 'a square a move exactly');
+    const fastest = game.fastestRun(honest.moves, honest.length);
+    is(game.plausibleRun({ ...honest, durationMs: fastest }), true, 'the curve exactly');
+  });
+
+  // The heartbeat, driven by the tests: the game's own loop() and its own
+  // timers, with a clock that jumps straight to each beat. Timers never fire
+  // early, so this is the fastest a real browser could possibly play it.
+  const DIRS = [{x: 1, y: 0}, {x: -1, y: 0}, {x: 0, y: 1}, {x: 0, y: -1}];
+  const onBoard = (p) => p.x >= 0 && p.y >= 0 && p.x < game.COLS && p.y < game.ROWS;
+
+  // How many squares the snake could still reach from here. A flood fill
+  // over a flat grid, because it runs three times a move for thousands.
+  const cells = new Uint8Array(21 * 21);
+  const stack = new Int32Array(21 * 21);
+  function room(from) {
+    const cols = game.COLS, rows = game.ROWS;
+    cells.fill(0);
+    for (const p of game.snake) cells[p.y * cols + p.x] = 1;
+    let top = 0, count = 0;
+    stack[top++] = from.y * cols + from.x;
+    cells[from.y * cols + from.x] = 1;
+    while (top) {
+      const at = stack[--top], x = at % cols, y = (at - x) / cols;
+      count++;
+      if (x > 0        && !cells[at - 1])    { cells[at - 1] = 1;    stack[top++] = at - 1; }
+      if (x < cols - 1 && !cells[at + 1])    { cells[at + 1] = 1;    stack[top++] = at + 1; }
+      if (y > 0        && !cells[at - cols]) { cells[at - cols] = 1; stack[top++] = at - cols; }
+      if (y < rows - 1 && !cells[at + cols]) { cells[at + cols] = 1; stack[top++] = at + cols; }
+    }
+    return count;
+  }
+
+  // A bot that keeps as much room as it can, then heads for the food.
+  function steer() {
+    const head = game.snake[0];
+    const dir = game.direction;
+    const target = game.visitor && game.visitor.kind === 'mouse' ? game.visitor : game.egg;
+    let choice = null, best = -Infinity;
+    for (const d of DIRS) {
+      if (d.x === -dir.x && d.y === -dir.y) continue;
+      const next = {x: head.x + d.x, y: head.y + d.y};
+      if (!onBoard(next) || game.snake.some(p => p.x === next.x && p.y === next.y)) continue;
+      const value = room(next) * 1000 - Math.abs(next.x - target.x) - Math.abs(next.y - target.y);
+      if (value > best) { best = value; choice = d; }
+    }
+    if (choice && (choice.x !== dir.x || choice.y !== dir.y)) game.queueTurn(choice);
+    return choice || dir;
+  }
+
+  // As lucky as the dice could ever be: the egg lands right in front of
+  // you, it always brings a mouse, and the mouse lands in front of you too.
+  function luck(dir) {
+    const head = game.snake[0];
+    const next = {x: head.x + dir.x, y: head.y + dir.y};
+    const same = (p) => p.x === next.x && p.y === next.y;
+    if (!onBoard(next) || game.snake.some(same)) return;
+    if (game.visitor) {
+      game.visitor.kind = 'mouse';
+      if (!same(game.egg)) Object.assign(game.visitor, next);
+    } else {
+      Object.assign(game.egg, next);
+    }
+  }
+
+  function playOut({ lucky = false, mercy = 0, maxMoves = 2000 }) {
+    const saved = [sandbox.performance.now, sandbox.setTimeout, sandbox.clearTimeout];
+    let clock = 0;
+    let timer = null;
+    sandbox.performance.now = () => clock;
+    sandbox.setTimeout = (fn, ms) => { timer = { fn, at: clock + ms }; return 1; };
+    sandbox.clearTimeout = () => { timer = null; };
+    try {
+      game.reset();
+      game.phase = 'playing';
+      game.loop();                                  // the first move, on the beat
+      while (game.phase === 'playing' && game.moves < maxMoves) {
+        if (Math.random() < mercy) {
+          clock += Math.random() * (timer.at - clock);
+          game.toggleMercy();
+          clock += Math.random() * 3000;
+          game.toggleMercy();
+        }
+        const dir = steer();
+        const before = game.score;
+        if (lucky) luck(dir);
+        clock = timer.at;
+        const beat = timer;
+        timer = null;
+        beat.fn();
+        if (lucky && game.score === before + game.EGG_POINTS && !game.visitor) {
+          game.visitor = { kind: 'mouse', life: game.MOUSE_LIFE, facing: 1,
+                           ...game.reachableSquare(game.MOUSE_LIFE) };
+        }
+      }
+      if (game.phase === 'playing') {               // out of patience, not out of room
+        clock = timer.at;
+        game.gameOver('wall', {x: -1, y: 0});
+      }
+      return { score: game.score, length: game.snake.length, moves: game.moves, durationMs: game.runMs };
+    } finally {
+      [sandbox.performance.now, sandbox.setTimeout, sandbox.clearTimeout] = saved;
+      game.phase = 'ready';
+    }
+  }
+
+  // Checked without the slack, so the arithmetic itself is what is tested.
+  const strictly = (run) =>
+    run.length - 3 <= run.moves &&
+    run.score <= game.POINTS_PER_SQUARE * (run.length - 3) &&
+    run.durationMs >= game.fastestRun(run.moves, run.length);
+
+  test('continuing from mercy waits a full step before the next move', () => {
+    const saved = [sandbox.performance.now, sandbox.setTimeout, sandbox.clearTimeout];
+    let timer = null;
+    sandbox.performance.now = () => 500;
+    sandbox.setTimeout = (fn, ms) => { timer = { fn, ms }; return 1; };
+    sandbox.clearTimeout = () => { timer = null; };
+    try {
+      freshGame();
+      game.toggleMercy();
+      timer = null;
+      game.toggleMercy();
+      is(timer && timer.ms, game.stepDelay(), 'a whole step');
+    } finally {
+      [sandbox.performance.now, sandbox.setTimeout, sandbox.clearTimeout] = saved;
+    }
+  });
+
+  test('every run the game plays is accepted, mercy or not', () => {
+    for (let i = 0; i < 10; i++) {
+      const run = playOut({ mercy: i % 2 ? 0.3 : 0, maxMoves: 800 });
+      if (!strictly(run) || !game.plausibleRun(run)) throw new Error('refused ' + JSON.stringify(run));
+    }
+  });
+
+  test('the luckiest run the rules allow is accepted, mercy or not', () => {
+    let top = 0;
+    for (let i = 0; i < 4; i++) {
+      const run = playOut({ lucky: true, mercy: i % 2 ? 0.5 : 0 });
+      if (!strictly(run) || !game.plausibleRun(run)) throw new Error('refused ' + JSON.stringify(run));
+      top = Math.max(top, run.score);
+    }
+    is(top > 275, true, 'lucky enough to reach midnight blue, got ' + top);
+  });
+});
+
+
 describe('initials', () => {
   test('only a new hi-score asks for them', () => {
     is(game.wantsInitials(12, 11), true, 'beat it');
@@ -1559,7 +1766,7 @@ describe('initials', () => {
   });
 
   test('blocked initials never become a score record', () => {
-    const run = { dojo: 'cobra-kai', score: 10, best: 10, length: 5, moves: 40, durationMs: 9000 };
+    const run = { dojo: 'cobra-kai', score: 10, best: 10, length: 8, moves: 40, durationMs: 9000 };
     is(game.scoreRecord({ ...run, initials: 'KKK' }), null, 'blocked');
     is(game.scoreRecord({ ...run, initials: 'wtf' }).initials, 'WTF', 'cheek is allowed');
   });
@@ -1574,6 +1781,10 @@ describe('initials', () => {
   // A run that just ended, with the initials field open on it.
   const signable = (initials) => {
     freshGame({ score: 12 });
+    // Long enough, and played slowly enough, to have scored twelve.
+    game.snake = Array.from({ length: 7 }, (_, i) => ({ x: 10 - i, y: 5 }));
+    game.moves = 40;
+    game.runMs = 12000;
     game.best = 12;
     game.phase = 'over';
     game.entry = { value: initials, focus() {}, blur() {} };
