@@ -622,11 +622,76 @@
     15%  { opacity: 1; transform: translateY(  0px) scale(1.1); }
     100% { opacity: 0; transform: translateY(-24px) scale(1);   }
   }
+
+  /* THE TITLE SCREEN. The crest as large as the window allows, alone, with
+     one instruction under it - the arcade front door. Board, stats and
+     hints step aside until start is pressed. Last in the sheet, and flex
+     rather than grid, so nothing from the short-window layout above can
+     reach it: that layout's two columns once put the crest in one and the
+     instruction in the other. */
+  .wrap.titling {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100svh;
+    box-sizing: border-box;
+  }
+  .wrap.titling header { display: block; margin: 0; }
+  .wrap.titling .scores,
+  .wrap.titling .stage,
+  .wrap.titling .hint,
+  .wrap.titling .version { display: none; }
+  .wrap.titling h1.crest { margin: 0 0 52px; }
+  .wrap.titling h1.crest svg { width: min(88vw, 780px, calc((100svh - 220px) / 0.36)); }
+
+  .title-screen { display: grid; justify-items: center; gap: 10px; }
+  .title-screen[hidden] { display: none; }
+  .title-screen p { margin: 0; font-size: 13px; color: var(--dim); }
+
+  /* Not the slab: that is for actions on a panel, and here the whole screen
+     is the target. So it takes the other house treatment, the one for
+     things that address the whole screen - the wordmark's hard offset
+     behind the letters and a bloom around them - and blinks, the arcade's
+     own way of saying press me. Chosen 16 September over plain glowing
+     text and over pixel lettering, which was too much beside the crest. */
+  .title-screen button {
+    all: unset;
+    cursor: pointer;
+    font-size: 30px;
+    font-weight: bold;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--yellow);
+    text-shadow: 0 4px 0 var(--yellow-deep), 0 0 24px rgba(255, 255, 0, 0.3);
+    animation: press-start 1.1s steps(1, end) infinite;
+  }
+
+  /* An arcade title's foot: who made it, and the coin state. This one has
+     no coin slot, which is what "free play" says on a cabinet. */
+  .title-screen .title-foot {
+    position: fixed;
+    left: 24px;
+    right: 24px;
+    bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    letter-spacing: 1px;
+  }
+  .title-screen button:focus-visible { outline: 2px solid var(--text); outline-offset: 8px; }
+  @keyframes press-start { 60% { opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .title-screen button { animation: none; }
+  }
 </style>
 </head>
 <body>
 
-<div class="wrap">
+<!-- Starts on the title screen, in the markup rather than from the script,
+     so the board never flashes up before it. -->
+<div class="wrap titling" id="page">
   <header>
     <!-- The wordmark is artwork now, not styled text. The SVG carries its
          own <title>, which describes the drawing - right for the file on
@@ -650,6 +715,12 @@
       </div>
     </div>
   </header>
+
+  <div class="title-screen" id="title-screen">
+    <button id="start-btn" type="button">Press start</button>
+    <p id="start-how">any key</p>
+    <p class="title-foot"><span>© pushinpixls 2026</span><span>free play</span></p>
+  </div>
 
   <div class="stage" id="stage">
     <canvas id="game" width="630" height="630"></canvas>
@@ -717,6 +788,7 @@ const TOUCH = window.matchMedia('(any-pointer: coarse)').matches;
 if (TOUCH) {
   hintEl.textContent = 'swipe to move · ❚❚ = mercy';
   document.getElementById('overlay-text').textContent = 'swipe to move';
+  document.getElementById('start-how').textContent = 'tap to start';
   mercyBtn.hidden = false;
 }
 const HINT_TEXT = hintEl.textContent;
@@ -2279,6 +2351,16 @@ const KEYS = {
 };
 
 document.addEventListener('keydown', (event) => {
+  // On the title screen any key presses start, and does nothing else: Space
+  // there must not also start a run on the screen that follows.
+  if (titling) {
+    if (!['Shift', 'Control', 'Alt', 'Meta', 'Tab'].includes(event.key)) {
+      event.preventDefault();
+      pressStart();
+    }
+    return;
+  }
+
   // While initials are being entered, every key belongs to them: r, wasd,
   // m and space are letters or nothing, never a restart behind your back.
   if (entry) { initialsKeydown(event); return; }
@@ -2799,14 +2881,38 @@ for (const type of ['keydown', 'pointerdown']) {
   document.addEventListener(type, endArrival, true);
 }
 
+// ---- title screen ----------------------------------------------------
+// Every page load opens on the crest alone: the arcade front door. Any key,
+// click or tap presses start, and only that - it never also starts a run.
+// Then arrival plays as it always has, so the board still arrives rather
+// than just being there. Tab and the modifiers are left alone, so keyboard
+// users can still reach the button itself. UNR-114 puts dojo select between
+// the two; for now start leads straight to the start screen.
+const pageEl        = document.getElementById('page');
+const titleScreenEl = document.getElementById('title-screen');
+let titling = true;
+
+function pressStart() {
+  if (!titling) return;
+  titling = false;
+  titleScreenEl.hidden = true;
+  pageEl.classList.remove('titling');
+  startArrival();
+}
+
+document.getElementById('start-btn').addEventListener('click', pressStart);
+document.addEventListener('pointerdown', (event) => {
+  if (titling && event.button === 0) pressStart();
+});
+
 // Set up an opening position to look at behind the menu, then start the
 // heartbeat. Nothing moves until phase becomes 'playing'.
 reset();
 phase = 'ready';
 showBestBelt();
-startArrival();
 loop();
-setTimeout(idleTongue, TONGUE_PAUSE_MIN + (arrivalStart === null ? 0 : ARRIVAL_MS));
+setTimeout(() => flickTongue(2), ARRIVAL_CREST_MS);   // the crest smells the room
+setTimeout(idleTongue, TONGUE_PAUSE_MIN + ARRIVAL_CREST_MS);
 
 // =====================================================================
 //  10. SCORES - runs that outlive the browser

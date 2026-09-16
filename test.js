@@ -168,6 +168,7 @@ globalThis.game = {
   wantsInitials, cleanInitials, BLOCKED_INITIALS, signInitials, hideInitials,
   dojoFor, currentDojo,
   get entry() { return entry }, set entry(v) { entry = v },
+  get titling() { return titling }, pressStart,
   get lastRunId() { return lastRunId },
   BOARD_TEAM, PODIUM, PODIUM_REACH, boardRequests, neighbourRequest,
   podiumRows, dojoStandings, studentsLabel, readRows, fetchBoard, loadBoard,
@@ -266,6 +267,27 @@ describe('the grid', () => {
   test('is 21 squares across and down', () => {
     is(game.COLS, 21, 'columns');
     is(game.ROWS, 21, 'rows');
+  });
+});
+
+
+// First of the tests that press keys, because the game opens on the title
+// screen and every key before start belongs to it.
+describe('the title screen', () => {
+  test('the game opens on it', () => {
+    is(game.titling, true, 'titling');
+  });
+
+  test('any key presses start, and does nothing else', () => {
+    game.phase = 'ready';
+    pressKey(' ');
+    is(game.titling, false, 'titling');
+    is(game.phase, 'ready', 'phase - Space must not also start a run');
+  });
+
+  test('pressing start again does nothing', () => {
+    game.pressStart();
+    is(game.titling, false, 'titling');
   });
 });
 

@@ -88,9 +88,18 @@ A small `+1` for an egg, a big electric-yellow `+5` for a mouse. The size
 difference is the message: you see the value before you read it. A loss is
 red and always carries its minus sign, so it never relies on colour alone.
 
+### The title screen
+
+The game opens the way an arcade cabinet does: the crest, large and alone,
+a blinking **Press start**, and along the foot, who made it and *free play*.
+Any key, click or tap presses start, and does nothing else, so Space here
+never also starts a run. A touch screen is told to tap rather than press a
+key. It shows every time the page loads. With reduced motion it holds still
+instead of blinking.
+
 ### Arrival
 
-The first time you open the game in a session, it arrives rather than just
+The first time you press start in a session, the game arrives rather than just
 being there. The crest settles and flicks its tongue, the grid on the mat
 lights up from the middle outward, and the snake slides in from the left wall
 a cell at a time. Then the egg, then the menu. About a second and a half. Any
