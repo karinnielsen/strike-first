@@ -158,7 +158,7 @@ globalThis.game = {
   QUEASY_SHAKE, queasyShake,
   TONGUE_DOUBLE, TONGUE_PAUSE_MIN, TONGUE_PAUSE_MAX, tongueFlickPlan,
   TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt,
-  DEFEAT_LINES, defeatLine, defeatPool, fillLine,
+  DEFEAT_LINES, defeatLine, defeatPool, fillLine, showVerdict,
   BOW_MS, bowPose, bowElapsed,
   ARRIVAL_MS, ARRIVAL_CREST_MS, ARRIVAL_ENTRY, arrivalElapsed,
   arrivalCrest, arrivalDot, arrivalShift, arrivalEgg, arrivalOverlay,
@@ -182,7 +182,7 @@ globalThis.game = {
   get dojoPhase() { return dojoPhase }, get dojoAt() { return dojoAt },
   get entry() { return entry }, set entry(v) { entry = v },
   get titling() { return titling }, pressStart,
-  get lastRunId() { return lastRunId },
+  get lastRunId() { return lastRunId }, get lastDefeatLine() { return lastDefeatLine },
   BOARD_TEAM, PODIUM, PODIUM_REACH, boardRequests, neighbourRequest,
   podiumRows, dojoStandings, studentsLabel, readRows, fetchBoard, loadBoard,
   dropBoard, dueBoard, skipInitials, DOJO_BADGES, badgeSvg, ordinal,
@@ -1069,6 +1069,36 @@ describe('defeat lines', () => {
     is(unpunctued.length, 0, 'all end in a full stop: ' + unpunctued.join(' / '));
     is(rambling.length,   0, 'none over nine words: ' + rambling.join(' / '));
     is(unfilled.length,   0, 'no blanks left: ' + unfilled.join(' / '));
+  });
+
+  // Only a tampered page can be disqualified, so an honest run must never
+  // see these - the scores tests prove that side. This proves the other.
+  test('a run no game could produce is disqualified, and its hi-score taken back', () => {
+    freshGame();
+    game.gameOver('wall', {x: 21, y: 5});
+    game.best = 20;
+    game.bestAtStart = 20;
+    game.score = 999999;                        // typed into the console
+    game.best = 999999;
+    game.moves = 50;
+    game.runMs = 20000;
+    game.showVerdict();
+    is(game.DEFEAT_LINES.disqualified.includes(game.lastDefeatLine), true, 'a disqualified line');
+    is(game.score, 0, 'the bout does not count');
+    is(game.best, 20, 'hi-score back where it was');
+    is(sandbox.localStorage.getItem('strikeFirstBest'), '20', 'and remembered that way');
+    is(game.entry, null, 'nothing to sign');
+  });
+
+  test('an honest run is defeated, not disqualified', () => {
+    freshGame();
+    game.gameOver('wall', {x: 21, y: 5});
+    game.bestAtStart = 50;
+    game.best = 50;
+    game.moves = 50;
+    game.runMs = 20000;
+    game.showVerdict();
+    is(game.DEFEAT_LINES.disqualified.includes(game.lastDefeatLine), false, 'a defeat line');
   });
 
   test('"record" is not a word the dojo uses', () => {

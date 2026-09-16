@@ -937,7 +937,7 @@ const ROWS = canvas.height / CELL;    // 21 rows down
 // Single source of truth for the version. Bump this, add a CHANGELOG entry,
 // update the Current version line in README.md, and tag the commit - those
 // four go together, always.
-const VERSION = '0.5.1';
+const VERSION = '0.5.2';
 document.getElementById('version').textContent = 'v' + VERSION;
 
 // Handy references to the bits of HTML we update as the game runs.
@@ -1386,10 +1386,35 @@ function showVerdict() {
   // The score is not repeated here - it is still sitting in the header
   // where you have been watching it all run. This screen gets one thing
   // to say, so it may as well be worth reading.
+  if (!plausibleRun({ score, length: snake.length, moves, durationMs: runMs })) {
+    return disqualify();
+  }
   lastDefeatLine = defeatLine(defeat.cause, score, bestAtStart, Math.random(), lastDefeatLine);
   showOverlay('DEFEATED', lastDefeatLine, 'Again');
   if (wantsInitials(score, bestAtStart)) openInitials();
   else dueBoard();
+}
+
+// SHIL KYUK. A run the rules could not have produced was not played, so
+// it is not defeated: it is disqualified, the way a referee ends a bout
+// for a foul. UNR-132 made the database refuse such a run; this is the
+// page saying so to whoever typed the score in.
+//
+// A disqualified bout does not count, so its score goes to nothing and
+// the hi-score it set is taken back, with the belt. There is nothing to sign. The board still
+// shows, because the honest scores on it are the point.
+function disqualify() {
+  score = 0;
+  scoreEl.textContent = score;
+  levelEl.textContent = levelFor(score);
+  best = bestAtStart;
+  localStorage.setItem('strikeFirstBest', best);
+  bestEl.textContent = best;
+  showBestBelt();
+  const pool = DEFEAT_LINES.disqualified;
+  lastDefeatLine = pool[Math.floor(Math.random() * pool.length)];
+  showOverlay('DISQUALIFIED', lastDefeatLine, 'Again');
+  dueBoard();
 }
 
 
@@ -2763,6 +2788,17 @@ const DEFEAT_LINES = {
     'You have never done that before. Do it again.',
     'The All Valley will hear about this.',
     'Your sensei would nod. Once.'
+  ],
+  // A run the game could not have produced, which means the page was
+  // tampered with. Shil kyuk is the Korean referee's call for
+  // disqualification: the bout does not count, whatever the score said.
+  // No honest run can land here - see plausibleRun() - so these may tease.
+  disqualified: [
+    'Shil kyuk. The bout does not count.',
+    'The referee saw that. No score.',
+    'Earned on the mat. Not in the console.',
+    'The dojo does not reward shortcuts.',
+    'Shil kyuk. Your hi-score stands where it was.'
   ],
   nearBelt: [
     '{belt} belt was {points} away.',

@@ -16,6 +16,18 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+## [0.5.2] — 2026-09-16
+
+Disqualified. A tampered run is called for what it is. No honest player can
+ever see it, so it is a patch.
+
+### Added
+- **Disqualified.** A run the rules could not have produced, which means the
+  page was tampered with, ends DISQUALIFIED instead of DEFEATED, the way a
+  referee calls *shil kyuk*. The bout does not count: the score goes to
+  nothing, the hi-score and belt it set are taken back, and there is nothing
+  to sign. No honest run can reach it. UNR-145.
+
 ## [0.5.1] — 2026-09-16
 
 Scores you can trust. The board only takes runs the game could have
@@ -409,7 +421,8 @@ First playable version.
   gradient.
 - **The version number** in the footer.
 
-[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/karinnielsen/strike-first/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/karinnielsen/strike-first/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/karinnielsen/strike-first/compare/v0.4.6...v0.5.0
 [0.4.6]: https://github.com/karinnielsen/strike-first/compare/v0.4.5...v0.4.6

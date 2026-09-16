@@ -61,6 +61,7 @@ a deliberate decision, not a preference.
 | Starting a run | **Enter the dojo** | Play, Start, Begin |
 | Restarting after death | **Again** | Retry, Play again, Try again |
 | Dying | **DEFEATED** | Game Over, You died, Wasted |
+| A run the rules could not produce | **DISQUALIFIED** | Cheater, Invalid, Error |
 | Crossing a belt threshold | **promotion** | level up, rank up, unlock |
 | The play area | **the mat** in prose, **the board** in code | grid, arena, field |
 
@@ -95,7 +96,7 @@ a screen ends up shouting in three places at once.
 
 Full capitals, letter-spaced, large. This is volume, and it is rationed.
 
-* Overlay titles: `DEFEATED`, `MERCY`
+* Overlay titles: `DEFEATED`, `DISQUALIFIED`, `MERCY`
 * The promotion announcement: `GREEN BELT`
 
 That is the entire list. **A screen gets one of these or none.** If something
@@ -344,6 +345,7 @@ The complete inventory, so nothing drifts unnoticed.
 | `MERCY` / `Press space to fight on` / `Continue` — pause | Dojo |
 | `Tap continue to fight on` — pause, touch screens | Dojo |
 | `DEFEATED` / a defeat line / `Again` — defeat | Dojo |
+| `DISQUALIFIED` / a disqualified line / `Again` — a tampered run | Dojo |
 | `<BELT> BELT` — promotion announcement | Dojo |
 | `score` `level` `hi-score` `belt` — header labels | Utility |
 | `arrows / wasd · space = mercy · r = restart` — footer | Utility |
@@ -351,6 +353,6 @@ The complete inventory, so nothing drifts unnoticed.
 | `mercy` — the touch pause button's accessible name | Utility |
 | Belt names — header and promotion | — |
 
-Thirty-seven defeat lines live in `DEFEAT_LINES` in `index.html`, grouped by
-how you died and how close you came. The house style above is asserted in `test.js` rather than trusted: a new
+Forty-two defeat lines live in `DEFEAT_LINES` in `index.html`, grouped by
+how you died and how close you came, five of them for a disqualified run. The house style above is asserted in `test.js` rather than trusted: a new
 line that contracts, shouts, runs long or forgets its full stop fails the build.
