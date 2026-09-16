@@ -43,10 +43,12 @@ untracked; they are the large files from PR #6 (`assets/dojo-crests`).
 - The keys line picks out the keys in bold bone against dim words.
 
 **The cards**
-- Art is PR #6's higher-density crests, sized to the window and capped at
-  160px. The 18px badges scaled up were rejected as too chunky. Shipped art
-  needs transparent PNGs of about 300px in the game palette from Astra; the
-  mock strips the backgrounds itself.
+- Art is Astra's higher-density pixel crests from PR #6, sized to the window
+  and capped at 160px. The 18px badges scaled up were rejected as too chunky.
+  The files to ship are in `assets/crests/`: 320px WebP with the ground made
+  transparent, 40-66KB each. The plan is to load them in the background from
+  the title screen, so they are ready when the select arrives. The mock still reads the large opaque PNGs
+  and strips the backgrounds itself.
 - Front: badge and dojo name, centred in the card. No creed on the card - that
   was too much. Back: place, team score, students, top student, and the
   sensei - always the dojo's founder: John Kreese, Mr. Miyagi, Johnny
@@ -68,14 +70,13 @@ untracked; they are the large files from PR #6 (`assets/dojo-crests`).
 strike (the band snaps out of the card, 120ms, accelerating), impact (the name
 holds oversized for a beat, the band flashes and gives), settle, hold, then the
 band closes to a line and the start screen fades in. No page shake: it caused
-motion sickness. The line under the name is the dojo's creed, said once as you
-commit to it, so the hold is 1.8 seconds to read it (one second for "Too
-slow"). The welcome lines this replaced are parked in `design/MICROCOPY.md`.
+motion sickness. The line under the name is the dojo's creed - Eagle Fang's
+is "Bite like an eagle." - said once as you commit to it, so the hold is 1.8
+seconds to read it (one second for "Too slow"). The welcome lines this replaced are parked in `design/MICROCOPY.md`.
 
 ## Still open
 
 - The kick's timing has not been judged at real speed.
-- Eagle Fang's creed is the weakest copy.
 - A hit sound on impact would do more than any timing change; held with the
   sound work in Choose your fighter.
 - Nothing is built into `index.html` yet.

@@ -32,7 +32,7 @@ addEventListener('load', () => {
                     sensei: 'John Kreese',    place: '1st of 3', team: 726, students: 14, top: 'JLR · 260' },
     'miyagi-do':  { glow: '211, 38, 47',   creed: 'Karate is for defence only.',
                     sensei: 'Mr. Miyagi',     place: '2nd of 3', team: 708, students: 9,  top: 'DAN · 254' },
-    'eagle-fang': { glow: '236, 230, 218', creed: 'Fear does not exist. Neither do rules.',
+    'eagle-fang': { glow: '236, 230, 218', creed: 'Bite like an eagle.',
                     sensei: 'Johnny Lawrence', place: '3rd of 3', team: 248, students: 3,  top: 'MIG · 248' },
   };
 
