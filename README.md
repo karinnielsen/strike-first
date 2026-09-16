@@ -6,7 +6,8 @@ Snake, as a dojo. Eat eggs, chase mice, dodge rotten ones and earn your belt.
 
 [![The Strike First cobra crest beside a game board, with a snake wearing an orange belt, a mouse and an egg](og-image.png)](https://karinnielsen.github.io/strike-first/)
 
-One HTML file, no build step and nothing to install — open it and play. Its one
+One HTML file of code, no build step and nothing to install — open it and play.
+Beside it sit a few images: the dojo crests and the sharing preview. Its one
 outside connection is a hosted database for scores. Made for desktop and tablet.
 
 Current version: **v0.4.6** — see [CHANGELOG.md](CHANGELOG.md).
@@ -97,10 +98,27 @@ never also starts a run. A touch screen is told to tap rather than press a
 key. It shows every time the page loads. With reduced motion it holds still
 instead of blinking.
 
+### Dojo select
+
+Every run counts for a dojo, so the first time you press start you choose one:
+**Cobra Kai**, **Miyagi-Do** or **Eagle Fang**, each a card with its crest. It
+is an arcade select screen, so there are 30 seconds on the clock, and when it
+runs out the lit dojo is chosen for you. The highlight starts on a random dojo,
+so no dojo is everyone's default.
+
+- **← →** or **Tab** to choose, **Enter** or **Space** to bow in
+- **↑ ↓** to flip a card. The back shows where the dojo stands, its team score,
+  its students, its top student and its sensei. On a touch screen, tap a card
+  to choose it and tap its turned-down corner to flip it
+
+Choosing lands like a kick, and the dojo's creed comes up with its name. The
+choice is remembered. After that, the start screen says which dojo you are in,
+and **change** brings the select back.
+
 ### Arrival
 
-The first time you press start in a session, the game arrives rather than just
-being there. The crest settles and flicks its tongue, the grid on the mat
+The first time you reach the start screen in a session, the game arrives rather
+than just being there. The crest settles and flicks its tongue, the grid on the mat
 lights up from the middle outward, and the snake slides in from the left wall
 a cell at a time. Then the egg, then the menu. About a second and a half. Any
 key, click or tap skips straight to the start screen and still does what it
@@ -146,8 +164,8 @@ if this one wasn't a hi-score.
 
 Under it are the dojos, each scored as the total of its best three players,
 with how many students it has. Every score counts for you and for your dojo.
-There is no way to pick a dojo yet, so every signed run counts for Cobra Kai unless
-the address says otherwise, such as `?dojo=miyagi-do`.
+A run counts for the dojo you were in when you signed it, even if you change
+later.
 
 When the board is drawn small, the runs either side of yours are left out
 rather than squeezing the rest, and the dojos come down to one line: yours,

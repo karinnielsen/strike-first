@@ -685,9 +685,174 @@
   @media (prefers-reduced-motion: reduce) {
     .title-screen button { animation: none; }
   }
+  /* DOJO SELECT. UNR-114. A screen of its own after the title, like an
+     arcade select: the crest, board, stats and hints all step aside and
+     the select has the page. Settled across 15 and 16 September from the
+     mock in design/dojo-select-compare/, whose README says what each
+     choice beat. Last in the sheet for the same reason as the title. */
+  .wrap.selecting {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100svh;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 1;
+  }
+  .wrap.selecting header,
+  .wrap.selecting .scores,
+  .wrap.selecting .stage,
+  .wrap.selecting .hint,
+  .wrap.selecting .version { display: none; }
+
+  /* The room takes on the lit dojo's light, from below, like a stage. */
+  .dojo-aura {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0;
+    background: radial-gradient(ellipse 70% 55% at 50% 72%, rgba(var(--glow), 0.16), transparent 70%);
+    transition: opacity 0.35s;
+  }
+  .dojo-aura.on { opacity: 1; }
+
+  /* Three groups - the heading and clock, the cards, the keys - 80px apart
+     so the screen breathes. */
+  .dojo-select { display: grid; justify-items: center; text-align: center; gap: 80px; }
+  .dojo-select[hidden] { display: none; }
+  .dojo-select .group { display: grid; justify-items: center; gap: 16px; }
+  .dojo-select .heading { gap: 32px; }
+  /* The monospace set big and bold in the wordmark's language - a hard
+     offset and a bloom - as Press start is. */
+  .dojo-select h2 {
+    margin: 0; font-size: clamp(30px, 4.6vw, 52px); font-weight: bold; letter-spacing: 0.16em;
+    color: var(--yellow); text-transform: uppercase;
+    text-shadow: 0 5px 0 var(--yellow-deep), 0 0 28px rgba(255, 255, 0, 0.3);
+  }
+  /* The clock with no label: a big number counting down says what it is. */
+  .dojo-select .count {
+    font-size: 44px; font-weight: bold; line-height: 1.05;
+    color: var(--text); font-variant-numeric: tabular-nums;
+  }
+  .dojo-select .count.late { color: var(--red); text-shadow: 0 0 16px rgba(211, 38, 47, 0.6); }
+  .dojo-select .count.beat { animation: count-beat 0.35s ease-out; }
+  @keyframes count-beat { from { transform: scale(1.35); } to { transform: scale(1); } }
+  /* The keys are what the eye hunts for: bone and bold, the words dim. */
+  .dojo-select .how { margin: 0; font-size: 14px; letter-spacing: 0.5px; color: var(--dim); }
+  .dojo-select .how kbd { font: inherit; font-weight: bold; color: var(--text); }
+
+  .dojo-select ul {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; grid-template-columns: repeat(3, auto); gap: var(--gap, 32px);
+  }
+  .dojo-select li {
+    position: relative; display: grid; justify-items: center;
+    color: var(--dim); transition: color 0.15s, opacity 0.3s;
+  }
+  /* No scale and no lift: scaled text renders between pixels and blurs. */
+  .dojo-select li.on { color: rgb(var(--glow)); }
+
+  .dojo-select .pick { all: unset; display: block; cursor: pointer; }
+  .dojo-select .pick:focus-visible { outline: none; }
+  /* The card turns as a whole, like a real one. It is only 3D while it
+     turns; at rest it is flat and sharp. */
+  .dojo-select .card { display: grid; }
+  .dojo-select .face.back,
+  .dojo-select li.flipped .face.front { visibility: hidden; }
+  .dojo-select li.flipped .face.back { visibility: visible; }
+  .dojo-select li.tease .card { animation: card-tease 0.9s ease-in-out; }
+  @keyframes card-tease {
+    35% { transform: perspective(900px) rotateY(-32deg); }
+    65% { transform: perspective(900px) rotateY(8deg); }
+  }
+
+  .dojo-select .face {
+    grid-area: 1 / 1; position: relative; box-sizing: border-box;
+    display: grid; justify-items: center; align-content: center; gap: 18px;
+    padding: 21px 20px;
+    border: 3px solid transparent; border-radius: 12px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  /* Room at the foot of the back, so the fold never covers the sensei. */
+  .dojo-select .face.back { gap: 16px; padding-bottom: 36px; background: rgba(9, 9, 11, 0.55); }
+  .dojo-select li.on .face {
+    border-color: rgb(var(--glow));
+    box-shadow: 0 0 32px rgba(var(--glow), 0.4), inset 0 0 22px rgba(var(--glow), 0.14);
+  }
+
+  .dojo-select .name { font-size: 20px; letter-spacing: 3px; text-transform: uppercase; }
+  .dojo-select .art {
+    width: var(--art, 160px); height: var(--art, 160px);
+    filter: brightness(0.4) grayscale(0.6); transition: filter 0.15s;
+  }
+  .dojo-select .art img { display: block; width: 100%; height: 100%; }
+  .dojo-select li.on .art { filter: none; }
+
+  /* The back is the stats list the short layout already uses. */
+  .dojo-select .stats { margin: 0; width: max(var(--art, 160px), 160px); font-size: 13px; }
+  .dojo-select .stats div {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 9px 0; border-bottom: 1px solid var(--line);
+  }
+  .dojo-select .stats dt { color: var(--dim); white-space: nowrap; }
+  .dojo-select .stats dd { white-space: nowrap; margin: 0 0 0 12px; font-weight: bold; color: var(--text); font-size: 15px; }
+  .dojo-select .sensei {
+    display: grid; gap: 4px; font-size: 11px; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--dim);
+  }
+  .dojo-select .sensei b { font-size: 16px; letter-spacing: 1px; text-transform: none; color: rgb(var(--glow)); }
+
+  /* Flipping on touch, since a tap on the card picks: the lit card's corner
+     is turned down, a flap in its colour over a cut-away, drawn on the face
+     so it turns with the card. The hit area is a finger's 44px. */
+  .dojo-select li.on .face::after {
+    content: ''; position: absolute; right: -3px; bottom: -3px; width: 30px; height: 30px;
+    background: linear-gradient(315deg, var(--bg) 0 50%, rgba(var(--glow), 0.9) 50% 100%);
+    border-top-left-radius: 3px;
+  }
+  .dojo-select .corner {
+    all: unset; position: absolute; right: -4px; bottom: -4px;
+    width: 44px; height: 44px; cursor: pointer;
+  }
+  .dojo-select li:not(.on) .corner { display: none; }
+
+  /* The screen fades in as one piece, lit card and all. */
+  .dojo-select.arrive { animation: select-in 0.35s ease-out backwards; }
+  @keyframes select-in { from { opacity: 0; } }
+
+  /* The pick is choreographed in chooseDojo(); here only the part CSS can
+     own - the other two dojos step out of the way. */
+  .dojo-select.chosen li:not(.picked) { opacity: 0; transition: opacity 0.25s ease-out; }
+  .dojo-select.chosen .corner { display: none; }
+
+  /* The banner that confirms the pick. Pinned to the window, outside
+     .wrap, so nothing the page does can re-anchor it. */
+  .dojo-verdict {
+    position: fixed; inset: 0; z-index: 5; pointer-events: none;
+    display: grid; align-content: center;
+  }
+  .dojo-verdict[hidden] { display: none; }
+  .dojo-verdict .band {
+    display: grid; justify-items: center; gap: 10px;
+    padding: 28px 16px 32px; background: rgba(9, 9, 11, 0.9);
+    border-block: 2px solid rgba(var(--glow), 0.7);
+  }
+  .dojo-verdict b {
+    font-size: clamp(40px, 8vw, 96px); letter-spacing: 0.12em;
+    color: rgb(var(--glow)); text-transform: uppercase;
+    text-shadow: 0 0 30px rgba(var(--glow), 0.6), 0 6px 0 rgba(0, 0, 0, 0.8);
+  }
+  .dojo-verdict span { font-size: 16px; color: var(--text); }
+
+  /* No turning and no fades: the back simply replaces the front. */
+  @media (prefers-reduced-motion: reduce) {
+    .dojo-select *, .dojo-select.arrive, .dojo-verdict * { animation: none !important; transition: none !important; }
+  }
+
+  /* On the start screen: which dojo you are in, and the way to change it. */
+  .overlay .dojo-line a { color: var(--dim); text-decoration: underline; cursor: pointer; }
 </style>
 </head>
 <body>
+
+<div class="dojo-aura" id="dojo-aura"></div>
 
 <!-- Starts on the title screen, in the markup rather than from the script,
      so the board never flashes up before it. -->
@@ -722,12 +887,22 @@
     <p class="title-foot"><span>@pushinpixls 2026</span><span>free play</span></p>
   </div>
 
+  <section class="dojo-select" id="dojo-select" aria-labelledby="dojo-heading" hidden>
+    <div class="group heading">
+      <h2 id="dojo-heading">Choose your dojo</h2>
+      <div class="count" id="dojo-count" role="timer" aria-label="seconds left"></div>
+    </div>
+    <ul id="dojo-cards"></ul>
+    <div class="group"><p class="how" id="dojo-how"><kbd>&larr; &rarr;</kbd> or <kbd>tab</kbd> to choose &middot; <kbd>&uarr; &darr;</kbd> to flip &middot; <kbd>enter</kbd> to bow in</p></div>
+  </section>
+
   <div class="stage" id="stage">
     <canvas id="game" width="630" height="630"></canvas>
 
     <div class="overlay" id="overlay">
       <h2 id="overlay-title">Strike hard. No mercy.</h2>
       <p  id="overlay-text">arrows or wasd to move</p>
+      <p class="dojo-line" id="dojo-line" hidden>Dojo: <span id="dojo-line-name"></span> &middot; <a href="#" id="dojo-change">change</a></p>
       <div class="initials" id="initials" hidden></div>
       <div class="board" id="board" hidden></div>
       <button id="play-btn">Enter the dojo</button>
@@ -741,6 +916,8 @@
   <p class="hint" id="hint">arrows&nbsp;/&nbsp;wasd &middot; space&nbsp;=&nbsp;mercy &middot; r&nbsp;=&nbsp;restart &middot; m&nbsp;=&nbsp;sound</p>
   <p class="version" id="version"></p>
 </div>
+
+<div class="dojo-verdict" id="dojo-verdict" hidden><div class="band"><b></b><span></span></div></div>
 
 <script>
 // =====================================================================
@@ -776,6 +953,7 @@ const stageEl   = document.getElementById('stage');
 const hintEl    = document.getElementById('hint');
 const mercyBtn  = document.getElementById('mercy-btn');
 const playBtn   = document.getElementById('play-btn');
+const dojoLineEl = document.getElementById('dojo-line');
 const soundBtn  = document.getElementById('sound-btn');
 
 // Can this screen be touched? `any-pointer` rather than `pointer`, so an
@@ -789,6 +967,7 @@ if (TOUCH) {
   hintEl.textContent = 'swipe to move · ❚❚ = mercy';
   document.getElementById('overlay-text').textContent = 'swipe to move';
   document.getElementById('start-how').textContent = 'tap to start';
+  document.getElementById('dojo-how').textContent = 'tap a dojo to bow in · tap its corner to flip';
   mercyBtn.hidden = false;
 }
 const HINT_TEXT = hintEl.textContent;
@@ -2361,6 +2540,13 @@ document.addEventListener('keydown', (event) => {
     return;
   }
 
+  // While dojo select is up every key is its own, and while the pick plays
+  // out no key does anything.
+  if (dojoPhase !== 'closed') {
+    if (dojoPhase === 'open') dojoKeydown(event);
+    return;
+  }
+
   // While initials are being entered, every key belongs to them: r, wasd,
   // m and space are letters or nothing, never a restart behind your back.
   if (entry) { initialsKeydown(event); return; }
@@ -2505,6 +2691,7 @@ for (const type of ['pointerup', 'pointercancel']) {
 // telling you something you already knew. A promotion is the exception,
 // and it has its own moment below the board rather than a line in here.
 function showOverlay(title, text, buttonLabel) {
+  dojoLineEl.hidden = true;
   titleEl.textContent = title;
   textEl.textContent  = text;
   playBtn.textContent = buttonLabel;
@@ -2884,10 +3071,10 @@ for (const type of ['keydown', 'pointerdown']) {
 // ---- title screen ----------------------------------------------------
 // Every page load opens on the crest alone: the arcade front door. Any key,
 // click or tap presses start, and only that - it never also starts a run.
-// Then arrival plays as it always has, so the board still arrives rather
-// than just being there. Tab and the modifiers are left alone, so keyboard
-// users can still reach the button itself. UNR-114 puts dojo select between
-// the two; for now start leads straight to the start screen.
+// Then, until a dojo has been chosen, dojo select; otherwise arrival plays
+// as it always has, so the board still arrives rather than just being there.
+// Tab and the modifiers are left alone, so keyboard users can still reach
+// the button itself.
 const pageEl        = document.getElementById('page');
 const titleScreenEl = document.getElementById('title-screen');
 let titling = true;
@@ -2895,9 +3082,14 @@ let titling = true;
 function pressStart() {
   if (!titling) return;
   titling = false;
+  if (!currentDojo()) return openDojoSelect(true);
+  leaveTitle();
+  startArrival();
+}
+
+function leaveTitle() {
   titleScreenEl.hidden = true;
   pageEl.classList.remove('titling');
-  startArrival();
 }
 
 document.getElementById('start-btn').addEventListener('click', pressStart);
@@ -2936,27 +3128,32 @@ const SCORE_SERVICE = {
 // A slow database must never hold up a game. After this long, give up.
 const SCORE_TIMEOUT_MS = 8000;
 
-// The dojos a score can belong to, as the database names them. Dojo select
-// (UNR-114) should use these ids; the database refuses any other.
+// The dojos a score can belong to, as the database names them, in the
+// order dojo select lays them out. The database refuses any other.
 const DOJO_IDS = ['cobra-kai', 'miyagi-do', 'eagle-fang'];
 
-// STAND-IN until dojo select (UNR-114), which replaces all of this. There
-// is no way to pick a dojo in the page yet, so ?dojo=miyagi-do in the
-// address picks one and it is remembered; otherwise every run is Cobra
-// Kai. That default is why this branch stays unmerged until UNR-114.
+// The dojo you chose on dojo select, remembered between visits. A known
+// dojo, or null. localStorage can throw or forget (a private window), so
+// the choice is also kept for the rest of the visit, which is all a run
+// needs to be signed.
 const DOJO_KEY = 'strikeFirstDojo';
 
-function dojoFor(asked, remembered) {
-  if (DOJO_IDS.includes(asked)) return asked;
-  if (DOJO_IDS.includes(remembered)) return remembered;
-  return 'cobra-kai';
+function dojoOrNull(value) {
+  return DOJO_IDS.includes(value) ? value : null;
 }
 
+let chosenDojo = (() => {
+  try { return dojoOrNull(localStorage.getItem(DOJO_KEY)); } catch (e) { return null; }
+})();
+
 function currentDojo() {
-  const asked = typeof location === 'undefined' ? null
-    : new URLSearchParams(location.search).get('dojo');
-  if (DOJO_IDS.includes(asked)) localStorage.setItem(DOJO_KEY, asked);
-  return dojoFor(asked, localStorage.getItem(DOJO_KEY));
+  return chosenDojo;
+}
+
+function commitDojo(dojo) {
+  if (!dojoOrNull(dojo)) return;
+  chosenDojo = dojo;
+  try { localStorage.setItem(DOJO_KEY, dojo); } catch (e) {}
 }
 
 // Initials the dojo will not print. Slurs, hate, sexual terms and
@@ -3464,6 +3661,373 @@ function showBoard() {
   }
 
   boardEl.replaceChildren(table, dojos);
+}
+
+// =====================================================================
+//  11. DOJO SELECT - choose a side. UNR-114
+// =====================================================================
+// A screen of its own after the title, the first time only: every run
+// counts for a dojo, so there is no dojo-less player. The start screen
+// says which dojo you are in and offers to change it. Settled from the
+// mock in design/dojo-select-compare/, whose README records each choice.
+//
+// Arcade rules: 30 seconds on the clock, and when it runs out the lit dojo
+// is chosen for you. The highlight starts on the dojo you had, or a random
+// one - never always the same card, because whichever starts lit gets
+// picked more and dojos compete as teams.
+
+const DOJO_SECONDS = 30;
+const DOJO_CREEDS = {
+  'cobra-kai':  'Strike first. Strike hard. No mercy.',
+  'miyagi-do':  'Karate is for defence only.',
+  'eagle-fang': 'Bite like an eagle.'
+};
+// Always the dojo's founder: one clear rule, where Cobra Kai alone has had
+// three senseis.
+const DOJO_SENSEIS = { 'cobra-kai': 'John Kreese', 'miyagi-do': 'Mr. Miyagi', 'eagle-fang': 'Johnny Lawrence' };
+// Each dojo's light, as r, g, b for rgba(): the card, the room, the banner.
+const DOJO_GLOWS = { 'cobra-kai': '255, 255, 0', 'miyagi-do': '211, 38, 47', 'eagle-fang': '236, 230, 218' };
+// Until someone has flipped a card, the lit one turns a little, once.
+const FLIPPED_KEY = 'strikeFirstFlipped';
+// The art: 320px WebP, made from Astra's crests in PR #6.
+const DOJO_ART_MAX = 160;
+const DOJO_ART_MIN = 120;
+
+// 'closed', 'open' (choosing), or 'choosing' (the pick is playing out).
+let dojoPhase = 'closed';
+let dojoAt = -1;          // index into DOJO_IDS of the lit card
+let dojoLeft = 0;         // seconds on the clock
+let dojoTimer = 0;
+
+// Where the highlight starts: the dojo you had, else a random one. Pure.
+function dojoStart(had, random) {
+  const i = DOJO_IDS.indexOf(had);
+  return i >= 0 ? i : Math.floor(random * DOJO_IDS.length);
+}
+
+// One step left or right, wrapping. Pure.
+function dojoStep(at, delta) {
+  const n = DOJO_IDS.length;
+  return ((at + delta) % n + n) % n;
+}
+
+// What each card's back says, from the same dojo_players rows the board
+// reads. Null rows - the database could not be reached - leave the back
+// blank rather than wrong. Pure.
+function dojoBacks(players) {
+  const backs = {};
+  const standings = players ? dojoStandings(players, BOARD_TEAM) : null;
+  for (const dojo of DOJO_IDS) {
+    const s = standings && standings.find(d => d.dojo === dojo);
+    const top = players && players.find(p => p.dojo === dojo && p.place === 1);
+    backs[dojo] = {
+      place:    s && s.students ? `${ordinal(s.place)} of ${DOJO_IDS.length}` : '—',
+      team:     s && s.students ? String(s.total) : '—',
+      students: s ? String(s.students) : '—',
+      top:      top ? `${top.initials} · ${top.best}` : '—'
+    };
+  }
+  return backs;
+}
+
+const dojoSelectEl = document.getElementById('dojo-select');
+const dojoCountEl  = document.getElementById('dojo-count');
+const dojoAuraEl   = document.getElementById('dojo-aura');
+const dojoVerdict  = document.getElementById('dojo-verdict');
+
+// The cards, built once from constants - never from data.
+document.getElementById('dojo-cards').innerHTML = DOJO_IDS.map(dojo => `
+  <li style="--glow:${DOJO_GLOWS[dojo]}">
+    <button class="pick" type="button" aria-label="${DOJO_NAMES[dojo]}">
+      <span class="card">
+        <span class="face front">
+          <span class="art"><img alt="" width="320" height="320" data-src="assets/crests/${dojo}.webp"></span>
+          <span class="name">${DOJO_NAMES[dojo]}</span>
+        </span>
+        <span class="face back" aria-hidden="true">
+          <span class="name">${DOJO_NAMES[dojo]}</span>
+          <dl class="stats">
+            <div><dt>place</dt><dd data-back="place">—</dd></div>
+            <div><dt>team score</dt><dd data-back="team">—</dd></div>
+            <div><dt>students</dt><dd data-back="students">—</dd></div>
+            <div><dt>top</dt><dd data-back="top">—</dd></div>
+          </dl>
+          <span class="sensei">Sensei<b>${DOJO_SENSEIS[dojo]}</b></span>
+        </span>
+      </span>
+    </button>
+    <button class="corner" type="button" tabindex="-1" aria-label="flip ${DOJO_NAMES[dojo]}"></button>
+  </li>`).join('');
+const dojoCards = [...dojoSelectEl.querySelectorAll('li')];
+
+// The art is only fetched when it might be shown: straight away for someone
+// who has not chosen, since the title screen leads to the select and that
+// gives it time to arrive; otherwise when they ask to change.
+function loadDojoArt() {
+  for (const img of dojoSelectEl.querySelectorAll('img[data-src]')) {
+    img.src = img.dataset.src;
+    img.removeAttribute('data-src');
+  }
+}
+if (!currentDojo()) loadDojoArt();
+
+// Size the art from the room left once everything else is laid out.
+function fitDojoSelect() {
+  if (dojoSelectEl.hidden) return;
+  dojoSelectEl.style.setProperty('--art', '0px');
+  pageEl.style.minHeight = '0';                 // measure the content, not the centring
+  const rest = pageEl.getBoundingClientRect().height;
+  pageEl.style.minHeight = '';
+  const gap = Math.max(16, Math.min(56, innerWidth * 0.035));
+  const byHeight = innerHeight - rest - 24;
+  const byWidth = (innerWidth - 48 - gap * 2) / 3 - 60;
+  const art = Math.round(Math.max(DOJO_ART_MIN, Math.min(DOJO_ART_MAX, byHeight, byWidth)));
+  dojoSelectEl.style.setProperty('--art', art + 'px');
+  dojoSelectEl.style.setProperty('--gap', gap + 'px');
+}
+if (typeof addEventListener === 'function') addEventListener('resize', fitDojoSelect);
+
+function showDojoLine() {
+  const dojo = currentDojo();
+  dojoLineEl.hidden = !dojo;
+  if (dojo) document.getElementById('dojo-line-name').textContent = DOJO_NAMES[dojo];
+}
+showDojoLine();
+document.getElementById('dojo-change').addEventListener('click', (event) => {
+  event.preventDefault();
+  openDojoSelect(false);
+});
+
+// Output only: lights the card at dojoAt and the room behind it.
+function showDojoHighlight() {
+  dojoCards.forEach((li, i) => {
+    const on = i === dojoAt;
+    // A card turns face-up again when the highlight leaves it.
+    if (!on && li.classList.contains('flipped')) turnDojoCard(li);
+    li.classList.toggle('on', on);
+  });
+  if (dojoAt < 0) return;
+  dojoAuraEl.style.setProperty('--glow', DOJO_GLOWS[DOJO_IDS[dojoAt]]);
+  const pick = dojoCards[dojoAt] && dojoCards[dojoAt].querySelector('.pick');
+  if (pick && dojoPhase === 'open') pick.focus({ preventScroll: true });
+}
+
+function highlightDojo(i) {
+  if (dojoPhase !== 'open' || i === dojoAt) return;
+  dojoAt = i;
+  showDojoHighlight();
+}
+
+function flipDojo(i) {
+  if (dojoPhase !== 'open') return;
+  highlightDojo(i);
+  if (dojoCards[dojoAt]) turnDojoCard(dojoCards[dojoAt]);
+  try { localStorage.setItem(FLIPPED_KEY, '1'); } catch (e) {}
+}
+
+// Half a turn away, swap the face while it is edge-on, half a turn back.
+// 3D only for those 400ms, so nothing at rest sits in a blurred 3D layer.
+function turnDojoCard(li) {
+  if (REDUCED_MOTION.matches || !li.animate) { li.classList.toggle('flipped'); return; }
+  if (li.turning) return;
+  li.turning = true;
+  const card = li.querySelector('.card');
+  const edge = (deg) => ({ transform: `perspective(900px) rotateY(${deg}deg)` });
+  card.animate([edge(0), edge(90)], { duration: 170, easing: 'ease-in' }).finished
+    .then(() => {
+      li.classList.toggle('flipped');
+      return card.animate([edge(-90), edge(0)], { duration: 230, easing: 'ease-out' }).finished;
+    })
+    .finally(() => { li.turning = false; });
+}
+
+function tickDojoClock() {
+  dojoCountEl.textContent = String(dojoLeft);
+  dojoCountEl.classList.toggle('late', dojoLeft <= 5);
+  if (dojoLeft <= 5) {
+    dojoCountEl.classList.remove('beat');
+    void dojoCountEl.offsetWidth;
+    dojoCountEl.classList.add('beat');
+  }
+}
+
+// Open the select, from the title screen or from the start screen's
+// change link. The title fades out first; the select fades in as one
+// piece with the lit card already lit.
+function openDojoSelect(fromTitle) {
+  if (dojoPhase !== 'closed') return;
+  dojoPhase = 'open';
+  loadDojoArt();
+  const fading = fromTitle && !REDUCED_MOTION.matches && crestEl.animate
+    ? [crestEl, titleScreenEl].map(el =>
+        el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, easing: 'ease-in', fill: 'forwards' }))
+    : [];
+  const show = () => {
+    if (fromTitle) leaveTitle();
+    dojoAt = -1;
+    dojoLeft = DOJO_SECONDS;
+    dojoCards.forEach(li => li.classList.remove('picked', 'on', 'flipped', 'tease'));
+    dojoSelectEl.classList.remove('chosen');
+    pageEl.classList.add('selecting');
+    dojoSelectEl.hidden = false;
+    dojoAuraEl.classList.add('on');
+    fitDojoSelect();
+    dojoSelectEl.classList.remove('arrive');
+    void dojoSelectEl.offsetWidth;
+    dojoSelectEl.classList.add('arrive');
+    tickDojoClock();
+    highlightDojo(dojoStart(currentDojo(), Math.random()));
+    // Held at nothing until the swap, then let go, so the crest can come
+    // back above the board later.
+    fading.forEach(f => f.cancel());
+    let flipped = null;
+    try { flipped = localStorage.getItem(FLIPPED_KEY); } catch (e) {}
+    if (!flipped && !REDUCED_MOTION.matches) {
+      setTimeout(() => { if (dojoPhase === 'open' && dojoCards[dojoAt]) dojoCards[dojoAt].classList.add('tease'); }, 1000);
+    }
+    clearInterval(dojoTimer);
+    dojoTimer = setInterval(() => {
+      if (document.hidden) return;              // stopped while the tab is hidden
+      dojoLeft -= 1;
+      tickDojoClock();
+      if (dojoLeft <= 0) chooseDojo(dojoAt, true);
+    }, 1000);
+    // What each dojo's back says. The select never waits for it.
+    readRows(boardRequests(SCORE_SERVICE).dojos).then(players => {
+      const backs = dojoBacks(players);
+      dojoCards.forEach((li, i) => {
+        for (const dd of li.querySelectorAll('[data-back]')) dd.textContent = backs[DOJO_IDS[i]][dd.dataset.back];
+      });
+    });
+  };
+  if (!fading.length) return show();
+  Promise.all(fading.map(f => f.finished)).then(show);
+}
+
+// Keys while the select is open. Arrows or a/d choose, Tab walks the dojos
+// and wraps rather than leaving the screen, up or down flips, Enter or
+// Space picks.
+function dojoKeydown(event) {
+  const key = event.key;
+  const from = dojoAt < 0 ? 0 : dojoAt;
+  if (key === 'ArrowLeft' || key === 'a') highlightDojo(dojoStep(from, -1));
+  else if (key === 'ArrowRight' || key === 'd') highlightDojo(dojoStep(from, 1));
+  else if (key === 'Tab') highlightDojo(dojoStep(from, event.shiftKey ? -1 : 1));
+  else if (key === 'ArrowUp' || key === 'ArrowDown' || key === 'w' || key === 's') flipDojo(from);
+  else if (key === 'Enter' || key === ' ') chooseDojo(from, false);
+  else return;
+  event.preventDefault();
+}
+
+dojoCards.forEach((li, i) => {
+  li.addEventListener('mouseenter', () => highlightDojo(i));
+  li.addEventListener('animationend', (e) => { if (e.animationName === 'card-tease') li.classList.remove('tease'); });
+  li.querySelector('.pick').addEventListener('click', () => chooseDojo(i, false));
+  li.querySelector('.corner').addEventListener('click', () => flipDojo(i));
+});
+
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// The pick lands like a kick, in beats:
+//   chamber  the card draws back, the others step away    (anticipation)
+//   strike   the band snaps out of the card, accelerating  (fast, ease-in)
+//   impact   a held frame, a flash, the band gives         (hit-stop)
+//   settle   the name comes down to size, the creed follows
+//   hold     long enough to read the creed
+//   leave    the band closes to a line, the select fades, the game arrives
+// The impact lives on the band, never the page: a page shake caused
+// motion sickness.
+async function chooseDojo(i, timedOut) {
+  if (dojoPhase !== 'open') return;
+  highlightDojo(i);
+  dojoPhase = 'choosing';
+  clearInterval(dojoTimer);
+  const dojo = DOJO_IDS[i];
+  commitDojo(dojo);
+
+  const li = dojoCards[i];
+  const glow = DOJO_GLOWS[dojo];
+  const band = dojoVerdict.querySelector('.band');
+  const name = dojoVerdict.querySelector('b');
+  const line = dojoVerdict.querySelector('span');
+  li.classList.add('picked');
+  dojoSelectEl.classList.add('chosen');
+  dojoVerdict.style.setProperty('--glow', glow);
+  name.textContent = DOJO_NAMES[dojo] + '!';
+  // The creed is said once, as you commit to it.
+  line.textContent = timedOut ? 'Too slow. Sensei chose for you.' : DOJO_CREEDS[dojo];
+  const hold = timedOut ? 1000 : 1800;
+
+  if (REDUCED_MOTION.matches || !band.animate) {
+    dojoVerdict.hidden = false;
+    await wait(hold + 400);
+    return closeDojoSelect();
+  }
+
+  const settle = 'cubic-bezier(.2, .8, .2, 1)';
+  const card = li.querySelector('.card');
+  await card.animate([{ transform: 'none', filter: 'none' }, { transform: 'scale(.94)', filter: 'brightness(1.35)' }],
+    { duration: 150, easing: 'cubic-bezier(.3, 0, .2, 1)', fill: 'forwards' }).finished;
+
+  dojoVerdict.hidden = false;
+  name.style.opacity = 0;
+  line.style.opacity = 0;
+  const c = card.getBoundingClientRect();
+  const b = band.getBoundingClientRect();
+  const dy = (c.top + c.height / 2) - (b.top + b.height / 2);
+  li.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 90, easing: 'linear', fill: 'forwards' });
+  await band.animate([
+    { transform: `translateY(${dy}px) scaleY(${c.height / b.height})`,
+      clipPath: `inset(0px ${c.left}px 0px ${innerWidth - c.right}px round 12px)` },
+    { transform: 'none', clipPath: 'inset(0px 0px 0px 0px round 0px)' }
+  ], { duration: 120, easing: 'cubic-bezier(.6, 0, 1, .5)', fill: 'both' }).finished;
+
+  name.style.opacity = '';
+  line.style.opacity = '';
+  band.animate([{ transform: 'scaleY(1.1)' }, { transform: 'none' }], { duration: 220, easing: settle });
+  band.animate([{ backgroundColor: `rgba(${glow}, .55)`, borderColor: `rgb(${glow})` },
+                { backgroundColor: 'rgba(9, 9, 11, .9)', borderColor: `rgba(${glow}, .7)` }],
+    { duration: 320, easing: 'ease-out' });
+  await Promise.all([
+    name.animate([{ opacity: 1, transform: 'scale(1.14)' }, { opacity: 1, transform: 'scale(1.14)', offset: .22 },
+                  { opacity: 1, transform: 'none' }], { duration: 280, easing: settle, fill: 'both' }).finished,
+    line.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }],
+      { duration: 260, delay: 220, easing: settle, fill: 'both' }).finished
+  ]);
+
+  await wait(hold);
+
+  const out = { duration: 280, easing: 'ease-in', fill: 'forwards' };
+  await Promise.all([
+    band.animate([{ clipPath: 'inset(0% 0px 0% 0px)' }, { clipPath: 'inset(50% 0px 50% 0px)' }], out).finished,
+    name.animate([{ opacity: 1 }, { opacity: 0 }], { ...out, duration: 180 }).finished,
+    line.animate([{ opacity: 1 }, { opacity: 0 }], { ...out, duration: 180 }).finished,
+    dojoSelectEl.animate([{ opacity: 1 }, { opacity: 0 }], out).finished
+  ]);
+  closeDojoSelect();
+}
+
+// Back to the game: the start screen, with the dojo you chose on it. The
+// first time, arrival brings the board in; after a change, it fades back.
+function closeDojoSelect() {
+  dojoPhase = 'closed';
+  clearInterval(dojoTimer);
+  dojoSelectEl.hidden = true;
+  dojoVerdict.hidden = true;
+  dojoAuraEl.classList.remove('on');
+  pageEl.classList.remove('selecting');
+  for (const el of [dojoSelectEl, dojoVerdict.querySelector('.band'), dojoVerdict.querySelector('b'),
+                    dojoVerdict.querySelector('span'), ...dojoCards, ...dojoCards.map(li => li.querySelector('.card'))]) {
+    if (el.getAnimations) el.getAnimations().filter(a => !(a instanceof CSSAnimation) && !(a instanceof CSSTransition)).forEach(a => a.cancel());
+  }
+  showDojoLine();
+  startArrival();
+  if (arrivalStart !== null) return;
+  if (REDUCED_MOTION.matches) return;
+  flickTongue(2);
+  for (const el of [crestEl, stageEl, document.querySelector('.scores'), hintEl]) {
+    if (el && el.animate) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 360, easing: 'ease-out' });
+  }
 }
 </script>
 

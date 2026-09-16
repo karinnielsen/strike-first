@@ -58,6 +58,10 @@ function makeElement() {
     setAttribute() {},
     remove() {},
     addEventListener() {},
+    querySelector: () => makeElement(),
+    querySelectorAll: () => [],
+    getBoundingClientRect: () => ({ top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 }),
+    dataset: {},
     focus() {},
     blur() {},
     append() {},
@@ -91,9 +95,14 @@ const sandbox = {
   // Swallowing the timer stops it spinning forever inside the test run.
   setTimeout: () => 0,
   clearTimeout: () => {},
+  setInterval: () => 0,
+  clearInterval: () => {},
   requestAnimationFrame: () => 0,
   cancelAnimationFrame: () => {},
   performance: { now: () => 0 },
+  // The window, a laptop's worth, for the code that sizes dojo select.
+  innerWidth: 1280,
+  innerHeight: 800,
   Math,
   Date,
   console
@@ -166,7 +175,9 @@ globalThis.game = {
   get pausedMs() { return pausedMs }, toggleMercy, gameOver,
   SCORE_SERVICE, DOJO_IDS, runDuration, scoreRecord, runRecord, scoreRequest, submitScore,
   wantsInitials, cleanInitials, BLOCKED_INITIALS, signInitials, hideInitials,
-  dojoFor, currentDojo,
+  currentDojo, commitDojo, dojoOrNull, DOJO_KEY, DOJO_SECONDS, DOJO_CREEDS, DOJO_SENSEIS,
+  DOJO_GLOWS, dojoStart, dojoStep, dojoBacks, closeDojoSelect,
+  get dojoPhase() { return dojoPhase }, get dojoAt() { return dojoAt },
   get entry() { return entry }, set entry(v) { entry = v },
   get titling() { return titling }, pressStart,
   get lastRunId() { return lastRunId },
@@ -285,9 +296,87 @@ describe('the title screen', () => {
     is(game.phase, 'ready', 'phase - Space must not also start a run');
   });
 
+  test('with no dojo chosen, start opens dojo select', () => {
+    is(game.currentDojo(), null, 'no dojo yet');
+    is(game.dojoPhase, 'open', 'dojo select');
+  });
+
   test('pressing start again does nothing', () => {
     game.pressStart();
     is(game.titling, false, 'titling');
+  });
+});
+
+
+// Straight after the title screen, because the select it opened is still
+// up and every key belongs to it until it closes.
+describe('dojo select', () => {
+  test('keys choose, wrapping at either end, and never start a run', () => {
+    const start = game.dojoAt;
+    pressKey('ArrowRight');
+    is(game.dojoAt, game.dojoStep(start, 1), 'right');
+    pressKey('ArrowLeft');
+    pressKey('ArrowLeft');
+    is(game.dojoAt, game.dojoStep(start, -1), 'left twice from one right');
+    pressKey('r');
+    is(game.phase, 'ready', 'r does not restart behind the select');
+  });
+
+  test('closing it hands the keys back to the game', () => {
+    game.commitDojo('eagle-fang');
+    game.closeDojoSelect();
+    is(game.dojoPhase, 'closed', 'closed');
+    is(game.currentDojo(), 'eagle-fang', 'the dojo chosen');
+  });
+
+  test('the highlight starts on your dojo, or a random one', () => {
+    is(game.dojoStart('miyagi-do', 0.99), 1, 'yours, whatever the dice say');
+    is(game.dojoStart(null, 0), 0, 'random, low');
+    is(game.dojoStart(null, 0.99), 2, 'random, high');
+    is(game.dojoStart('dragon', 0.5), 1, 'an unknown dojo counts as none');
+  });
+
+  test('a step wraps both ways', () => {
+    is(game.dojoStep(2, 1), 0, 'right from the end');
+    is(game.dojoStep(0, -1), 2, 'left from the start');
+  });
+
+  test('only a known dojo is committed, and it is remembered', () => {
+    game.commitDojo('dragon');
+    is(game.currentDojo(), 'eagle-fang', 'unknown ignored');
+    game.commitDojo('miyagi-do');
+    is(game.currentDojo(), 'miyagi-do', 'chosen');
+    is(sandbox.localStorage.getItem(game.DOJO_KEY), 'miyagi-do', 'remembered');
+  });
+
+  test('every dojo has a creed, a sensei and a light', () => {
+    for (const dojo of game.DOJO_IDS) {
+      if (!game.DOJO_CREEDS[dojo] || !game.DOJO_SENSEIS[dojo] || !game.DOJO_GLOWS[dojo]) {
+        throw new Error(`${dojo} is missing something`);
+      }
+    }
+  });
+
+  test('the creeds keep the house style: sentence case, full stops', () => {
+    for (const creed of Object.values(game.DOJO_CREEDS)) {
+      if (!/^[A-Z][^A-Z]*(\. [A-Z][^A-Z]*)*\.$/.test(creed)) throw new Error(`not house style: ${creed}`);
+    }
+  });
+
+  test('a card back reads from the same rows as the board', () => {
+    const players = [
+      { dojo: 'cobra-kai', initials: 'JLR', best: 260, place: 1, students: 14 },
+      { dojo: 'cobra-kai', initials: 'KAR', best: 200, place: 2, students: 14 },
+      { dojo: 'miyagi-do', initials: 'DAN', best: 254, place: 1, students: 9 }
+    ];
+    const backs = game.dojoBacks(players);
+    is(backs['cobra-kai'], { place: '1st of 3', team: '460', students: '14', top: 'JLR · 260' }, 'cobra kai');
+    is(backs['miyagi-do'].place, '2nd of 3', 'miyagi-do');
+    is(backs['eagle-fang'], { place: '—', team: '—', students: '0', top: '—' }, 'a dojo with nobody');
+  });
+
+  test('a card back with no database is blank, not wrong', () => {
+    is(game.dojoBacks(null)['cobra-kai'], { place: '—', team: '—', students: '—', top: '—' }, 'blank');
   });
 });
 
@@ -1490,8 +1579,9 @@ describe('initials', () => {
     game.entry = { value: initials, focus() {}, blur() {} };
   };
 
-  testAsyncInOrder('signing sends the run and keeps its id', async () => {
+  testAsyncInOrder('signing sends the run, under your dojo, and keeps its id', async () => {
     signable('KAR');
+    game.commitDojo('eagle-fang');
     let body = null;
     const send = async (url, options) => {
       if (options.method === 'POST') body = JSON.parse(options.body);
@@ -1500,7 +1590,7 @@ describe('initials', () => {
     const saving = game.signInitials(send);
     is(game.entry, null, 'entry closed while saving, so it cannot send twice');
     await saving;
-    is([body.initials, body.dojo, body.score], ['KAR', 'cobra-kai', 12], 'row sent');
+    is([body.initials, body.dojo, body.score], ['KAR', 'eagle-fang', 12], 'row sent');
     is(game.lastRunId, 42, 'id kept');
     is(sandbox.localStorage.getItem('strikeFirstLastRun'), '42', 'id remembered');
   });
@@ -1520,12 +1610,6 @@ describe('initials', () => {
     fail(new Error('offline'));
     await quietly(() => saving);
     is(game.entry, null, 'no entry over the new run');
-  });
-
-  test('the dojo stand-in: asked, else remembered, else Cobra Kai', () => {
-    is(game.dojoFor('miyagi-do', 'eagle-fang'), 'miyagi-do', 'asked');
-    is(game.dojoFor('dragon', 'eagle-fang'), 'eagle-fang', 'unknown ignored');
-    is(game.dojoFor(null, null), 'cobra-kai', 'default');
   });
 
   test('while initials are open, game keys do not restart', () => {
