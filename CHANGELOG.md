@@ -16,6 +16,13 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+### Added
+- **Disqualified.** A run the rules could not have produced, which means the
+  page was tampered with, ends DISQUALIFIED instead of DEFEATED, the way a
+  referee calls *shil kyuk*. The bout does not count: the score goes to
+  nothing, the hi-score and belt it set are taken back, and there is nothing
+  to sign. No honest run can reach it. UNR-145.
+
 ## [0.5.1] — 2026-09-16
 
 Scores you can trust. The board only takes runs the game could have
