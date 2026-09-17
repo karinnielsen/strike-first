@@ -344,6 +344,14 @@ it yourself if it hasn't moved. For work that only partly addresses an issue,
 keep the ID out of the branch name and write `Part of UNR-N` rather than
 `Closes`, since when the keyword does fire, it fires on partial work too.
 
+**The page has one stylesheet, so a class name is global.** A new class can
+pick up rules written for a different screen, and it looks exactly like a
+layout bug rather than a naming one. On 17 September the rankings table
+broke twice this way: a column called `initials` became a centred grid
+from the initials entry, and renamed to `name` it turned big, uppercase and
+letter-spaced from the dojo filter. Before naming a class, search the
+`<style>` block for it.
+
 **Balance lives in named constants** at the top of the script. Change those
 rather than scattering numbers through the code.
 
