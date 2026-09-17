@@ -37,6 +37,8 @@ player has to *do*, and they aren't renumbered.
   up from about 4.4:1 to 5.4:1 against the mat, and the version line now
   uses it too instead of its own darker grey. The header's labels and
   numbers are a size up (UNR-147).
+- **Menu rows are bone, not grey,** when they aren't lit. The grey was too
+  muted and read as disabled. The lit row is still the only yellow one.
 
 ### Fixed
 
