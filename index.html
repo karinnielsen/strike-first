@@ -311,7 +311,12 @@
   .menu button.on { color: var(--yellow); }
   .menu button.on .label { animation: menu-punch 0.16s steps(2, end); }
   .menu button.on .mark { visibility: visible; animation: press-start 1.1s steps(1, end) infinite; }
-  .menu button:hover:not(.on) { color: var(--text); }
+  /* Only for a real pointer: a tap leaves :hover stuck on whatever is under
+     the finger, which lit a second row the moment the menu replaced PRESS
+     START. */
+  @media (hover: hover) and (pointer: fine) {
+    .menu button:hover:not(.on) { color: var(--text); }
+  }
   /* Not the slab's hover, press or focus ring from the button rules below:
      the lit row is the focus. */
   .menu button:hover, .menu button:active { background: none; transform: none; box-shadow: none; animation: none; }
@@ -4318,7 +4323,10 @@ function dojoKeydown(event) {
 }
 
 dojoCards.forEach((li, i) => {
-  li.addEventListener('mouseenter', () => highlightDojo(i));
+  // Movement, not presence: Arcade's row sits where the middle card
+  // appears, so a pointer resting after the click must not take the light
+  // away from your dojo.
+  li.addEventListener('mousemove', () => highlightDojo(i));
   li.addEventListener('animationend', (e) => { if (e.animationName === 'card-tease') li.classList.remove('tease'); });
   li.querySelector('.pick').addEventListener('click', () => chooseDojo(i, false));
   li.querySelector('.corner').addEventListener('click', () => flipDojo(i));
