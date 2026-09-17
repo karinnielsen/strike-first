@@ -16,6 +16,27 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+## [0.5.3] — 2026-09-17
+
+All Valley Rankings. The whole board gets a screen of its own, and The All
+Valley milestone is complete. Nothing about how you play changes, so it is a
+patch.
+
+### Added
+- **All Valley Rankings.** The top ten, with your run and the ones either side
+  of it if you are further down, on a screen of its own. Open it with **B** or
+  the new **rankings** button on the start and defeat screens; **Esc**, **B**
+  or **back** returns. Never during a run. UNR-134.
+- **Filter by dojo.** All, Cobra Kai, Miyagi-Do or Eagle Fang, with **← →**,
+  **Tab** or a tap. Filtered, places count within the dojo and the dojo's
+  crest sits above the list. A dojo nobody has fought for yet says so.
+- **Column names** along the top, and the top three places in bone.
+
+### Changed
+- **The hint line** under the board names **b = rankings**.
+- **The sound switch** shares its line with the rankings button, so the
+  defeat screen is no taller than it was.
+
 ## [0.5.2] — 2026-09-16
 
 Disqualified. A tampered run is called for what it is. No honest player can
@@ -421,7 +442,8 @@ First playable version.
   gradient.
 - **The version number** in the footer.
 
-[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.5.3...HEAD
+[0.5.3]: https://github.com/karinnielsen/strike-first/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/karinnielsen/strike-first/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/karinnielsen/strike-first/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/karinnielsen/strike-first/compare/v0.4.6...v0.5.0

@@ -256,7 +256,7 @@
      spare room is load-bearing (see the +N), and because the overlay is
      the one place a tablet can reach mid-run - mercy brings it up. 44px
      tall on the same grounds as the mercy button: a finger, not a cursor. */
-  .sound-btn {
+  .sound-btn, .rankings-btn, .rankings-back {
     justify-self: center;
     min-height: 44px;
     margin-top: 4px;
@@ -268,8 +268,16 @@
     box-shadow: none;
     animation: none;
   }
-  .sound-btn:hover  { background: transparent; color: var(--text); }
-  .sound-btn:active { transform: none; box-shadow: none; }
+  .sound-btn:hover, .rankings-btn:hover, .rankings-back:hover { background: transparent; color: var(--text); }
+  .sound-btn:active, .rankings-btn:active, .rankings-back:active { transform: none; box-shadow: none; }
+  .rankings-btn[hidden] { display: none; }
+
+  /* The rankings button sits beside the sound switch rather than under it,
+     so the defeat overlay is no taller than it was: its height is spoken
+     for by the board. UNR-134. */
+  .overlay-foot { display: flex; justify-content: center; }
+  .overlay-foot .sound-btn, .overlay-foot .rankings-btn { margin-top: 0; }
+  .overlay-foot { margin-top: 4px; }
 
   /* INITIALS. Asked for only after a new hi-score, between the verdict and
      the call to action, which reads "Sign" until you sign or skip. Chosen
@@ -339,7 +347,7 @@
   .overlay.with-board { gap: 0; }
   .overlay.with-board h2 { margin-bottom: 10px; }
   .overlay.with-board #play-btn { margin-top: 52px; justify-self: center; }
-  .overlay.with-board .sound-btn { margin-top: 12px; }
+  .overlay.with-board .overlay-foot { margin-top: 12px; }
 
   .board { margin-top: 52px; font-size: 12px; }
   .board[hidden] { display: none; }
@@ -376,7 +384,7 @@
   @container overlay (max-height: 540px) {
     .overlay.with-board h2 { margin-bottom: 8px; }
     .overlay.with-board #play-btn { margin-top: 28px; }
-    .overlay.with-board .sound-btn { margin-top: 0; }
+    .overlay.with-board .overlay-foot { margin-top: 0; }
     .board { margin-top: 28px; }
     .board td { height: 26px; }
     .board .gap td { height: 14px; }
@@ -721,7 +729,7 @@
   .dojo-select .heading { gap: 32px; }
   /* The monospace set big and bold in the wordmark's language - a hard
      offset and a bloom - as Press start is. */
-  .dojo-select h2 {
+  .dojo-select h2, .rankings h2 {
     margin: 0; font-size: clamp(30px, 4.6vw, 52px); font-weight: bold; letter-spacing: 0.16em;
     color: var(--yellow); text-transform: uppercase;
     text-shadow: 0 5px 0 var(--yellow-deep), 0 0 28px rgba(255, 255, 0, 0.3);
@@ -735,8 +743,8 @@
   .dojo-select .count.beat { animation: count-beat 0.35s ease-out; }
   @keyframes count-beat { from { transform: scale(1.35); } to { transform: scale(1); } }
   /* The keys are what the eye hunts for: bone and bold, the words dim. */
-  .dojo-select .how { margin: 0; font-size: 14px; letter-spacing: 0.5px; color: var(--dim); }
-  .dojo-select .how kbd { font: inherit; font-weight: bold; color: var(--text); }
+  .dojo-select .how, .rankings .how { margin: 0; font-size: 14px; letter-spacing: 0.5px; color: var(--dim); }
+  .dojo-select .how kbd, .rankings .how kbd { font: inherit; font-weight: bold; color: var(--text); }
 
   .dojo-select ul {
     list-style: none; margin: 0; padding: 0;
@@ -848,6 +856,108 @@
 
   /* On the start screen: which dojo you are in, and the way to change it. */
   .overlay .dojo-line a { color: var(--dim); text-decoration: underline; cursor: pointer; }
+
+  /* ALL VALLEY RANKINGS. UNR-134. A screen of its own, like dojo select,
+     and built only from what the game already has: dojo select's title,
+     spacing, dim-to-lit names and key line, and the defeat overlay's rows
+     and dojo lines. Settled from a mock on 17 September. It scrolls as a
+     page, so on a tablet a swipe here is a scroll - the stage, where a
+     swipe steers, is hidden while it is open. */
+  /* Pinned to the top, not centred: the lists change length as you move
+     between dojos, and a centred page moved the title and filter with them. */
+  .wrap.ranking {
+    /* Full width, so the bar spans the window: the body centres the page,
+       which otherwise shrinks it to its contents and put back against the
+       first dojo name. */
+    justify-self: stretch;
+    display: flex; flex-direction: column; justify-content: flex-start;
+    min-height: 100svh; box-sizing: border-box;
+  }
+  .wrap.ranking header,
+  .wrap.ranking .stage,
+  .wrap.ranking .hint,
+  .wrap.ranking .version { display: none; }
+
+  .rankings { display: grid; justify-items: center; text-align: center; padding: 56px 0; --bar: 68px; }
+
+  /* THE BAR. The title scrolls away; back and the filter stay pinned at the
+     top, and the column names pin just under them, so however far down
+     the list you are you can see which dojo it is, what each column means
+     and the way out. Asked for 17 September after landscape on an iPad
+     left none of that on screen. The page itself still scrolls - a swipe
+     is a scroll, as before - only these stick. The headers stay in the
+     table, below the crest, so they keep their columns' widths. */
+  .rankings .rankings-bar {
+    position: sticky; top: 0; z-index: 2;
+    justify-self: stretch; margin-top: 80px; height: var(--bar); padding: 12px 0; box-sizing: border-box;
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+    background: var(--bg);
+  }
+  .rankings .rankings-bar .rankings-back { grid-column: 1; justify-self: start; margin-top: 0; }
+  .rankings .rankings-bar ul { grid-column: 2; }
+  .rankings .list { margin-top: 20px; }            /* 32px under the names, with the bar's padding */
+  .rankings .keys { margin-top: 80px; }
+  .rankings[hidden] { display: none; }
+  .rankings .group { display: grid; justify-items: center; gap: 16px; }
+
+  /* One line, always. The gap between dojos stays at least three times the
+     space inside "Cobra Kai", so two names never read as one; on a narrow
+     screen the names shrink before the gap does. */
+  .rankings ul {
+    list-style: none; margin: 0; padding: 0;
+    display: flex; flex-wrap: nowrap; justify-content: center;
+    gap: clamp(40px, 6vw, 64px); white-space: nowrap;
+  }
+  .rankings li { color: var(--dim); transition: color 0.15s; }
+  .rankings li.on { color: rgb(var(--glow)); }
+  .rankings .pick { all: unset; cursor: pointer; min-height: 44px; display: grid; align-items: center; }
+  /* The lit name is the selection. The keys move it without moving focus,
+     so a focus ring only marked wherever the last click happened to land. */
+  .rankings .pick:focus-visible { outline: none; }
+  .rankings .name { font-size: clamp(13px, 2.6vw, 20px); letter-spacing: 3px; text-transform: uppercase; }
+
+  .rankings .board { margin-top: 0; }
+
+  /* The filter, the dojo's crest and the list sit 32px apart: the crest
+     belongs to the list under it more than to the names above.
+     The crest is at dojo select's smallest size, where the 320px art is
+     drawn sharp on a retina screen; at 160px it was soft. On All there is
+     no crest and no space held for one, so the list moves once between All
+     and a dojo, and never between dojos. */
+  .rankings .list { gap: 32px; }
+  .rankings .crests { display: flex; justify-content: center; }
+  .rankings .crests[hidden], .rankings .crests img[hidden] { display: none; }
+  .rankings .crests img { display: block; width: 120px; height: 120px; }
+  /* Sized for the screen it is on, not the overlay it came from: 16px rows
+     44px tall, a finger's height, headers at the key line's 14px. Chosen
+     17 September from 14px and 16px side by side.
+
+     The table is as wide as its columns and no wider, with the same space
+     between every pair of them, and centred as a whole. Stretching one
+     column to fill a fixed width crowded the rest against each other.
+     Class names here are checked against the whole sheet: .initials and
+     .name are both taken elsewhere and each broke this table once. */
+  .rankings .board { font-size: 16px; }
+  .rankings .board table { width: auto; }
+  .rankings .board td, .rankings .board th { height: 44px; padding: 0 24px; text-align: left; }
+  /* Column names, the way an arcade table printed RANK SCORE NAME: dim
+     and small, in the key line's lowercase. */
+  .rankings .board th {
+    font-size: 14px; font-weight: normal; color: var(--dim); white-space: nowrap;
+    position: sticky; top: var(--bar); z-index: 1; background: var(--bg);
+  }
+  /* Aligned by kind, header and cells alike: numbers right so their digits
+     line up, the name left, and the badge and belt centred under their
+     names. Chosen 17 September on a board of 1,500 invented runs. */
+  .rankings .board .place, .rankings .board .score { text-align: right; }
+  .rankings .board .dojo, .rankings .board .belt { text-align: center; }
+  /* The podium's places in bone rather than dim: the top three stand out
+     without a colour of their own. Medals wait for the tournament (UNR-143). */
+  .rankings .board tr.podium:not(.you) td.place { color: var(--text); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rankings li { transition: none; }
+  }
 </style>
 </head>
 <body>
@@ -896,6 +1006,21 @@
     <div class="group"><p class="how" id="dojo-how"><kbd>&larr; &rarr;</kbd> or <kbd>tab</kbd> to choose &middot; <kbd>&uarr; &darr;</kbd> to flip &middot; <kbd>enter</kbd> to bow in</p></div>
   </section>
 
+  <section class="rankings" id="rankings" aria-labelledby="rankings-heading" hidden>
+    <div class="group" id="rankings-title"><h2 id="rankings-heading">All Valley Rankings</h2></div>
+    <div class="rankings-bar" id="rankings-bar">
+      <button class="rankings-back" id="rankings-back" type="button">back</button>
+      <ul id="rankings-filter" aria-label="dojo"></ul>
+    </div>
+    <div class="group list">
+      <div class="crests" id="rankings-crests" aria-hidden="true" hidden></div>
+      <div class="board" id="rankings-runs"></div>
+    </div>
+    <div class="group keys">
+      <p class="how" id="rankings-how"><kbd>&larr; &rarr;</kbd> or <kbd>tab</kbd> to choose &middot; <kbd>esc</kbd> to go back</p>
+    </div>
+  </section>
+
   <div class="stage" id="stage">
     <canvas id="game" width="630" height="630"></canvas>
 
@@ -907,13 +1032,16 @@
       <div class="board" id="board" hidden></div>
       <button id="play-btn">Enter the dojo</button>
       <button class="skip-btn" id="skip-btn" type="button" hidden>skip</button>
-      <button class="sound-btn" id="sound-btn" type="button">sound on</button>
+      <div class="overlay-foot">
+        <button class="rankings-btn" id="rankings-btn" type="button">rankings</button>
+        <button class="sound-btn" id="sound-btn" type="button">sound on</button>
+      </div>
     </div>
   </div>
 
   <!-- Non-breaking spaces inside each pair, so a narrow column wraps
        between controls and never splits "r" from "= restart". -->
-  <p class="hint" id="hint">arrows&nbsp;/&nbsp;wasd &middot; space&nbsp;=&nbsp;mercy &middot; r&nbsp;=&nbsp;restart &middot; m&nbsp;=&nbsp;sound</p>
+  <p class="hint" id="hint">arrows&nbsp;/&nbsp;wasd &middot; space&nbsp;=&nbsp;mercy &middot; r&nbsp;=&nbsp;restart &middot; m&nbsp;=&nbsp;sound &middot; b&nbsp;=&nbsp;rankings</p>
   <p class="version" id="version"></p>
 </div>
 
@@ -937,7 +1065,7 @@ const ROWS = canvas.height / CELL;    // 21 rows down
 // Single source of truth for the version. Bump this, add a CHANGELOG entry,
 // update the Current version line in README.md, and tag the commit - those
 // four go together, always.
-const VERSION = '0.5.2';
+const VERSION = '0.5.3';
 document.getElementById('version').textContent = 'v' + VERSION;
 
 // Handy references to the bits of HTML we update as the game runs.
@@ -968,6 +1096,7 @@ if (TOUCH) {
   document.getElementById('overlay-text').textContent = 'swipe to move';
   document.getElementById('start-how').textContent = 'tap to start';
   document.getElementById('dojo-how').textContent = 'tap a dojo to bow in · tap its corner to flip';
+  document.getElementById('rankings-how').textContent = 'tap a dojo to choose';
   mercyBtn.hidden = false;
 }
 const HINT_TEXT = hintEl.textContent;
@@ -2572,11 +2701,17 @@ document.addEventListener('keydown', (event) => {
     return;
   }
 
+  // While the rankings are up every key is theirs too, so nothing reaches
+  // a game you cannot see.
+  if (rankingsOpen) { rankingsKeydown(event); return; }
+
   // While initials are being entered, every key belongs to them: r, wasd,
   // m and space are letters or nothing, never a restart behind your back.
   if (entry) { initialsKeydown(event); return; }
 
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+
+  if (key === 'b') { openRankings(); return; }
 
   // Stop arrows and space from scrolling the page underneath us.
   if (key in KEYS || key === ' ') event.preventDefault();
@@ -2690,6 +2825,7 @@ function swipeDirection(dx, dy, min) {
 let swipeFrom = null;
 
 stageEl.addEventListener('pointerdown', (event) => {
+  if (rankingsOpen) return;                       // hidden, but never steer behind it
   // A tap during the defeat skips it. Once the verdict is up, the Again
   // button is the way back in, as it always was.
   if (phase === 'dying') { if (canRestart()) startGame(); return; }
@@ -2727,6 +2863,7 @@ function showOverlay(title, text, buttonLabel) {
   textEl.textContent  = text;
   playBtn.textContent = buttonLabel;
   overlay.classList.remove('hidden');
+  showRankingsBtn();
 }
 
 // DEFEAT LINES.
@@ -3132,6 +3269,7 @@ function pressStart() {
 function leaveTitle() {
   titleScreenEl.hidden = true;
   pageEl.classList.remove('titling');
+  showRankingsBtn();
 }
 
 document.getElementById('start-btn').addEventListener('click', pressStart);
@@ -3425,6 +3563,7 @@ function openInitials(note) {
   showInitials();
   if (note) document.getElementById('initials-label').textContent = note;
   if (!matchMedia('(pointer: coarse)').matches) entry.focus({ preventScroll: true });
+  showRankingsBtn();
 }
 
 // Output only: reflects the field, decides nothing.
@@ -3499,6 +3638,7 @@ function endEntry() {
   skipBtn.hidden = true;
   playBtn.disabled = false;
   playBtn.textContent = 'Again';
+  showRankingsBtn();
 }
 
 function hideInitials() {
@@ -3506,6 +3646,7 @@ function hideInitials() {
   signing = null;
   initialsEl.hidden = true;
   initialsEl.innerHTML = '';
+  showRankingsBtn();
 }
 
 skipBtn.addEventListener('click', skipInitials);
@@ -3522,7 +3663,8 @@ skipBtn.addEventListener('click', skipInitials);
 // It starts loading the moment you die, so it has the defeat to arrive in.
 // If it is late it appears when it lands, and if it fails it never
 // appears: the board is something to look at, and a run never waits for
-// it. The full board - top ten, teams, filters - is UNR-134.
+// it. The full board - top ten, teams, filters - is the All Valley
+// Rankings, section 12.
 
 // A dojo's standing is the sum of its best this many players.
 const BOARD_TEAM = 3;
@@ -3698,6 +3840,7 @@ function dropBoard() {
 
 // Output only: shows what board and boardDue say, decides nothing.
 function showBoard() {
+  showRankingsBtn();
   const shown = boardDue && board !== null && entry === null && signing === null;
   boardEl.hidden = !shown;
   overlay.classList.toggle('with-board', shown);
@@ -4121,6 +4264,7 @@ function closeDojoSelect() {
     if (el.getAnimations) el.getAnimations().filter(a => !(a instanceof CSSAnimation) && !(a instanceof CSSTransition)).forEach(a => a.cancel());
   }
   showDojoLine();
+  showRankingsBtn();
   startArrival();
   if (arrivalStart !== null) return;
   if (REDUCED_MOTION.matches) return;
@@ -4129,6 +4273,301 @@ function closeDojoSelect() {
     if (el && el.animate) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 360, easing: 'ease-out' });
   }
 }
+
+// =====================================================================
+//  12. ALL VALLEY RANKINGS - the full board. UNR-134
+// =====================================================================
+// A ranking rather than a tournament: the tournament is still to come, and
+// the name is kept free for it. Everything the defeat overlay's board has
+// no room for - the top ten, and a filter by dojo. Each dojo's standing and
+// team were tried under the list and taken out on 17 September: on All
+// they repeated the list in another shape, and filtered they read as a
+// second list that made no sense beside the first. The defeat screen still
+// carries every dojo's total.
+//
+// Its own screen, like dojo select, reached from the start screen and the
+// defeat screen with B or the rankings button, never during a run. It
+// scrolls as a page, so on a tablet a swipe scrolls it; the stage, where a
+// swipe steers, is hidden while it is open.
+//
+// Filtered to a dojo, places are counted within the dojo: its best run is
+// 1st. Chosen 17 September over keeping the tournament place.
+//
+// Only a dojo's runs are ranked. There is no dojo-less run to leave out
+// yet; when quick play arrives (UNR-137) it keeps its hi-score at home.
+
+const RANKINGS_TOP = 10;
+const RANKINGS_FILTERS = [null, ...DOJO_IDS];     // null is All
+
+// Which screens may open it: between runs, and never over an entry.
+function rankingsAllowed({ phase, titling, dojoPhase, entry, signing }) {
+  return (phase === 'ready' || phase === 'over') &&
+    !titling && dojoPhase === 'closed' && !entry && !signing;
+}
+
+// What to ask for, without asking. Pure.
+function rankingsRequests(service, dojo, runId) {
+  const rest = service.url + '/rest/v1/leaderboard?';
+  const run = 'select=id,initials,dojo,score,belt,place';
+  const only = dojo ? `&dojo=eq.${dojo}` : '';
+  return {
+    top:   `${rest}${run}${only}&order=place&limit=${RANKINGS_TOP}`,
+    you:   runId ? `${rest}${run}&id=eq.${runId}` : null
+  };
+}
+
+// Your run and the ones either side of it, when it is below the top ten.
+// Within a dojo your place is one more than the dojo's runs ahead of you,
+// which are read as bare ids and counted: small enough while the board is
+// this size, and the scores are wiped at v1.0. Pure.
+function rankingsNearRequests(service, dojo, place) {
+  const rest = service.url + '/rest/v1/leaderboard?';
+  const run = 'select=id,initials,dojo,score,belt,place';
+  const only = dojo ? `&dojo=eq.${dojo}` : '';
+  return {
+    ahead: dojo ? `${rest}select=id${only}&place=lt.${place}` : null,
+    above: `${rest}${run}${only}&place=lt.${place}&order=place.desc&limit=1`,
+    below: `${rest}${run}${only}&place=gt.${place}&order=place&limit=1`
+  };
+}
+
+// The rows to show, top to bottom, already numbered for the filter. null
+// is the gap before your neighbourhood. Pure.
+function rankingRows(top, near, you) {
+  const rows = top.map(r => ({ ...r, you: !!you && r.id === you.id }));
+  if (!you || rows.some(r => r.you)) return rows;
+  return [...rows, null, ...near
+    .filter(r => r.place > rows.length)
+    .map(r => ({ ...r, you: r.id === you.id }))];
+}
+
+// Everything the screen shows for one filter, or null. Never throws.
+async function fetchRankings(dojo, runId, send = globalThis.fetch) {
+  const ask = rankingsRequests(SCORE_SERVICE, dojo, runId);
+  const [top, mine] = await Promise.all([
+    readRows(ask.top, send),
+    ask.you ? readRows(ask.you, send) : []
+  ]);
+  if (!top || !mine) return null;
+  const ranked = top.map((r, i) => ({ ...r, place: i + 1 }));
+  let you = mine[0] && (!dojo || mine[0].dojo === dojo) ? mine[0] : null;
+  let near = [];
+  if (you && !ranked.some(r => r.id === you.id)) {
+    const n = rankingsNearRequests(SCORE_SERVICE, dojo, you.place);
+    const [ahead, above, below] = await Promise.all([
+      n.ahead ? readRows(n.ahead, send) : [],
+      readRows(n.above, send),
+      readRows(n.below, send)
+    ]);
+    if (!ahead || !above || !below) return null;
+    const place = dojo ? ahead.length + 1 : you.place;
+    you = { ...you, place };
+    near = [above[0] && { ...above[0], place: place - 1 }, you, below[0] && { ...below[0], place: place + 1 }]
+      .filter(Boolean);
+  }
+  return { rows: rankingRows(ranked, near, you) };
+}
+
+const rankingsEl       = document.getElementById('rankings');
+const rankingsFilterEl = document.getElementById('rankings-filter');
+const rankingsRunsEl   = document.getElementById('rankings-runs');
+const rankingsCrestsEl = document.getElementById('rankings-crests');
+const rankingsBtn      = document.getElementById('rankings-btn');
+
+let rankingsOpen = false;
+let rankingsAt = 0;           // index into RANKINGS_FILTERS
+let rankings;                 // undefined while loading, null if it failed
+let rankingsLoads = 0;        // a load that lands after another began is dropped
+const rankingsSeen = new Map(); // each filter's answer, for as long as the screen is open
+
+function canOpenRankings() {
+  return rankingsAllowed({ phase, titling, dojoPhase, entry, signing });
+}
+
+function openRankings() {
+  if (rankingsOpen || !canOpenRankings()) return;
+  rankingsOpen = true;
+  swipeFrom = null;
+  rankingsSeen.clear();
+  pageEl.classList.add('ranking');
+  rankingsEl.hidden = false;
+  if (typeof scrollTo === 'function') scrollTo(0, 0);
+  filterRankings(0);
+}
+
+function closeRankings() {
+  if (!rankingsOpen) return;
+  rankingsOpen = false;
+  rankingsLoads++;
+  rankingsEl.hidden = true;
+  pageEl.classList.remove('ranking');
+  if (typeof scrollTo === 'function') scrollTo(0, 0);
+  showRankingsBtn();
+}
+
+// Changing dojo while scrolled down starts the new list at its top, just
+// under the bar, rather than wherever the old list happened to leave you.
+function keepListInView() {
+  if (typeof scrollTo !== 'function') return;
+  const stuckAt = scrollY + document.getElementById('rankings-title').getBoundingClientRect().bottom +
+    parseFloat(getComputedStyle(document.getElementById('rankings-bar')).marginTop);
+  if (scrollY > stuckAt) scrollTo(0, stuckAt);
+}
+
+// Resolves once the filter has settled, for tests.
+async function filterRankings(i) {
+  if (i !== rankingsAt) keepListInView();
+  rankingsAt = i;
+  const dojo = RANKINGS_FILTERS[i];
+  const load = ++rankingsLoads;
+  rankings = rankingsSeen.get(dojo);
+  showRankings();
+  if (rankings) return;
+  const loaded = await fetchRankings(dojo, lastRunId);
+  if (load !== rankingsLoads || !rankingsOpen) return;
+  if (loaded) rankingsSeen.set(dojo, loaded);
+  rankings = loaded;
+  showRankings();
+}
+
+// Arrows or a/d choose, Tab walks the filters and wraps, Esc or B goes
+// back. Up, down and space are left to the page, which scrolls.
+function rankingsKeydown(event) {
+  const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+  const n = RANKINGS_FILTERS.length;
+  const step = (delta) => filterRankings(((rankingsAt + delta) % n + n) % n);
+  if (key === 'ArrowLeft' || key === 'a') step(-1);
+  else if (key === 'ArrowRight' || key === 'd') step(1);
+  else if (key === 'Tab') step(event.shiftKey ? -1 : 1);
+  else if (key === 'Escape' || key === 'b') closeRankings();
+  else return;
+  event.preventDefault();
+}
+
+// What an empty list says. The dojo voice: no contractions, full stops. Pure.
+function rankingsEmpty(dojo, mine) {
+  if (!dojo) return 'No one has fought yet.';
+  if (dojo === mine) return `Be the first to fight for ${DOJO_NAMES[dojo]}.`;
+  return `No student of ${DOJO_NAMES[dojo]} has fought yet.`;
+}
+
+// Output only: the button is there when the screen behind it may open.
+function showRankingsBtn() {
+  rankingsBtn.hidden = !canOpenRankings();
+}
+
+rankingsBtn.addEventListener('click', () => { rankingsBtn.blur(); openRankings(); });
+document.getElementById('rankings-back').addEventListener('click', closeRankings);
+
+const rankingsPicks = RANKINGS_FILTERS.map((dojo, i) => {
+  const li = document.createElement('li');
+  li.style.setProperty('--glow', dojo ? DOJO_GLOWS[dojo] : DOJO_GLOWS['eagle-fang']);
+  li.innerHTML = `<button class="pick" type="button"><span class="name">${dojo ? DOJO_NAMES[dojo] : 'All'}</span></button>`;
+  const pick = li.querySelector('.pick');
+  pick.addEventListener('click', () => { pick.blur(); filterRankings(i); });
+  rankingsFilterEl.append(li);
+  return li;
+});
+
+// The crests, built once from constants. The art is dojo select's.
+// They start hidden, and only the chosen dojo's is ever shown.
+const rankingsCrests = DOJO_IDS.map(dojo => {
+  const img = document.createElement('img');
+  img.alt = '';
+  img.width = 320;
+  img.height = 320;
+  img.src = `assets/crests/${dojo}.webp`;
+  img.hidden = true;
+  rankingsCrestsEl.append(img);
+  return img;
+});
+
+// Output only: shows rankingsAt and rankings, decides nothing. One icon a
+// row, and only where it says something: on All, the dojo; filtered, none,
+// since every row would repeat it. Characters will take this slot (UNR-115).
+function showRankings() {
+  const dojo = RANKINGS_FILTERS[rankingsAt];
+  rankingsCrestsEl.hidden = !dojo;
+  rankingsCrests.forEach((img, i) => { img.hidden = DOJO_IDS[i] !== dojo; });
+  rankingsPicks.forEach((li, i) => {
+    li.classList.toggle('on', i === rankingsAt);
+    li.querySelector('.pick').setAttribute('aria-pressed', String(i === rankingsAt));
+  });
+
+  if (!rankings) {
+    const note = document.createElement('p');
+    note.className = 'how';
+    if (rankings === null) note.textContent = 'The rankings did not load.';
+    rankingsRunsEl.replaceChildren(note);
+    return;
+  }
+
+  const cell = (text, className) => {
+    const td = document.createElement('td');
+    if (className) td.className = className;
+    if (text !== null) td.textContent = text;
+    return td;
+  };
+  const badge = (id) => {
+    const span = document.createElement('span');
+    span.className = 'dojo-badge';
+    span.innerHTML = badgeSvg(id);             // constants, never data
+    span.setAttribute('role', 'img');
+    span.setAttribute('aria-label', DOJO_NAMES[id]);
+    span.title = DOJO_NAMES[id];
+    return span;
+  };
+
+  const table = document.createElement('table');
+  // Named once here, so the header can never disagree with the rows.
+  // The dojo column becomes the fighter's when characters arrive.
+  const head = table.createTHead().insertRow();
+  for (const [label, className] of [['rank', 'place'], ['name', 'player'], ...(dojo ? [] : [['dojo', 'dojo']]),
+                                    ['belt', 'belt'], ['score', 'score']]) {
+    const th = document.createElement('th');
+    th.scope = 'col';
+    if (className) th.className = className;
+    th.textContent = label;
+    head.append(th);
+  }
+  const body = table.createTBody();
+  for (const r of rankings.rows) {
+    const tr = body.insertRow();
+    if (r === null) {
+      tr.className = 'gap';
+      const td = cell(null);
+      td.colSpan = 5;
+      tr.append(td);
+      continue;
+    }
+    tr.className = [r.you ? 'you' : '', r.place <= PODIUM ? 'podium' : ''].join(' ').trim();
+    const belt = BELTS.find(b => b.name === r.belt) || BELTS[0];
+    const swatch = document.createElement('span');
+    swatch.className = 'belt-swatch';
+    swatch.style.setProperty('--belt', belt.colour);
+    swatch.title = belt.name;
+    const beltCell = cell(null, 'belt');
+    beltCell.append(swatch);
+    tr.append(cell(String(r.place), 'place'), cell(r.initials, 'player'));
+    if (!dojo) {
+      const icon = cell(null, 'dojo');
+      icon.append(badge(r.dojo));
+      tr.append(icon);
+    }
+    tr.append(beltCell, cell(String(r.score), 'score'));
+  }
+  // Nobody yet: one line in place of the list. Your own dojo is asked to
+  // go first.
+  if (!rankings.rows.length) {
+    const note = document.createElement('p');
+    note.className = 'how';
+    note.textContent = rankingsEmpty(dojo, currentDojo());
+    return rankingsRunsEl.replaceChildren(note);
+  }
+  rankingsRunsEl.replaceChildren(table);
+}
+
+showRankingsBtn();
 </script>
 
 </body>

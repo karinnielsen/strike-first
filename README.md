@@ -10,7 +10,7 @@ One HTML file of code, no build step and nothing to install — open it and play
 Beside it sit a few images: the dojo crests and the sharing preview. Its one
 outside connection is a hosted database for scores. Made for desktop and tablet.
 
-Current version: **v0.5.2** — see [CHANGELOG.md](CHANGELOG.md).
+Current version: **v0.5.3** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Play
 
@@ -19,6 +19,7 @@ Current version: **v0.5.2** — see [CHANGELOG.md](CHANGELOG.md).
   step before the snake moves again
 - **R** to restart
 - **M** to turn sound off or on
+- **B** between runs for the All Valley Rankings
 
 On a tablet or any touch screen:
 
@@ -26,8 +27,8 @@ On a tablet or any touch screen:
   right-then-up in one unbroken stroke rounds a corner
 - **The ❚❚ button** under the crest for mercy — or at the foot of the scores,
   when they sit beside the board
-- Tap the button on the board to start, continue or go again, and **sound on**
-  under it to mute
+- Tap the button on the board to start, continue or go again, **sound on**
+  under it to mute, and **rankings** beside that for the All Valley Rankings
 
 The board is 21×21 squares, drawn at 30px a square. The grid is the game; the
 cell size is only how large it is drawn.
@@ -181,6 +182,25 @@ rather than squeezing the rest, and the dojos come down to one line: yours,
 with where it stands, such as `708 · 2nd of 3 · 9 students`. If the leaderboard can't be reached, there is
 no board, and nothing else waits for it.
 
+### All Valley Rankings
+
+The whole board, on a screen of its own. Open it with **B** or the **rankings**
+button on the start screen or the defeat screen — never during a run, and not
+while you are signing. **Esc**, **B** or **back** returns you to where you were.
+
+It is the top ten, then a gap and your run with the ones either side of it if
+you are further down. The columns are named along the top — rank, name,
+dojo, belt, score — and the top three places are picked out in bone.
+
+Choose **All**, **Cobra Kai**, **Miyagi-Do** or **Eagle Fang** along the top
+with **← →** or **Tab**, or by tapping. Filtered to a dojo, the places count
+within that dojo, so its best run is 1st, and the dojo's crest sits above the
+list. Each dojo's total is on the defeat screen. On All each row carries its dojo's badge; filtered, the badge is left off,
+because every row would repeat it.
+
+It scrolls like a page, so on a tablet a swipe scrolls the rankings and never
+steers a snake behind them.
+
 ### Sound
 
 80s/90s arcade sound, generated in the page from square and pulse waves rather
@@ -203,8 +223,6 @@ motion turns it off.
 
 Each is a milestone, and each ships as a version.
 
-- **The All Valley** — shipped as v0.5.0 with dojo select and the board, and
-  scores you can trust as v0.5.1. Still to come as a patch: the full board
 - **Dojo recruitment** — a challenge link that points at your place on the board
 - **Choose your fighter** — pick a character
 - **Forbidden techniques** — secrets, and modes you earn rather than pick
