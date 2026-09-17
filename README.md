@@ -10,7 +10,7 @@ One HTML file of code, no build step and nothing to install — open it and play
 Beside it sit a few images: the dojo crests and the sharing preview. Its one
 outside connection is a hosted database for scores. Made for desktop and tablet.
 
-Current version: **v0.5.3** — see [CHANGELOG.md](CHANGELOG.md).
+Current version: **v0.5.4** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Play
 
@@ -18,17 +18,21 @@ Current version: **v0.5.3** — see [CHANGELOG.md](CHANGELOG.md).
 - **Space** to pause — the game calls it mercy. Continuing gives you one full
   step before the snake moves again
 - **R** to restart
-- **M** to turn sound off or on
+- **M** to turn sound off or on, on any screen — the title included, where it
+  mutes without starting the game
 - **B** between runs for the All Valley Rankings
+
+In the top-right corner of every screen, for mouse or finger: the **speaker**
+turns sound off or on, and **❚❚** calls mercy during a run.
 
 On a tablet or any touch screen:
 
 - **Swipe on the board** to turn. The turn happens as your finger moves, and
   right-then-up in one unbroken stroke rounds a corner
-- **The ❚❚ button** under the crest for mercy — or at the foot of the scores,
-  when they sit beside the board
-- Tap the button on the board to start, continue or go again, **sound on**
-  under it to mute, and **rankings** beside that for the All Valley Rankings
+- **The ❚❚ button** in the top-right corner for mercy, beside the speaker for
+  sound
+- Tap the button on the board to start, continue or go again, and
+  **rankings** under it for the All Valley Rankings
 
 The board is 21×21 squares, drawn at 30px a square. The grid is the game; the
 cell size is only how large it is drawn.
@@ -209,8 +213,8 @@ mouse, a burp for a rotten egg, a quick run of chords for a promotion, and a
 long fall for defeat. A promotion replaces the sound of the food that earned
 it. Nothing plays until you start a game.
 
-Turn it off with **M**, or with the **sound on** button on the start, mercy
-and defeat screens. The game remembers the choice.
+Turn it off with **M**, or with the speaker in the top-right corner of every
+screen. The game remembers the choice.
 
 ### The crest
 
