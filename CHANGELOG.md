@@ -16,6 +16,32 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+## [0.5.4] — 2026-09-17
+
+Corner controls. Sound and mercy become buttons everyone already recognises,
+in the same place on every screen. Nothing about how you play changes, so it
+is a patch.
+
+### Added
+- **A speaker and a ❚❚ in the top-right corner** of every screen, as grey
+  keycaps that press down like the call to action. The speaker is crossed out
+  while sound is off. ❚❚ shows only during a run and turns into ▶ in mercy;
+  its slot stays put either way, so the speaker never moves.
+- **Key hints on hover.** With a mouse or trackpad, each button names its key
+  — **m** sound, **space** mercy — on hover or when tabbed to. Touch screens
+  never show them.
+
+### Changed
+- **M mutes on every screen, the title included,** without starting the game.
+  Someone playing in an office can silence it before anything plays.
+- **Mercy's button is for everyone,** not only touch screens, and has left the
+  scores for the corner.
+- **The sound on button** under the call to action is gone; **rankings** has
+  the line to itself.
+
+### Fixed
+- **On the title, M pressed start** instead of muting.
+
 ## [0.5.3] — 2026-09-17
 
 All Valley Rankings. The whole board gets a screen of its own, and The All
