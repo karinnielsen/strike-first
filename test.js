@@ -154,6 +154,10 @@ globalThis.game = {
   LEVELS, REACH_BUDGET, TURN_QUEUE_MAX, SWIPE_MIN, swipeDirection, queueTurn,
   update, reset, isOccupied, stepDelay, mixColour, KEYS, addScore, queasiness,
   levelFor, reachableSquare,
+  ROTTEN_COOLDOWN, BELT_STRETCH, ROTTEN_GAP, beltStretch, routeSquares, besideSquares,
+  rottenSquare, maybeSpawnVisitor, VISITOR_CHANCE, ROTTEN_SHARE,
+  get sinceRotten() { return sinceRotten }, set sinceRotten(v) { sinceRotten = v },
+  get guardedBelts() { return guardedBelts }, set guardedBelts(v) { guardedBelts = v },
   BELTS, beltFor, promotionFor,
   BONE_BODY, DUSTY_TAIL, SICK_GREEN, blend, bodyColour, BELT_SEGMENT,
   QUEASY_SHAKE, queasyShake,
@@ -607,6 +611,152 @@ describe('where visitors appear', () => {
       }
       game.update();
     }
+  });
+});
+
+
+// Where a rotten egg lands, and when. UNR-155.
+describe('rotten egg placement', () => {
+  // Pin the dice, so a test can say what happens on a roll that brings
+  // nothing, or on one that brings a rotten egg.
+  function withRandom(value, fn) {
+    const math = vm.runInContext('Math', sandbox);
+    const real = math.random;
+    math.random = () => value;
+    try { fn(); } finally { math.random = real; }
+  }
+  const NOTHING = 0.99;   // above VISITOR_CHANCE: no visitor comes
+  const ROTTEN  = 0;      // under both odds: a visitor, and it's rotten
+  const same = (a, b) => !!a && !!b && a.x === b.x && a.y === b.y;
+
+  test('a belt stretch is the last few points before a belt score', () => {
+    is(game.beltStretch(10), 15, '10 is closing in on orange');
+    is(game.beltStretch(14), 15, '14 too');
+    is(game.beltStretch(9), null, '9 is not yet');
+    is(game.beltStretch(15), null, 'on the belt itself is past it');
+    is(game.beltStretch(0), null, 'white never counts');
+    is(game.beltStretch(272), 275, 'midnight blue counts');
+    is(game.beltStretch(275), null, 'nothing after midnight blue');
+  });
+
+  test('in the way means on a shortest route, and never right beside the egg', () => {
+    const head = {x: 3, y: 4}, egg = {x: 12, y: 16};
+    const route = game.routeSquares(head, egg);
+    is(route.length > 0, true, 'there are squares');
+    for (const s of route) {
+      is(Math.abs(s.x - head.x) + Math.abs(s.y - head.y) +
+         Math.abs(s.x - egg.x) + Math.abs(s.y - egg.y), 21, 'on a shortest route');
+      is(Math.abs(s.x - egg.x) + Math.abs(s.y - egg.y) >= 2, true, 'not beside the egg');
+    }
+  });
+
+  test('beside the egg means the side that faces the head', () => {
+    is(game.besideSquares({x: 5, y: 5}, {x: 10, y: 8}), [{x: 9, y: 8}, {x: 10, y: 7}], 'at an angle');
+    is(game.besideSquares({x: 5, y: 8}, {x: 10, y: 8}), [{x: 9, y: 8}], 'in line');
+  });
+
+  test('no rotten egg until the cooldown has passed', () => {
+    freshGame({ egg: {x: 15, y: 15} });
+    game.sinceRotten = game.ROTTEN_COOLDOWN - 1;
+    withRandom(ROTTEN, () => game.maybeSpawnVisitor());
+    is(game.visitor, null, 'nothing, and not a mouse in its place');
+  });
+
+  test('the cooldown is a minimum, so the usual odds still apply after it', () => {
+    freshGame({ egg: {x: 15, y: 15} });
+    game.sinceRotten = game.ROTTEN_COOLDOWN + 5;
+    withRandom(NOTHING, () => game.maybeSpawnVisitor());
+    is(game.visitor, null, 'a roll that brings nothing still brings nothing');
+  });
+
+  test('away from a belt, a rotten egg lands in the way', () => {
+    for (let i = 0; i < 100; i++) {
+      freshGame({ egg: {x: 15, y: 15}, score: 20 });
+      game.sinceRotten = game.ROTTEN_COOLDOWN;
+      game.maybeSpawnVisitor();
+      if (!game.visitor || game.visitor.kind !== 'rotten') continue;
+      const route = game.routeSquares(game.snake[0], game.egg);
+      is(route.some(s => same(s, game.visitor)), true, 'on the route');
+    }
+  });
+
+  test('closing in on a belt brings a rotten egg beside the egg, once', () => {
+    freshGame({ egg: {x: 15, y: 15}, score: 12 });
+    game.sinceRotten = game.ROTTEN_COOLDOWN;
+    withRandom(NOTHING, () => game.maybeSpawnVisitor());
+    is(game.visitor && game.visitor.kind, 'rotten', 'guaranteed, whatever the dice say');
+    const beside = game.besideSquares(game.snake[0], game.egg);
+    is(beside.some(s => same(s, game.visitor)), true, 'beside the egg, facing the head');
+
+    game.visitor = null;
+    game.sinceRotten = game.ROTTEN_COOLDOWN;
+    withRandom(NOTHING, () => game.maybeSpawnVisitor());
+    is(game.visitor, null, 'not guaranteed twice for the same belt');
+  });
+
+  test('with nowhere that matters to go, no rotten egg comes and the belt keeps its one', () => {
+    // The egg right in front of the head: no room beside it or in the way.
+    freshGame({ egg: {x: 6, y: 5}, score: 12 });
+    game.sinceRotten = game.ROTTEN_COOLDOWN;
+    is(game.rottenSquare(true), null, 'nowhere');
+    withRandom(ROTTEN, () => game.maybeSpawnVisitor());
+    is(game.visitor, null, 'not dropped on a random square instead');
+    is(game.guardedBelts, [], 'still owed');
+  });
+
+  test('the guaranteed one still waits for the cooldown', () => {
+    freshGame({ egg: {x: 15, y: 15}, score: 12 });
+    game.sinceRotten = game.ROTTEN_COOLDOWN - 1;
+    withRandom(NOTHING, () => game.maybeSpawnVisitor());
+    is(game.visitor, null, 'nothing yet');
+    is(game.guardedBelts, [], 'and the belt is still owed one');
+  });
+
+  test('never close to the head, and never boxing the egg in', () => {
+    for (let i = 0; i < 100; i++) {
+      // The egg in a corner, with one of its two sides under the snake.
+      freshGame({ snake: [{x: 6, y: 6}, {x: 0, y: 1}], egg: {x: 0, y: 0} });
+      const spot = game.rottenSquare(true);
+      is(same(spot, {x: 1, y: 0}), false, 'the egg keeps an open side');
+      const head = game.snake[0];
+      is(Math.abs(spot.x - head.x) + Math.abs(spot.y - head.y) >= game.ROTTEN_GAP, true, 'not on top of the head');
+    }
+  });
+
+  test('eating the egg takes its rotten egg with it and restarts the cooldown', () => {
+    freshGame({ egg: {x: 6, y: 5}, visitor: {kind: 'rotten', x: 12, y: 12, life: 30, facing: 1} });
+    game.sinceRotten = 7;
+    withRandom(NOTHING, () => game.update());
+    is(game.visitor, null, 'gone with its egg');
+    is(game.sinceRotten, 0, 'cooldown restarted');
+  });
+
+  test('eggs and mice count towards the cooldown', () => {
+    freshGame({ egg: {x: 6, y: 5} });
+    withRandom(NOTHING, () => game.update());
+    is(game.sinceRotten, 1, 'an egg');
+    freshGame({ visitor: {kind: 'mouse', x: 6, y: 5, life: 30, facing: 1} });
+    game.update();
+    is(game.sinceRotten, 1, 'a mouse');
+  });
+
+  test('a rotten egg eaten or expired restarts the cooldown', () => {
+    freshGame({ visitor: {kind: 'rotten', x: 6, y: 5, life: 30, facing: 1} });
+    game.sinceRotten = 9;
+    game.update();
+    is(game.sinceRotten, 0, 'eaten');
+    freshGame({ visitor: {kind: 'rotten', x: 18, y: 18, life: 1, facing: 1} });
+    game.sinceRotten = 9;
+    game.update();
+    is(game.sinceRotten, 0, 'expired');
+  });
+
+  test('a new run starts with the cooldown and every belt owed', () => {
+    game.sinceRotten = 9;
+    game.guardedBelts = [15, 35];
+    game.reset();
+    is(game.sinceRotten, 0, 'cooldown');
+    is(game.guardedBelts, [], 'belts');
   });
 });
 

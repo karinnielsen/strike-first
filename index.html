@@ -1218,6 +1218,8 @@ let egg;            // the baseline food. There is always exactly one.
 let visitor;        // the second slot: a mouse or a rotten egg, or null
 let grow;           // squares still owed to the snake from something eaten
 let queasy;         // moves left of looking green, after a rotten egg
+let sinceRotten;    // rewards eaten since the last rotten egg left
+let guardedBelts;   // belt scores that have had their rotten egg this run
 let bestAtStart;    // the record as it stood when this run began
 let score;
 let phase;          // 'ready' | 'playing' | 'paused' | 'dying' | 'over'
@@ -1272,6 +1274,28 @@ const ROTTEN_SHARE   = 0.4;  // ...and this fraction of those are rotten
 const MOUSE_LIFE    = 60;
 const ROTTEN_LIFE   = 45;
 const WARNING_MOVES = 15;   // moves left when a visitor starts flashing
+
+// Where a rotten egg lands, and when it is allowed to. UNR-155.
+//
+// A lone rotten egg on a random square is one you just steer around, so it
+// changes nothing about how you play. It lands where avoiding it costs you
+// something instead. But the harshest placement isn't thrown at a player
+// from the first egg: it follows a sequence through the run.
+//
+//  - A cooldown first. No rotten egg until you have eaten this many
+//    rewards since the last one left, or since the run began. It is a
+//    minimum, not a schedule: after it the usual odds still apply, so the
+//    gaps stay random. Two back to back was too much in play.
+//  - Usually IN THE WAY, on a shortest route from the head to the egg.
+//  - Near a belt, BESIDE THE EGG, on the side facing you. Just before a
+//    belt is when you have most to lose, and the first egg of that stretch
+//    is guaranteed to bring one, once per belt.
+//
+// Belt scores count whatever your best is, so this works the same for a
+// new player, a veteran and in Practice.
+const ROTTEN_COOLDOWN = 3;   // rewards eaten before another rotten egg may come
+const BELT_STRETCH    = 5;   // points before a belt score where it lands beside the egg
+const ROTTEN_GAP      = 3;   // never closer than this to the head: no ambush at speed
 
 // How far a visitor may spawn from your head, as a fraction of its life.
 // The rest of the budget is slack for noticing it and for the fact that
@@ -1351,6 +1375,8 @@ function reset() {
   bestAtStart   = best;
   queasy        = 0;
   visitor       = null;
+  sinceRotten   = 0;
+  guardedBelts  = [];
   defeat        = null;
   moves         = 0;
   runStartedAt  = null;
@@ -1411,18 +1437,111 @@ function placeEgg() {
 // looking away from your own head is itself the risk.
 function maybeSpawnVisitor() {
   if (visitor) return;                          // the slot is taken
-  if (Math.random() > VISITOR_CHANCE) return;
 
-  const rotten = Math.random() < ROTTEN_SHARE;
-  const life   = rotten ? ROTTEN_LIFE : MOUSE_LIFE;
-  const spot   = reachableSquare(life);
+  // A belt's guaranteed rotten egg comes before any roll of the dice.
+  const due  = sinceRotten >= ROTTEN_COOLDOWN;
+  const belt = beltStretch(score);
+  if (due && belt !== null && !guardedBelts.includes(belt)) {
+    const spot = rottenSquare(true);
+    if (spot) {
+      guardedBelts.push(belt);
+      return spawn('rotten', spot);
+    }
+  }
+
+  if (Math.random() > VISITOR_CHANCE) return;
+  if (Math.random() < ROTTEN_SHARE) {
+    // A rotten egg that isn't due yet, or has nowhere that matters to go,
+    // is simply nothing rather than a mouse, so none of this can quietly
+    // make mice more common.
+    const spot = due && rottenSquare(belt !== null);
+    if (spot) spawn('rotten', spot);
+    return;
+  }
+  spawn('mouse', reachableSquare(MOUSE_LIFE));
+}
+
+function spawn(kind, spot) {
   visitor = {
-    kind:   rotten ? 'rotten' : 'mouse',
+    kind,
     x:      spot.x,
     y:      spot.y,
-    life:   rotten ? ROTTEN_LIFE : MOUSE_LIFE,
+    life:   kind === 'rotten' ? ROTTEN_LIFE : MOUSE_LIFE,
     facing: Math.random() < 0.5 ? 1 : -1        // which way it happens to sit
   };
+}
+
+// The belt score you are closing in on, if you are within BELT_STRETCH
+// points of one, or null. White is where everyone starts, so it never counts.
+function beltStretch(points) {
+  for (const belt of BELTS) {
+    if (belt.from > points && belt.from - points <= BELT_STRETCH) return belt.from;
+  }
+  return null;
+}
+
+function stepsBetween(a, b) {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+
+function onBoard(s) {
+  return s.x >= 0 && s.x < COLS && s.y >= 0 && s.y < ROWS;
+}
+
+// Squares IN THE WAY: on either of the two L-shaped shortest routes from the
+// head to the egg, leaving out the last square before the egg, which is
+// BESIDE it and saved for the belts.
+function routeSquares(head, egg) {
+  const sx = Math.sign(egg.x - head.x);
+  const sy = Math.sign(egg.y - head.y);
+  const route = [];
+  for (let x = head.x; x !== egg.x; x += sx) route.push({x, y: head.y}, {x, y: egg.y});
+  for (let y = head.y; y !== egg.y; y += sy) route.push({x: head.x, y}, {x: egg.x, y});
+  return route.filter(s => stepsBetween(s, egg) >= 2);
+}
+
+// Squares BESIDE the egg on the side that faces the head: one when you are
+// in line with it, two when you are not.
+function besideSquares(head, egg) {
+  const sides = [];
+  const sx = Math.sign(egg.x - head.x);
+  const sy = Math.sign(egg.y - head.y);
+  if (sx) sides.push({x: egg.x - sx, y: egg.y});
+  if (sy) sides.push({x: egg.x, y: egg.y - sy});
+  return sides;
+}
+
+// Where this rotten egg goes. Anything too close to the head is out, and
+// so is anything that would leave the egg with no open side. Near a belt it
+// tries beside first, then in the way. If nothing fits (the egg is right in
+// front of you, say) the answer is null and no rotten egg comes: a random
+// square is exactly the decoration this replaced, and a belt's guaranteed
+// one is kept for the next egg rather than spent on it.
+function rottenSquare(nearBelt) {
+  const head = snake[0];
+  const pick = list => list[Math.floor(Math.random() * list.length)];
+  const fits = s => onBoard(s) && !isOccupied(s) && stepsBetween(s, head) >= ROTTEN_GAP &&
+    eggSides().some(o => (o.x !== s.x || o.y !== s.y) && !isOccupied(o));
+
+  if (nearBelt) {
+    const beside = besideSquares(head, egg).filter(fits);
+    if (beside.length) return pick(beside);
+  }
+  const route = routeSquares(head, egg).filter(fits);
+  return route.length ? pick(route) : null;
+}
+
+function eggSides() {
+  return [{x: 1, y: 0}, {x: -1, y: 0}, {x: 0, y: 1}, {x: 0, y: -1}]
+    .map(d => ({x: egg.x + d.x, y: egg.y + d.y}))
+    .filter(onBoard);
+}
+
+// However a rotten egg goes - eaten, expired, or gone with its egg - the
+// cooldown starts again from nothing.
+function rottenGone() {
+  visitor = null;
+  sinceRotten = 0;
 }
 
 
@@ -1443,7 +1562,10 @@ function update() {
   // 1, and means nothing quietly escapes while the game is paused.
   if (visitor) {
     visitor.life -= 1;
-    if (visitor.life <= 0) visitor = null;   // it got bored, or it went off
+    if (visitor.life <= 0) {                 // it got bored, or it went off
+      if (visitor.kind === 'rotten') rottenGone();
+      else visitor = null;
+    }
   }
 
   // The new head is the old head, one square along in our direction.
@@ -1475,19 +1597,25 @@ function update() {
   if (head.x === egg.x && head.y === egg.y) {
     addScore(EGG_POINTS, 'egg');
     grow += EGG_GROWTH;
+    // A rotten egg was placed around THIS egg, in its way or beside it.
+    // Left behind, it would guard nothing and hold the only slot.
+    if (visitor && visitor.kind === 'rotten') rottenGone();
+    else sinceRotten += 1;
     placeEgg();
     maybeSpawnVisitor();        // an egg sometimes brings something with it
   } else if (visitor && head.x === visitor.x && head.y === visitor.y) {
     if (visitor.kind === 'mouse') {
       addScore(MOUSE_POINTS, 'mouse');
       grow += MOUSE_GROWTH;     // the cost: worth five, but you carry two
+      sinceRotten += 1;
+      visitor = null;
     } else {
       addScore(ROTTEN_POINTS, 'rotten');
       queasy = QUEASY_MOVES;    // and you have to watch yourself regret it
       // Deliberately no length change. Taking length OFF would be a
       // *relief* late in a run, which is the opposite of a punishment.
+      rottenGone();
     }
-    visitor = null;
   }
 
   // Growing is just skipping the tail removal. `grow` is how many squares

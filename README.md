@@ -64,6 +64,24 @@ at seventy milliseconds a move.
 Roughly two eggs in five bring a visitor along, and about two in five of those
 are rotten. Visitors flash when they are about to leave.
 
+A rotten egg lands **where dodging it costs you something**, and it gets harsher
+as a run goes on:
+
+- **Not straight away.** No rotten egg until you've eaten 3 eggs or mice since
+  the last one left, or since the run began. After that the usual odds apply,
+  so the gaps stay random.
+- **In the way.** Usually it sits on a shortest route between your head and the
+  egg.
+- **Beside the egg, near a belt.** In the last 5 points before a belt score it
+  sits right beside the egg, on your side, so taking the egg means going around
+  it. The first egg in that stretch always brings one, once per belt. That
+  counts the belt scores themselves, whatever your best is, so it happens in
+  Practice too.
+- **It goes with its egg.** Eat the egg a rotten egg was guarding and the rotten
+  egg leaves too.
+
+It never lands within 3 squares of your head, and never boxes the egg in.
+
 The mouse costing two squares rather than one is the point of it. A reward that
 is strictly better with no cost isn't a decision — you take it every time and
 nothing about how you play changes. Five points for two squares is a real
@@ -280,6 +298,9 @@ those rather than scattering numbers through the code.
 | `EGG_GROWTH` / `MOUSE_GROWTH` | how much length each one costs you |
 | `VISITOR_CHANCE` | odds that an egg brings a visitor along |
 | `ROTTEN_SHARE` | how many of those visitors are rotten |
+| `ROTTEN_COOLDOWN` | eggs or mice eaten before another rotten egg may come |
+| `BELT_STRETCH` | points before a belt score where a rotten egg lands beside the egg |
+| `ROTTEN_GAP` | how close to your head a rotten egg may land |
 | `MOUSE_LIFE` / `ROTTEN_LIFE` | how many of *your moves* each one stays for |
 | `WARNING_MOVES` | moves left when a visitor starts flashing |
 | `REACH_BUDGET` | how far a visitor may spawn, as a fraction of its life |
