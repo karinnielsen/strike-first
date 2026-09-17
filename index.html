@@ -1231,6 +1231,8 @@ let lastDefeatLine; // so the same line never lands twice in a row
 // these; they go with a score to the database, where they are what lets a
 // forged score be told apart from a real one (UNR-132).
 let moves;          // steps actually taken. The one that killed you isn't one.
+let tongueOut;      // is the tongue out THIS step? update() decides, draw() shows
+let flickAt;        // the move it next flicks on
 let runStartedAt;   // performance.now() of the first move, or null
 let pausedAt;       // when mercy was asked for, or null
 let pausedMs;       // total time spent in mercy this run
@@ -1337,6 +1339,24 @@ const MOUSE_TWITCH = 6;
 // speed and doesn't tick away while the game is paused.
 const QUEASY_MOVES  = 14;
 
+// How many of YOUR MOVES between the snake's own tongue flicks, as a range,
+// because real snakes flick to smell and they don't do it on a metronome.
+//
+// This was a wall-clock window - Date.now() % 2600 < 280 - and that quietly
+// broke when the speed curve changed on 8 September. draw() runs once per
+// STEP, so the window is sampled at step rate, and the tiered LEVELS table
+// roughly halved that rate through the mid-game: at score 30 it went from
+// 12.5 draws a second to 5.9. The flick had been covering three or four
+// consecutive frames, which reads as out-held-back, and dropped to one,
+// which reads as a blink. Karin noticed it was gone and was right. UNR-160.
+//
+// Counted in moves, the rhythm is the same at 260ms a move and at 70ms,
+// like MOUSE_LIFE and QUEASY_MOVES before it. It still can't whip: an
+// out-and-in inside a single drawn frame needs a render loop separate from
+// the game loop, which is UNR-161's half of the job.
+const TONGUE_GAP_MIN = 6;
+const TONGUE_GAP_MAX = 20;
+
 // Difficulty within a run, as tiers rather than a smooth slope.
 //
 // This used to shave 4ms off per point, continuously. It worked, but it
@@ -1409,6 +1429,8 @@ function reset() {
   guardedBelts  = [];
   defeat        = null;
   moves         = 0;
+  tongueOut     = false;
+  flickAt       = nextFlickIn(Math.random());
   runStartedAt  = null;
   pausedAt      = null;
   pausedMs      = 0;
@@ -1520,6 +1542,12 @@ function spawn(kind, spot) {
     facing: Math.random() < 0.5 ? 1 : -1,       // which way it happens to sit
     beat:   Math.floor(Math.random() * MOUSE_TWITCH)   // so two mice never twitch in step
   };
+}
+
+// How many moves until the next flick, given a roll of the dice. Pure, so
+// it needs no harness to test.
+function nextFlickIn(r) {
+  return TONGUE_GAP_MIN + Math.floor(r * (TONGUE_GAP_MAX - TONGUE_GAP_MIN + 1));
 }
 
 // The belt score you are closing in on, if you are within BELT_STRETCH
@@ -1642,6 +1670,12 @@ function update() {
   // run's duration is only ever time spent steering.
   if (moves === 0) runStartedAt = performance.now();
   moves += 1;
+
+  // The tongue is decided here rather than in draw(), because whether it is
+  // out is a fact about this step, and draw() only shows what update() has
+  // settled. Out for exactly one step, then the next flick is booked.
+  tongueOut = moves >= flickAt;
+  if (tongueOut) flickAt = moves + nextFlickIn(Math.random());
 
   // Did we land on anything? Only one of these can be true, since nothing
   // is ever placed on a square something else already occupies.
@@ -2572,9 +2606,9 @@ function drawHead() {
   paintHead(SPRITE.headAfter);
   ctx.restore();
 
-  // Tongue flicks every couple of seconds - and stays out the whole time
-  // there's something worth eating directly ahead, because the snake gets
-  // excited. Not for a rotten egg. It doesn't want that one either.
+  // Tongue flicks every few moves - and stays out the whole time there's
+  // something worth eating directly ahead, because the snake gets excited.
+  // Not for a rotten egg. It doesn't want that one either.
   //
   // Drawn in the game's own coordinates rather than as artwork, because
   // it has to animate. The supplied tongue path is a static outline and
@@ -2584,7 +2618,7 @@ function drawHead() {
        (egg.x === ahead.x && egg.y === ahead.y)
     || (visitor && visitor.kind === 'mouse'
         && visitor.x === ahead.x && visitor.y === ahead.y);
-  if (phase === 'playing' && (treatAhead || queasy > 0 || Date.now() % 2600 < 280)) {
+  if (phase === 'playing' && (treatAhead || queasy > 0 || tongueOut)) {
     drawTongue(cx, cy, fwd, side);
   }
 }

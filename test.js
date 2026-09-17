@@ -156,6 +156,9 @@ globalThis.game = {
   levelFor,
   MOUSE_CRAMP, MOUSE_NEAR, MOUSE_FAR, MOUSE_SLACK, MOUSE_FLOOR, MOUSE_TWITCH,
   openSides, mouseSquare, mouseClock, mouseIdle, spawn,
+  TONGUE_GAP_MIN, TONGUE_GAP_MAX, nextFlickIn,
+  get tongueOut() { return tongueOut }, set tongueOut(v) { tongueOut = v },
+  get flickAt() { return flickAt }, set flickAt(v) { flickAt = v },
   ROTTEN_COOLDOWN, BELT_STRETCH, ROTTEN_GAP, beltStretch, routeSquares, besideSquares,
   rottenSquare, maybeSpawnVisitor, VISITOR_CHANCE, ROTTEN_SHARE,
   get sinceRotten() { return sinceRotten }, set sinceRotten(v) { sinceRotten = v },
@@ -1485,6 +1488,56 @@ describe('sprites', () => {
 // The README line is the reason this group exists at all: it said v0.1.0
 // until 12 September, through two releases that changed it, while the
 // other three never drifted once.
+describe("the snake's own tongue", () => {
+  // UNR-160. It used to be on a wall-clock window, which the speed curve
+  // change on 8 September quietly halved the sampling rate of. Counted in
+  // moves, the rhythm is the same at every level.
+
+  test('the gap is always inside its range', () => {
+    for (let i = 0; i < 200; i++) {
+      const gap = game.nextFlickIn(Math.random());
+      is(gap >= game.TONGUE_GAP_MIN && gap <= game.TONGUE_GAP_MAX, true, 'in range');
+    }
+    is(game.nextFlickIn(0), game.TONGUE_GAP_MIN, 'the shortest wait');
+    is(game.nextFlickIn(0.9999), game.TONGUE_GAP_MAX, 'the longest');
+  });
+
+  test('it flicks on your moves, and for exactly one of them', () => {
+    freshGame({ egg: {x: 20, y: 20} });
+    game.flickAt = game.moves + 1;
+    game.update();
+    is(game.tongueOut, true, 'out on the booked move');
+    game.update();
+    is(game.tongueOut, false, 'and away again the next');
+  });
+
+  test('over a run it keeps a steady rhythm, never a metronome', () => {
+    freshGame({ snake: [{x: 10, y: 10}, {x: 9, y: 10}, {x: 8, y: 10}],
+                direction: {x: 1, y: 0}, egg: {x: 0, y: 0} });
+    const flicks = [];
+    // Round and round a small square in the middle of the board, so the run
+    // lasts long enough to watch the rhythm rather than dying at a wall.
+    for (let i = 0; i < 400 && game.phase === 'playing'; i++) {
+      if (i % 4 === 3) game.queueTurn({x: -game.direction.y, y: game.direction.x});
+      game.update();
+      if (game.tongueOut) flicks.push(game.moves);
+    }
+    is(game.phase, 'playing', 'still alive after 400 moves');
+    is(flicks.length > 5, true, 'it flicks more than a handful of times');
+    const gaps = flicks.slice(1).map((m, i) => m - flicks[i]);
+    is(gaps.every(g => g >= game.TONGUE_GAP_MIN && g <= game.TONGUE_GAP_MAX), true,
+       'every gap inside the range');
+    is(new Set(gaps).size > 1, true, 'not the same gap every time');
+  });
+
+  test('a fresh run starts with the tongue in', () => {
+    game.reset();
+    is(game.tongueOut, false, 'in');
+    is(game.flickAt >= game.TONGUE_GAP_MIN, true, 'with a flick booked');
+  });
+});
+
+
 describe('the crest tongue', () => {
   test('mostly flicks in pairs, sometimes once', () => {
     is(game.tongueFlickPlan(0, 0).flicks, 2, 'flicks');

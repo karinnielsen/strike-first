@@ -269,6 +269,12 @@ smells the air: in pairs, at uneven pauses. It holds still while you play, so
 the only thing moving above the board is something worth looking at. Reduced
 motion turns it off.
 
+The snake on the board does its own flicking, every 6 to 20 of **your moves**
+rather than on a clock, so the rhythm is the same whether you are thinking your
+way through level 1 or flat out at level 9. It also holds its tongue out
+whenever there is an egg or a mouse directly ahead — it can smell it — and the
+whole time you are queasy. Not for a rotten egg. It doesn't want that one.
+
 ## Next
 
 Each is a milestone, and each ships as a version.
