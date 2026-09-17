@@ -410,13 +410,13 @@ describe('dojo select', () => {
       { dojo: 'miyagi-do', initials: 'DAN', best: 254, place: 1, students: 9 }
     ];
     const backs = game.dojoBacks(players);
-    is(backs['cobra-kai'], { place: '1st of 3', team: '460', students: '14', top: 'JLR · 260' }, 'cobra kai');
-    is(backs['miyagi-do'].place, '2nd of 3', 'miyagi-do');
-    is(backs['eagle-fang'], { place: '—', team: '—', students: '0', top: '—' }, 'a dojo with nobody');
+    is(backs['cobra-kai'], { rank: '1st', team: '460', students: '14', top: 'JLR · 260' }, 'cobra kai');
+    is(backs['miyagi-do'].rank, '2nd', 'miyagi-do');
+    is(backs['eagle-fang'], { rank: '—', team: '—', students: '0', top: '—' }, 'a dojo with nobody');
   });
 
   test('a card back with no database is blank, not wrong', () => {
-    is(game.dojoBacks(null)['cobra-kai'], { place: '—', team: '—', students: '—', top: '—' }, 'blank');
+    is(game.dojoBacks(null)['cobra-kai'], { rank: '—', team: '—', students: '—', top: '—' }, 'blank');
   });
 });
 

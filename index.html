@@ -4128,7 +4128,9 @@ function dojoBacks(players) {
     const s = standings && standings.find(d => d.dojo === dojo);
     const top = players && players.find(p => p.dojo === dojo && p.place === 1);
     backs[dojo] = {
-      place:    s && s.students ? `${ordinal(s.place)} of ${DOJO_IDS.length}` : '—',
+      // Where the dojo stands against the other dojos, by team score. Not
+      // "of 3": all three cards are on screen.
+      rank:     s && s.students ? ordinal(s.place) : '—',
       team:     s && s.students ? String(s.total) : '—',
       students: s ? String(s.students) : '—',
       top:      top ? `${top.initials} · ${top.best}` : '—'
@@ -4154,7 +4156,7 @@ document.getElementById('dojo-cards').innerHTML = DOJO_IDS.map(dojo => `
         <span class="face back" aria-hidden="true">
           <span class="name">${DOJO_NAMES[dojo]}</span>
           <dl class="stats">
-            <div><dt>place</dt><dd data-back="place">—</dd></div>
+            <div><dt>dojo rank</dt><dd data-back="rank">—</dd></div>
             <div><dt>team score</dt><dd data-back="team">—</dd></div>
             <div><dt>students</dt><dd data-back="students">—</dd></div>
             <div><dt>top</dt><dd data-back="top">—</dd></div>

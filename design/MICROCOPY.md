@@ -338,7 +338,7 @@ The complete inventory, so nothing drifts unnoticed.
 | `Choose your dojo` — dojo select, shown in voice caps | Utility |
 | `← → or tab to choose · ↑ ↓ to flip · enter to bow in` — dojo select | Utility |
 | `tap a dojo to bow in · tap its corner to flip` — dojo select, touch screens | Utility |
-| `place` `team score` `students` `top` `Sensei` — a dojo card's back | Utility |
+| `dojo rank` (`1st`) `team score` `students` `top` `Sensei` — a dojo card's back. Never `place`, and never `of 3`: the three cards are on screen together | Utility |
 | `<DOJO>` / the dojo's creed — the banner confirming a pick, in voice caps | Dojo |
 | `Too slow. Sensei chose for you.` — the banner, when the clock runs out | Dojo |
 | `Arcade` / `Practice` / `Rankings` — the title's menu | Utility |

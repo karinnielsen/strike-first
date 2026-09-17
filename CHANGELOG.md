@@ -48,6 +48,8 @@ reshapes the journey without adding a mechanic, so it is a patch. UNR-137.
   which buzzes when there are fewer than three letters. Refused initials get
   a note under the letters. A save that fails goes to the menu rather than
   asking again.
+- **A dojo card's back says dojo rank, not place:** *1st*, rather than *1st
+  of 3*, which read like a player's place.
 - **R is Rematch on the defeat screen, and does nothing mid-run.** A bad run
   can no longer be thrown away off the record.
 
