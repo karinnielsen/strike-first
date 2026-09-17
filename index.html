@@ -282,19 +282,76 @@
   }
 
   .overlay.hidden { display: none; }
-  .overlay h2 { margin: 0; font-size: 22px; letter-spacing: 3px; color: var(--yellow); }
+  /* Large enough to outrank the lit menu row under it: at 22px DEFEATED
+     read as its equal. */
+  .overlay h2 {
+    margin: 0; font-size: 34px; letter-spacing: 0.16em; color: var(--yellow);
+    text-shadow: 0 4px 0 var(--yellow-deep);
+  }
   .overlay p  { margin: 0; font-size: 13px; color: var(--dim); }
+  .overlay #overlay-text:empty { display: none; }
 
-  /* Two groups, not four equal rows: the title and its line are one
-     thought, the button is what you do about it. An even gap all the way
-     down made the verdict and the call to action read as one lump. */
-  .overlay #play-btn { margin-top: 24px; }
+  /* MENUS. UNR-137. One style everywhere: the title's Arcade / Practice /
+     Rankings, and on the board mercy's Continue / Quit, Sign, and the
+     verdict's three. The lit row takes PRESS START's voice - yellow, the
+     hard offset and the bloom - and the others are the same letters with
+     the power off, like bulbs in a marquee, so only one thing shouts. The
+     marker has its own column, so labels never shift as it moves. No
+     helper text under any row: a row that needs a caption has the wrong
+     name. */
+  .menu[hidden] { display: none; }
+  .menu { display: grid; justify-items: start; justify-self: center; }
+  .menu button {
+    all: unset; cursor: pointer; box-sizing: border-box;
+    display: grid; grid-template-columns: 1.5em auto; align-items: center;
+    font-weight: bold; letter-spacing: 0.16em; text-transform: uppercase;
+    color: #8a838f;            /* 5.4:1, the --dim proposed in UNR-147 */
+  }
+  .menu .mark { font-size: 0.7em; visibility: hidden; }
+  .menu button.on { color: var(--yellow); }
+  .menu button.on .label { animation: menu-punch 0.16s steps(2, end); }
+  .menu button.on .mark { visibility: visible; animation: press-start 1.1s steps(1, end) infinite; }
+  .menu button:hover:not(.on) { color: var(--text); }
+  /* Not the slab's hover, press or focus ring from the button rules below:
+     the lit row is the focus. */
+  .menu button:hover, .menu button:active { background: none; transform: none; box-shadow: none; animation: none; }
+  .menu button:focus-visible { outline: none; }
+  @keyframes menu-punch { 0% { transform: translateX(6px); } }
+  @media (prefers-reduced-motion: reduce) {
+    .menu button.on .label, .menu button.on .mark { animation: none; }
+  }
 
-  /* The rankings button sits under the call to action and must not compete
-     with it: one slab on the overlay, and this is plain text beside it.
-     44px tall on the same grounds as the corner controls: a finger, not a
+  .title-menu { gap: 6px; }
+  .title-menu button { min-height: 52px; font-size: 30px; text-shadow: 0 4px 0 #1e1d22; }
+  .title-menu button.on { text-shadow: 0 4px 0 var(--yellow-deep), 0 0 24px rgba(255, 255, 0, 0.3); }
+
+  /* On the board, a size down from the title's, and 44px a row: a finger. */
+  .run-menu { margin-top: 24px; }
+  .run-menu button { min-height: 44px; font-size: 20px; text-shadow: 0 3px 0 #1e1d22; }
+  .run-menu button.on { text-shadow: 0 3px 0 var(--yellow-deep), 0 0 18px rgba(255, 255, 0, 0.3); }
+  /* One row: its marker hangs outside, so SIGN centres under the letters. */
+  #sign-menu button { grid-template-columns: auto; position: relative; }
+  #sign-menu .mark { position: absolute; right: 100%; margin-right: 0.3em; }
+
+  /* THE VERDICT. Anchored to the top of the board rather than centred, so
+     the menu sits in the same place on every defeat, however tall the
+     table and whenever it arrives: nothing below may move what is above.
+     A forfeit has no line, so the line keeps its height regardless. */
+  .overlay.verdict, .overlay.verdict.with-board { align-content: start; gap: 0; }
+  .overlay.verdict h2, .overlay.verdict.with-board h2 { margin-top: 64px; margin-bottom: 10px; }
+  .overlay.verdict #overlay-text { display: block; min-height: 1lh; }
+  .overlay.verdict .run-menu { margin-top: 32px; }
+  .overlay.verdict .board { margin-top: 44px; }
+
+  /* Signing has no table under it, so it is centred instead. The heading
+     moves once, when the menu takes over. */
+  .overlay.verdict.signing { align-content: center; }
+  .overlay.verdict.signing h2 { margin-top: 0; }
+  .overlay.verdict #sign-menu { margin-top: 36px; }
+
+  /* 44px tall on the same grounds as the corner controls: a finger, not a
      cursor. */
-  .rankings-btn, .rankings-back {
+  .rankings-back {
     justify-self: center;
     min-height: 44px;
     margin-top: 4px;
@@ -306,24 +363,20 @@
     box-shadow: none;
     animation: none;
   }
-  .rankings-btn:hover, .rankings-back:hover { background: transparent; color: var(--text); }
-  .rankings-btn:active, .rankings-back:active { transform: none; box-shadow: none; }
-  .rankings-btn[hidden] { display: none; }
-
-  /* The defeat overlay's height is spoken for by the board, so the foot
-     adds nothing to it. UNR-134. */
-  .overlay-foot { display: flex; justify-content: center; }
-  .overlay-foot .rankings-btn { margin-top: 0; }
-  .overlay-foot { margin-top: 4px; }
+  .rankings-back:hover { background: transparent; color: var(--text); }
+  .rankings-back:active { transform: none; box-shadow: none; }
 
   /* INITIALS. Asked for only after a new hi-score, between the verdict and
-     the call to action, which reads "Sign" until you sign or skip. Chosen
-     over three arcade slots you roll through, which needed up to thirteen
-     taps a letter on a tablet. UNR-108. */
-  .initials { display: grid; justify-items: center; gap: 8px; margin-top: 18px; }
+     SIGN. Chosen over three arcade slots you roll through, which needed up
+     to thirteen taps a letter on a tablet. UNR-108. There is no skip: an
+     arcade never had one. UNR-137.
+
+     The label is gone - SIGN says it - and comes back small, under the
+     letters, only to refuse a set the dojo will not print. */
+  .initials { display: grid; justify-items: center; gap: 14px; margin-top: 44px; }
   .initials[hidden] { display: none; }
-  .initials-label { font-size: 12px; }
-  .overlay .initials-done { font-size: 36px; font-weight: bold; letter-spacing: 0.6ch; margin-right: -0.6ch; color: var(--text); }
+  .initials-label { order: 1; font-size: 12px; display: none; }
+  .initials.blocked .initials-label { display: block; }
 
   /* A real field, letter-spaced so each letter sits on its own underline,
      the way an arcade table prints them. The board above it turns text
@@ -339,52 +392,33 @@
     letter-spacing: 0.6ch;
     text-transform: uppercase;
     color: var(--text);
-    caret-color: var(--yellow);
-    background:
-      linear-gradient(var(--dim), var(--dim)) 0.6ch 100% / 1ch 2px no-repeat,
-      linear-gradient(var(--dim), var(--dim)) 2.2ch 100% / 1ch 2px no-repeat,
-      linear-gradient(var(--dim), var(--dim)) 3.8ch 100% / 1ch 2px no-repeat;
     border: 0;
     outline: none;
     -webkit-user-select: text;
     user-select: text;
+    /* The arcade cursor: no browser caret. The next empty slot's underline
+       blinks yellow instead; showInitials() says which one that is. */
+    caret-color: transparent;
+    background:
+      linear-gradient(var(--u0, var(--text)), var(--u0, var(--text))) 0.6ch 100% / 1ch 2px no-repeat,
+      linear-gradient(var(--u1, var(--text)), var(--u1, var(--text))) 2.2ch 100% / 1ch 2px no-repeat,
+      linear-gradient(var(--u2, var(--text)), var(--u2, var(--text))) 3.8ch 100% / 1ch 2px no-repeat;
+    animation: slot-blink 1.1s steps(1, end) infinite;
   }
-
-  .overlay #play-btn:disabled { opacity: 0.35; cursor: default; animation: none; }
-
-  /* Under Sign, so a tablet's keyboard covers it once the field is tapped.
-     Accepted: skip is on screen until you choose to type, and backing out
-     after that is two taps - hide the keyboard, then skip. */
-  .skip-btn {
-    justify-self: center;
-    min-height: 44px;
-    margin-top: 8px;
-    padding: 0 12px;
-    font-size: 12px;
-    font-weight: normal;
-    color: var(--dim);
-    background: transparent;
-    box-shadow: none;
-    animation: none;
-  }
-  .skip-btn[hidden] { display: none; }
-  .skip-btn:hover  { background: transparent; color: var(--text); }
-  .skip-btn:active { transform: none; box-shadow: none; }
+  @property --cursor { syntax: '<color>'; inherits: true; initial-value: #ffff00; }
+  @keyframes slot-blink { 60% { --cursor: transparent; } }
+  @media (prefers-reduced-motion: reduce) { .initials-input { animation: none; } }
 
   /* THE BOARD, on the defeat screen only. A podium - the top three, a gap,
      then the run above yours, yours and the one below - and the dojos
      beneath it. Never alongside the initials entry. UNR-108.
 
      Spacing is small inside a group and large between groups, which is
-     what makes it skimmable: 10px from title to line, 52px from the line
-     to the podium and from the dojos to Again. Settled side by side at
-     actual size. The overlay is its own container so the short step below
-     can ask how much room there is. */
+     what makes it skimmable: 10px from title to line, then the menu, then
+     the podium. The dojo totals under it went with UNR-137: the Rankings
+     row does that job. The overlay is its own container so the short step
+     below can ask how much room there is. */
   .overlay { container: overlay / size; }
-  .overlay.with-board { gap: 0; }
-  .overlay.with-board h2 { margin-bottom: 10px; }
-  .overlay.with-board #play-btn { margin-top: 52px; justify-self: center; }
-  .overlay.with-board .overlay-foot { margin-top: 12px; }
 
   .board { margin-top: 52px; font-size: 12px; }
   .board[hidden] { display: none; }
@@ -403,32 +437,17 @@
   .dojo-badge { display: inline-block; width: 18px; height: 18px; vertical-align: middle; }
   .dojo-badge svg { display: block; width: 18px; height: 18px; }
 
-  .dojos { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 26px; margin-top: 40px; padding: 0 16px; color: var(--dim); }
-  .dojos b { color: var(--text); font-weight: normal; }
-  .dojos .mine, .dojos .mine b { color: var(--yellow); }
-  .dojos .standing { display: none; }
-
   /* SHORT. When the board is drawn small the podium loses the runs either
-     side of yours - never yours - and the spacing tightens to the
-     comfortable set that was compared against this one. Fewer rows rather
-     than smaller ones: text and buttons stay a size a finger and an eye
-     can use.
-
-     The dojos shrink to yours alone, with where it stands, on one line.
-     Three dojos wrapped onto two lines at this width, and the one left on
-     its own line read as overflow rather than third place. The other two
-     are in the full view (UNR-134). */
+     side of yours - never yours - and the spacing tightens. Fewer rows
+     rather than smaller ones: text and buttons stay a size a finger and an
+     eye can use. */
   @container overlay (max-height: 540px) {
-    .overlay.with-board h2 { margin-bottom: 8px; }
-    .overlay.with-board #play-btn { margin-top: 28px; }
-    .overlay.with-board .overlay-foot { margin-top: 0; }
-    .board { margin-top: 28px; }
+    .overlay.verdict h2, .overlay.verdict.with-board h2 { margin-top: 32px; }
+    .overlay.verdict .run-menu { margin-top: 20px; }
+    .overlay.verdict .board { margin-top: 24px; }
     .board td { height: 26px; }
     .board .gap td { height: 14px; }
     .board .near { display: none; }
-    .dojos { margin-top: 20px; }
-    .dojos > :not(.mine) { display: none; }
-    .dojos .standing { display: inline; }
   }
 
 
@@ -679,7 +698,10 @@
   .wrap.titling .hint,
   .wrap.titling .version { display: none; }
   .wrap.titling h1.crest { margin: 0 0 52px; }
-  .wrap.titling h1.crest svg { width: min(88vw, 780px, calc((100svh - 220px) / 0.36)); }
+  /* 330px of the window is kept for the menu's three rows, which shrinks
+     the crest on a short window. It is the same under PRESS START, so the
+     crest does not jump when the menu takes its place. */
+  .wrap.titling h1.crest svg { width: min(88vw, 780px, calc((100svh - 330px) / 0.36)); }
 
   .title-screen { display: grid; justify-items: center; gap: 10px; }
   .title-screen[hidden] { display: none; }
@@ -691,7 +713,7 @@
      behind the letters and a bloom around them - and blinks, the arcade's
      own way of saying press me. Chosen 16 September over plain glowing
      text and over pixel lettering, which was too much beside the crest. */
-  .title-screen button {
+  .title-screen #start-btn {
     all: unset;
     cursor: pointer;
     font-size: 30px;
@@ -715,11 +737,12 @@
     gap: 16px;
     letter-spacing: 1px;
   }
-  .title-screen button:focus-visible { outline: 2px solid var(--text); outline-offset: 8px; }
+  .title-screen #start-btn[hidden] { display: none; }
+  .title-screen #start-btn:focus-visible { outline: 2px solid var(--text); outline-offset: 8px; }
   @keyframes press-start { 60% { opacity: 0; } }
 
   @media (prefers-reduced-motion: reduce) {
-    .title-screen button { animation: none; }
+    .title-screen #start-btn { animation: none; }
   }
   /* DOJO SELECT. UNR-114. A screen of its own after the title, like an
      arcade select: the crest, board, stats and hints all step aside and
@@ -882,9 +905,6 @@
     .dojo-select *, .dojo-select.arrive, .dojo-verdict * { animation: none !important; transition: none !important; }
   }
 
-  /* On the start screen: which dojo you are in, and the way to change it. */
-  .overlay .dojo-line a { color: var(--dim); text-decoration: underline; cursor: pointer; }
-
   /* ALL VALLEY RANKINGS. UNR-134. A screen of its own, like dojo select,
      and built only from what the game already has: dojo select's title,
      spacing, dim-to-lit names and key line, and the defeat overlay's rows
@@ -1021,6 +1041,11 @@
   <div class="title-screen" id="title-screen">
     <button id="start-btn" type="button">Press start</button>
     <p id="start-how">any key</p>
+    <nav class="menu title-menu" id="title-menu" aria-label="main menu" hidden>
+      <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Arcade</span></button>
+      <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Practice</span></button>
+      <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Rankings</span></button>
+    </nav>
     <p class="title-foot"><span>@pushinpixls 2026</span><span>free play</span></p>
   </div>
 
@@ -1051,23 +1076,33 @@
   <div class="stage" id="stage">
     <canvas id="game" width="630" height="630"></canvas>
 
-    <div class="overlay" id="overlay">
-      <h2 id="overlay-title">Strike hard. No mercy.</h2>
-      <p  id="overlay-text">arrows or wasd to move</p>
-      <p class="dojo-line" id="dojo-line" hidden>Dojo: <span id="dojo-line-name"></span> &middot; <a href="#" id="dojo-change">change</a></p>
+    <!-- Only ever inside a run or at its end: mercy, signing, the verdict.
+         The start menu lives on the title, not here. UNR-137. -->
+    <div class="overlay hidden" id="overlay">
+      <h2 id="overlay-title"></h2>
+      <p  id="overlay-text"></p>
       <div class="initials" id="initials" hidden></div>
+      <nav class="menu run-menu" id="mercy-menu" aria-label="mercy" hidden>
+        <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Continue</span></button>
+        <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Quit</span></button>
+      </nav>
+      <nav class="menu run-menu" id="sign-menu" aria-label="sign" hidden>
+        <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Sign</span></button>
+      </nav>
+      <!-- The middle row is Rankings after an Arcade run and Arcade after a
+           Practice one, set by showMenus(). -->
+      <nav class="menu run-menu" id="verdict-menu" aria-label="next" hidden>
+        <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Rematch</span></button>
+        <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Rankings</span></button>
+        <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Main menu</span></button>
+      </nav>
       <div class="board" id="board" hidden></div>
-      <button id="play-btn">Enter the dojo</button>
-      <button class="skip-btn" id="skip-btn" type="button" hidden>skip</button>
-      <div class="overlay-foot">
-        <button class="rankings-btn" id="rankings-btn" type="button">rankings</button>
-      </div>
     </div>
   </div>
 
   <!-- Non-breaking spaces inside each pair, so a narrow column wraps
        between controls and never splits "r" from "= restart". -->
-  <p class="hint" id="hint">arrows&nbsp;/&nbsp;wasd &middot; space&nbsp;=&nbsp;mercy &middot; r&nbsp;=&nbsp;restart &middot; m&nbsp;=&nbsp;sound &middot; b&nbsp;=&nbsp;rankings</p>
+  <p class="hint" id="hint">arrows&nbsp;/&nbsp;wasd &middot; space&nbsp;=&nbsp;mercy &middot; m&nbsp;=&nbsp;sound &middot; b&nbsp;=&nbsp;rankings</p>
   <p class="version" id="version"></p>
 </div>
 
@@ -1111,8 +1146,6 @@ const bestNameEl = document.getElementById('best-belt-name');
 const stageEl   = document.getElementById('stage');
 const hintEl    = document.getElementById('hint');
 const mercyBtn  = document.getElementById('mercy-btn');
-const playBtn   = document.getElementById('play-btn');
-const dojoLineEl = document.getElementById('dojo-line');
 const soundBtn  = document.getElementById('sound-btn');
 
 // Can this screen be touched? `any-pointer` rather than `pointer`, so an
@@ -1124,13 +1157,11 @@ const TOUCH = window.matchMedia('(any-pointer: coarse)').matches;
 // bar, so telling it to press one is worse than saying nothing.
 if (TOUCH) {
   hintEl.textContent = 'swipe to move · ❚❚ = mercy';
-  document.getElementById('overlay-text').textContent = 'swipe to move';
   document.getElementById('start-how').textContent = 'tap to start';
   document.getElementById('dojo-how').textContent = 'tap a dojo to bow in · tap its corner to flip';
   document.getElementById('rankings-how').textContent = 'tap a dojo to choose';
 }
 const HINT_TEXT = hintEl.textContent;
-const MERCY_TEXT = TOUCH ? 'Tap continue to fight on' : 'Press space to fight on';
 
 // Asked once and kept, so anything that moves can check it cheaply. The
 // game honours this in CSS too; doing it properly everywhere is UNR-104.
@@ -1152,6 +1183,7 @@ let queasy;         // moves left of looking green, after a rotten egg
 let bestAtStart;    // the record as it stood when this run began
 let score;
 let phase;          // 'ready' | 'playing' | 'paused' | 'dying' | 'over'
+let mode = 'arcade';  // 'arcade' | 'practice'. Only Arcade keeps anything. UNR-137.
 let defeat;         // how the last run ended: {cause, at, time}, or null
 let lastDefeatLine; // so the same line never lands twice in a row
 
@@ -1446,8 +1478,10 @@ function addScore(points, kind) {
   // Order matters here. promotionFor() is asked BEFORE best moves, because
   // the question is whether this point crossed a threshold the old best
   // had not. Afterwards the answer would always be no.
+  //
+  // Practice keeps nothing, so there it never moves at all.
   let earned = null;
-  if (score > best) {
+  if (mode === 'arcade' && score > best) {
     earned = promotionFor(best, score);
     best = score;
     bestEl.textContent = best;
@@ -1506,7 +1540,7 @@ function gameOver(cause, at) {
   defeat = { cause, at, dir: direction, time: performance.now() };
   runMs  = runDuration(runStartedAt, defeat.time, pausedMs);
   playSound('defeat');
-  loadBoard(lastRunId);                      // while the defeat plays
+  if (mode === 'arcade') loadBoard(lastRunId);   // while the defeat plays
   requestAnimationFrame(dyingFrame);
 }
 
@@ -1548,10 +1582,37 @@ function showVerdict() {
   if (!plausibleRun({ score, length: snake.length, moves, durationMs: runMs })) {
     return disqualify();
   }
-  lastDefeatLine = defeatLine(defeat.cause, score, bestAtStart, Math.random(), lastDefeatLine);
-  showOverlay('DEFEATED', lastDefeatLine, 'Again');
+  // A forfeit gets no line: you chose it, and there is nothing to add.
+  // Practice has no hi-score to beat, so no line may claim a record.
+  const forfeited = defeat.cause === 'forfeit';
+  if (!forfeited) {
+    const bestBefore = mode === 'arcade' ? bestAtStart : Infinity;
+    lastDefeatLine = defeatLine(defeat.cause, score, bestBefore, Math.random(), lastDefeatLine);
+  }
+  showOverlay(forfeited ? 'FORFEIT' : 'DEFEATED', forfeited ? '' : lastDefeatLine);
+  if (mode === 'practice') return;
   if (wantsInitials(score, bestAtStart)) openInitials();
   else dueBoard();
+}
+
+// Quit, from mercy. A forfeit is a loss and goes on the record, so it takes
+// the defeat's path without the death: sign if it is your best, then the
+// menu. With nothing scored there is nothing to record, so it goes straight
+// back to the title. UNR-137.
+//
+// Dated a whole defeat ago, so the snake is drawn as the sequence leaves
+// it - drained and bowed - with no impact, since nothing was hit.
+function forfeit() {
+  if (phase !== 'paused') return;
+  const now = performance.now();
+  if (pausedAt !== null) pausedMs += now - pausedAt;
+  pausedAt = null;
+  if (score === 0) return toTitle();
+  defeat = { cause: 'forfeit', at: snake[0], dir: direction, time: now - DEFEAT_MS };
+  runMs  = runDuration(runStartedAt, now, pausedMs);
+  if (mode === 'arcade') loadBoard(lastRunId);
+  showVerdict();
+  showMercy();
 }
 
 // SHIL KYUK. A run the rules could not have produced was not played, so
@@ -1572,8 +1633,8 @@ function disqualify() {
   showBestBelt();
   const pool = DEFEAT_LINES.disqualified;
   lastDefeatLine = pool[Math.floor(Math.random() * pool.length)];
-  showOverlay('DISQUALIFIED', lastDefeatLine, 'Again');
-  dueBoard();
+  showOverlay('DISQUALIFIED', lastDefeatLine);
+  if (mode === 'arcade') dueBoard();
 }
 
 
@@ -1786,6 +1847,21 @@ const SOUNDS = {
     }
     tone('square', steps);
   },
+
+  // The menus, chosen from the mocks for UNR-137. A blip as the lit row
+  // moves, a rising chord when one is picked, and a low two-note buzz when
+  // SIGN is pressed without three letters to sign with.
+  cursor() {
+    tone('square', [[note('A5'), 0.14, 1]]);
+  },
+
+  select() {
+    tone('square', [[note('E5'), 0.22, 2], [note('A5'), 0.22, 2], [note('E6'), 0.22, 3]]);
+  },
+
+  refuse() {
+    tone('square', [[note('E3'), 0.2, 4], [note('C3'), 0.2, 8]]);
+  },
 };
 
 function playSound(name) {
@@ -1838,23 +1914,17 @@ function draw() {
   ctx.translate(jolt.x, jolt.y);
 
   // Faint dot in the middle of each grid square, just for looks.
-  const arrived = arrivalElapsed();
   ctx.fillStyle = '#1e1e24';
   for (let x = 0; x < COLS; x++) {
     for (let y = 0; y < ROWS; y++) {
-      const lit = arrivalDot(arrived, x, y);
-      if (lit <= 0) continue;
-      ctx.globalAlpha = lit;
       ctx.fillRect(x * CELL + CELL / 2 - 1, y * CELL + CELL / 2 - 1, 2, 2);
     }
   }
-  ctx.globalAlpha = 1;
 
   // The egg, with a gentle pulse driven by the clock, held still for
   // reduced motion. It is decoration; the egg says everything without it.
   const breathe = REDUCED_MOTION.matches ? 1 : 1 + Math.sin(Date.now() / 200) * 0.10;
-  const pulse = breathe * arrivalEgg(arrived);
-  if (pulse > 0) drawEgg(egg.x * CELL + CELL / 2, egg.y * CELL + CELL / 2, pulse);
+  drawEgg(egg.x * CELL + CELL / 2, egg.y * CELL + CELL / 2, breathe);
 
   if (visitor) {
     // Flash when it's nearly out of time, so you get fair warning either
@@ -2122,13 +2192,7 @@ function drawMouse() {
 // ---- the snake --------------------------------------------------------
 // Drawn tail-first, so the head always ends up painted on top.
 function drawSnake() {
-  // On arrival the snake may still be sliding in from the wall. Off the
-  // board is simply not drawn.
-  const arrived = arrivalElapsed();
-  const shift   = arrivalShift(arrived);
-
   for (let i = snake.length - 1; i >= 1; i--) {
-    if (snake[i].x - shift < 0) continue;
 
     // t runs from 0 (just behind the head) to 1 (the very tip of the tail).
     // Everything below is just "make it smaller and darker as t grows",
@@ -2143,7 +2207,7 @@ function drawSnake() {
     // The very tip is a drawn point rather than a rounded square, and it
     // trails whichever way the body actually runs.
     if (i === snake.length - 1 && snake.length > 1) {
-      drawTailTip(i, size, shift);
+      drawTailTip(i, size);
       continue;
     }
 
@@ -2163,20 +2227,20 @@ function drawSnake() {
       ? BELTS[beltFor(best) - 1].colour
       : deadColour(bodyColour(t, queasiness()), defeatDrain(defeatElapsed(), t));
     roundedSquare(
-      (snake[i].x - shift) * CELL + inset,
+      snake[i].x * CELL + inset,
       snake[i].y * CELL + inset,
       size,
       radius
     );
   }
 
-  if (snake[0].x - shift >= 0) drawHead(shift);
+  drawHead();
 }
 
 // The pointed tip. The artwork points LEFT, so it is turned to face away
 // from the segment in front of it - the tail should trail the body rather
 // than always pointing the same way regardless of where the snake went.
-function drawTailTip(i, size, shift) {
+function drawTailTip(i, size) {
   const tip  = snake[i];
   const prev = snake[i - 1];
 
@@ -2190,7 +2254,7 @@ function drawTailTip(i, size, shift) {
   // full segment so the tail ends in a point rather than a pip.
   const k = (size + 2) / TAIL_ART_WIDTH;
   ctx.save();
-  ctx.translate((tip.x - shift) * CELL + CELL / 2, tip.y * CELL + CELL / 2);
+  ctx.translate(tip.x * CELL + CELL / 2, tip.y * CELL + CELL / 2);
   ctx.rotate(angle + Math.PI);      // artwork points left; turn it to trail
   ctx.scale(k, k);
   ctx.translate(-10, -10);
@@ -2201,7 +2265,7 @@ function drawTailTip(i, size, shift) {
 
 // The head is where all the personality lives: it faces the way you're
 // travelling, blinks, flicks its tongue, and gets X eyes when you crash.
-function drawHead(shift = 0) {
+function drawHead() {
   const head = snake[0];
 
   // The whole head is painted around cx/cy, so shifting them shudders the
@@ -2228,7 +2292,7 @@ function drawHead(shift = 0) {
   const back = (defeatRecoil(ms, REDUCED_MOTION.matches) + pose.back) * CELL;
   const bow  = defeatBow(ms, REDUCED_MOTION.matches) * pose.scale;
 
-  const cx = (head.x - shift) * CELL + CELL / 2 + shake.x - fwd.x * back;
+  const cx = head.x * CELL + CELL / 2 + shake.x - fwd.x * back;
   const cy = head.y * CELL + CELL / 2 + shake.y - fwd.y * back;
 
   // Rotating the whole canvas is far easier than working out the maths
@@ -2470,56 +2534,6 @@ function bowPose(ms, reduced) {
            back:  BOW_COIL * easeOut((ms - 300) / 160) };
 }
 
-// ---- arrival, drawn ---------------------------------------------------
-// What happens between opening the page and the start screen, once per
-// session. It says what this is before a word is read - a cobra, a dojo -
-// and gets out of the way. It ends on the start screen exactly as it is
-// without one, so any key, click or tap jumps to the last frame and nothing
-// can break. See UNR-103.
-//
-// The crest settles and flicks its tongue, the mat's grid lights outward
-// from the spawn, and the snake slides in from the left wall one cell at a
-// time, by the board's own rules. Then the egg, then the menu. Chosen 14
-// September over no arrival, the crest alone, and the snake appearing in
-// place tail first. Those are kept on the branch options/arrival, with
-// design/arrival-options.html to compare.
-const ARRIVAL_MS         = 1400;   // start to menu
-const ARRIVAL_CREST_MS   = 700;
-const ARRIVAL_CREST_RISE = 10;     // px the crest settles down through
-const ARRIVAL_ENTRY      = 11;     // cells left the snake starts: head just off the wall
-
-function clamp01(t) { return Math.min(1, Math.max(0, t)); }
-
-// Everything below takes how far into arrival we are and returns a pose,
-// where 1 (or 0 for the shift) is the start screen. Past the end, or with
-// no arrival running (ms is Infinity), they all return the start screen.
-function arrivalCrest(ms) {
-  if (!(ms < ARRIVAL_CREST_MS)) return { opacity: 1, rise: 0 };
-  const t = easeOut(ms / ARRIVAL_CREST_MS);
-  return { opacity: t, rise: ARRIVAL_CREST_RISE * (1 - t) };
-}
-
-// A grid dot lights once the ring spreading from the spawn reaches it.
-function arrivalDot(ms, x, y) {
-  if (!(ms < ARRIVAL_MS)) return 1;
-  const d = Math.hypot(x - Math.floor(COLS / 2), y - Math.floor(ROWS / 2));
-  return clamp01((ms - 250 - d * 35) / 150);
-}
-
-// How many cells left of its spawn the snake still is.
-function arrivalShift(ms) {
-  if (!(ms < ARRIVAL_MS)) return 0;
-  return Math.min(ARRIVAL_ENTRY, Math.max(0, ARRIVAL_ENTRY - Math.floor((ms - 600) / 45)));
-}
-
-function arrivalEgg(ms) {
-  return ms < ARRIVAL_MS ? easeOut((ms - 1050) / 200) : 1;
-}
-
-function arrivalOverlay(ms) {
-  return ms < ARRIVAL_MS ? clamp01((ms - 1150) / 250) : 1;
-}
-
 // The flash at the point of contact: short yellow rays bursting from the
 // edge the head hit, gone in a fifth of a second. For a bite, the segment
 // that was bitten blinks twice as well, so you can see where you were.
@@ -2611,7 +2625,6 @@ function loop() {
   clearTimeout(loopTimer);
   // A hidden tab stops animation frames, so the bow can end here too.
   if (phase === 'bowing' && bowElapsed() >= BOW_MS) phase = 'playing';
-  if (arrivalElapsed() >= ARRIVAL_MS) endArrival();
   if (phase === 'playing') update();
   // A hidden tab stops animation frames; this makes sure the verdict
   // still arrives rather than waiting for the tab to come back.
@@ -2734,12 +2747,24 @@ document.addEventListener('keydown', (event) => {
     return;
   }
 
-  // On the title screen any key presses start, and does nothing else: Space
-  // there must not also start a run on the screen that follows.
+  const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+
+  // On the title, before the menu, any key presses start and does nothing
+  // else. Tab is left alone there, so keyboard users can still reach the
+  // button itself. Once the menu is up every key is its own, and B jumps
+  // to Rankings.
   if (titling) {
-    if (!['Shift', 'Control', 'Alt', 'Meta', 'Tab'].includes(event.key)) {
+    if (['Shift', 'Control', 'Alt', 'Meta'].includes(event.key)) return;
+    if (!startPressed) {
+      if (key === 'Tab') return;
       event.preventDefault();
       pressStart();
+    } else if (key === 'b') {
+      event.preventDefault();
+      titleMenu.at = titleMenu.items.indexOf('rankings');
+      pickMenu(titleMenu);
+    } else {
+      menuKeydown(titleMenu, event, false);
     }
     return;
   }
@@ -2755,25 +2780,42 @@ document.addEventListener('keydown', (event) => {
   // a game you cannot see.
   if (rankingsOpen) { rankingsKeydown(event); return; }
 
-  // While initials are being entered, every key belongs to them: r, wasd,
-  // m and space are letters or nothing, never a restart behind your back.
-  if (entry) { initialsKeydown(event); return; }
+  // Esc calls mercy and answers it, the way Space does.
+  if (key === 'Escape' && (phase === 'playing' || phase === 'paused')) {
+    event.preventDefault();
+    toggleMercy();
+    return;
+  }
 
-  const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+  // While initials are being entered, every key belongs to them and to
+  // SIGN: r, wasd, m and space are letters or nothing, never a restart
+  // behind your back.
+  if (entry) {
+    if (!menuKeydown(signMenu, event, true)) initialsKeydown(event);
+    return;
+  }
+
+  // Mercy's menu and the verdict's take the keys they use; the rest fall
+  // through, so B still opens the rankings from the verdict.
+  if (phase === 'paused' && menuKeydown(mercyMenu, event, false)) return;
+  if (phase === 'over' && menuKeydown(verdictMenu, event, false)) return;
 
   if (key === 'b') { openRankings(); return; }
 
   // Stop arrows and space from scrolling the page underneath us.
   if (key in KEYS || key === ' ') event.preventDefault();
 
-  if (key === 'r') { if (canRestart()) startGame(); return; }
+  // R is Rematch, on the defeat and nowhere else. Mid-run it would throw a
+  // bad Arcade run away off the record: the only way out of a run is
+  // mercy, then Quit, which counts. UNR-137.
+  if (key === 'r') {
+    if ((phase === 'dying' || phase === 'over') && canRestart()) startGame();
+    return;
+  }
 
   if (key === ' ') {
-    if (phase === 'playing' || phase === 'paused') {
-      toggleMercy();
-    } else if (phase !== 'bowing' && canRestart()) {
-      startGame();
-    }
+    if (phase === 'playing') toggleMercy();
+    else if (phase === 'dying' && canRestart()) startGame();
     return;
   }
 
@@ -2786,7 +2828,7 @@ function toggleMercy() {
   if (phase === 'playing') {
     phase = 'paused';
     pausedAt = performance.now();
-    showOverlay('MERCY', MERCY_TEXT, 'Continue');
+    showOverlay('MERCY', '');
   } else if (phase === 'paused') {
     phase = 'playing';
     if (pausedAt !== null) pausedMs += performance.now() - pausedAt;
@@ -2876,8 +2918,8 @@ let swipeFrom = null;
 
 stageEl.addEventListener('pointerdown', (event) => {
   if (rankingsOpen) return;                       // hidden, but never steer behind it
-  // A tap during the defeat skips it. Once the verdict is up, the Again
-  // button is the way back in, as it always was.
+  // A tap during the defeat skips it. Once the verdict is up, its menu is
+  // the way back in.
   if (phase === 'dying') { if (canRestart()) startGame(); return; }
   if (event.pointerType === 'mouse') return;      // a mouse drag isn't a swipe
   swipeFrom = {id: event.pointerId, x: event.clientX, y: event.clientY};
@@ -2907,13 +2949,18 @@ for (const type of ['pointerup', 'pointercancel']) {
 // and named in the header, so saying it a third time was a third voice
 // telling you something you already knew. A promotion is the exception,
 // and it has its own moment below the board rather than a line in here.
-function showOverlay(title, text, buttonLabel) {
-  dojoLineEl.hidden = true;
+//
+// Whatever it says, its menus open on their first row: Continue, Sign,
+// Rematch. After a Practice run the verdict offers Arcade where Rankings
+// would be, so the way into the game that counts is the next choice, and
+// no line has to say that practice did not.
+function showOverlay(title, text) {
   titleEl.textContent = title;
   textEl.textContent  = text;
-  playBtn.textContent = buttonLabel;
+  for (const menu of [mercyMenu, signMenu, verdictMenu]) menu.at = 0;
+  verdictMenu.items = mode === 'practice' ? ['again', 'arcade', 'menu'] : ['rematch', 'rankings', 'menu'];
   overlay.classList.remove('hidden');
-  showRankingsBtn();
+  showMenus();
 }
 
 // DEFEAT LINES.
@@ -3096,7 +3143,6 @@ function showBestBelt() {
 }
 
 function startGame() {
-  endArrival();
   audio();    // always a click or a key, so the browser will allow it
   reset();
   hideInitials();
@@ -3131,18 +3177,6 @@ function bowFrame() {
   draw();
   requestAnimationFrame(bowFrame);
 }
-
-// Continue goes through toggleMercy() like space does, so the time spent
-// paused is counted the same way whichever you used.
-playBtn.addEventListener('click', () => {
-  if (entry) {
-    signInitials();
-  } else if (phase === 'paused') {
-    toggleMercy();
-  } else {
-    startGame();
-  }
-});
 
 // ---- the crest's tongue ----------------------------------------------
 // Real snakes flick their tongues to smell, constantly and irregularly: a
@@ -3233,96 +3267,203 @@ function watchCrest() {
   if (phase === 'playing' && tongueFrame) stillTongue();
 }
 
-// ---- arrival ---------------------------------------------------------
-// Once per session, on page load. Like the bow, it needs every frame and
-// drives its own. The game is in 'ready' throughout, so input works from
-// the first frame: any key, click or tap ends arrival first - the listeners
-// below run before every other - and then does what it would have done on
-// the start screen anyway.
+// The crest, which the title and dojo select fade, and whose tongue flicks.
 const crestEl = document.getElementById('crest');
-let arrivalStart   = null;     // null when not arriving
-let arrivalFlicked = false;
 
-function arrivalElapsed() {
-  return arrivalStart === null ? Infinity : performance.now() - arrivalStart;
+// How long after the page opens the crest first smells the room.
+const FIRST_FLICK_MS = 700;
+
+// ---- menus ------------------------------------------------------------
+// Every menu is one of these: the title's, and on the board mercy's,
+// signing's and the verdict's. UNR-137. Arrows, W and S, or Tab move the
+// lit row and wrap; Enter or Space picks it. A mouse lights a row by moving
+// over it - movement, not presence, so a pointer resting where a menu
+// appears cannot take the light away from its first row - and a click
+// picks it.
+//
+// A menu's items are named here rather than read from the page, so what
+// each row does never depends on the markup's order. The page's rows are
+// only where they are shown.
+const MENU_LABELS = {
+  arcade: 'Arcade', practice: 'Practice', rankings: 'Rankings',
+  continue: 'Continue', quit: 'Quit', sign: 'Sign',
+  rematch: 'Rematch', again: 'Again', menu: 'Main menu'
+};
+
+// Which row a step lands on, wrapping at either end. Pure.
+function menuStep(at, delta, length) {
+  return ((at + delta) % length + length) % length;
 }
 
-// sessionStorage can be missing or throw (a private window, blocked site
-// data). Then it plays on every load, which is the lesser failure.
-function arrivalDue() {
-  try { return !sessionStorage.getItem('strikeFirstArrived'); } catch (e) { return true; }
+function makeMenu(id, items) {
+  const nav = document.getElementById(id);
+  const menu = { nav, items, rows: [...nav.querySelectorAll('button')], at: 0 };
+  menu.rows.forEach((row, i) => {
+    row.addEventListener('mousemove', () => moveMenu(menu, i));
+    row.addEventListener('click', () => {
+      row.blur();                 // so Space cannot press it a second time
+      menu.at = i;
+      pickMenu(menu);
+    });
+  });
+  return menu;
 }
 
-function startArrival() {
-  if (REDUCED_MOTION.matches || !arrivalDue()) return;
-  try { sessionStorage.setItem('strikeFirstArrived', '1'); } catch (e) {}
-  arrivalStart = performance.now();
-  showArrival(0);
-  requestAnimationFrame(arrivalFrame);
+const titleMenu   = makeMenu('title-menu', ['arcade', 'practice', 'rankings']);
+const mercyMenu   = makeMenu('mercy-menu', ['continue', 'quit']);
+const signMenu    = makeMenu('sign-menu', ['sign']);
+const verdictMenu = makeMenu('verdict-menu', ['rematch', 'rankings', 'menu']);
+
+// Output only: names the rows and lights the one at `at`.
+function showMenu(menu) {
+  menu.rows.forEach((row, i) => {
+    row.classList.toggle('on', i === menu.at);
+    row.querySelector('.label').textContent = MENU_LABELS[menu.items[i]];
+  });
 }
 
-// The DOM half: the crest and the menu. The board is draw()'s.
-function showArrival(ms) {
-  const crest = arrivalCrest(ms);
-  crestEl.style.opacity   = crest.opacity;
-  crestEl.style.transform = `translateY(${-crest.rise}px)`;
-  overlay.style.opacity   = arrivalOverlay(ms);
+function moveMenu(menu, i) {
+  if (i === menu.at) return;
+  menu.at = i;
+  showMenu(menu);
+  playSound('cursor');
 }
 
-function arrivalFrame() {
-  if (arrivalStart === null) return;         // skipped
-  const ms = arrivalElapsed();
-  // The crest has settled: it smells the room.
-  if (!arrivalFlicked && ms >= ARRIVAL_CREST_MS) {
-    arrivalFlicked = true;
-    flickTongue(2);
+// Keys for a menu that is up. Returns whether the key was the menu's.
+// While signing, W and S are letters and Space is nothing, so only the
+// arrows, Tab and Enter belong to it.
+function menuKeydown(menu, event, typing) {
+  const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+  const step = (delta) => moveMenu(menu, menuStep(menu.at, delta, menu.items.length));
+  if (key === 'ArrowUp' || (!typing && key === 'w')) step(-1);
+  else if (key === 'ArrowDown' || (!typing && key === 's')) step(1);
+  else if (key === 'Tab') step(event.shiftKey ? -1 : 1);
+  else if (key === 'Enter' || (!typing && key === ' ')) pickMenu(menu);
+  else return false;
+  event.preventDefault();
+  return true;
+}
+
+function pickMenu(menu) {
+  showMenu(menu);
+  const item = menu.items[menu.at];
+  if (item === 'sign') return sign();       // it has its own sound either way
+  playSound('select');
+  if (item === 'arcade') playArcade();
+  else if (item === 'practice') playPractice();
+  else if (item === 'rankings') menu === titleMenu ? openTitleRankings() : openRankings();
+  else if (item === 'continue') toggleMercy();
+  else if (item === 'quit') forfeit();
+  else if (item === 'rematch' || item === 'again') startGame();
+  else if (item === 'menu') toTitle();
+}
+
+// Output only: which of the board's menus is up, if any. The verdict's
+// replaces the initials the moment they close, so the table arriving under
+// it never moves it.
+function showMenus() {
+  const up = !overlay.classList.contains('hidden');
+  const verdict = up && phase === 'over';
+  const signingNow = verdict && entry !== null;
+  const shown = [[mercyMenu, up && phase === 'paused'], [signMenu, signingNow], [verdictMenu, verdict && !signingNow]];
+  for (const [menu, on] of shown) {
+    menu.nav.hidden = !on;
+    if (on) showMenu(menu);
   }
-  if (ms >= ARRIVAL_MS) return endArrival();
-  showArrival(ms);
-  draw();
-  requestAnimationFrame(arrivalFrame);
-}
-
-// The last frame, which is the start screen with nothing overridden.
-function endArrival() {
-  if (arrivalStart === null) return;
-  arrivalStart = null;
-  crestEl.style.opacity   = '';
-  crestEl.style.transform = '';
-  overlay.style.opacity   = '';
-  draw();
-}
-
-for (const type of ['keydown', 'pointerdown']) {
-  document.addEventListener(type, endArrival, true);
+  overlay.classList.toggle('verdict', verdict);
+  overlay.classList.toggle('signing', signingNow);
 }
 
 // ---- title screen ----------------------------------------------------
 // Every page load opens on the crest alone: the arcade front door. Any key,
-// click or tap presses start, and only that - it never also starts a run.
-// Then, until a dojo has been chosen, dojo select; otherwise arrival plays
-// as it always has, so the board still arrives rather than just being there.
-// Tab and the modifiers are left alone, so keyboard users can still reach
-// the button itself.
+// click or tap presses start, and only that: the menu takes PRESS START's
+// place under the crest. It never also starts a run.
+//
+// Arcade is the real game: dojo select every time, then the fight, and
+// the only runs that count. Practice goes straight into a run and keeps
+// nothing - no rankings, no hi-score, no belt - so it needs no dojo.
+// Rankings is here because checking where you stand without playing is a
+// real use, and cabinets show their high scores at the front door.
 const pageEl        = document.getElementById('page');
 const titleScreenEl = document.getElementById('title-screen');
+const startBtn      = document.getElementById('start-btn');
+const startHowEl    = document.getElementById('start-how');
 let titling = true;
+let startPressed = false;       // the menu has replaced PRESS START
 
+// The press also counts as the interaction browsers want before sound.
 function pressStart() {
-  if (!titling) return;
-  titling = false;
-  if (!currentDojo()) return openDojoSelect(true);
-  leaveTitle();
-  startArrival();
+  if (!titling || startPressed) return;
+  audio();
+  openTitleMenu(0);
+}
+
+function openTitleMenu(at) {
+  startPressed = true;
+  startBtn.hidden = true;
+  startHowEl.hidden = true;
+  titleMenu.at = at;
+  titleMenu.nav.hidden = false;
+  showMenu(titleMenu);
 }
 
 function leaveTitle() {
+  titling = false;
   titleScreenEl.hidden = true;
   pageEl.classList.remove('titling');
-  showRankingsBtn();
+  showMenus();
 }
 
-document.getElementById('start-btn').addEventListener('click', pressStart);
+// Back to the title with the menu up, on the row given.
+function showTitle(at) {
+  titling = true;
+  pageEl.classList.add('titling');
+  titleScreenEl.hidden = false;
+  openTitleMenu(at);
+  showMercy();
+}
+
+// Main menu, or a forfeit with nothing on it. The menu opens on the mode
+// you were playing.
+function toTitle() {
+  hideInitials();
+  dropBoard();
+  reset();
+  phase = 'ready';
+  overlay.classList.add('hidden');
+  showMenus();
+  showTitle(titleMenu.items.indexOf(mode));
+}
+
+// From the title, or from a Practice verdict's Arcade row.
+function playArcade() {
+  mode = 'arcade';
+  const fromTitle = titling;
+  titling = false;
+  if (!fromTitle) {
+    hideInitials();
+    dropBoard();
+    overlay.classList.add('hidden');
+  }
+  openDojoSelect(fromTitle);
+}
+
+function playPractice() {
+  mode = 'practice';
+  leaveTitle();
+  startGame();
+}
+
+// Back from rankings opened here lands on the title, Rankings still lit.
+let rankingsFromTitle = false;
+
+function openTitleRankings() {
+  leaveTitle();
+  rankingsFromTitle = true;
+  openRankings();
+}
+
+startBtn.addEventListener('click', pressStart);
 document.addEventListener('pointerdown', (event) => {
   // The corner controls are not part of the title: muting must not start.
   if (titling && event.button === 0 && !event.target.closest('#hud')) pressStart();
@@ -3334,8 +3475,8 @@ reset();
 phase = 'ready';
 showBestBelt();
 loop();
-setTimeout(() => flickTongue(2), ARRIVAL_CREST_MS);   // the crest smells the room
-setTimeout(idleTongue, TONGUE_PAUSE_MIN + ARRIVAL_CREST_MS);
+setTimeout(() => flickTongue(2), FIRST_FLICK_MS);   // the crest smells the room
+setTimeout(idleTongue, TONGUE_PAUSE_MIN + FIRST_FLICK_MS);
 
 // =====================================================================
 //  10. SCORES - runs that outlive the browser
@@ -3570,14 +3711,13 @@ let lastRunId = Number(localStorage.getItem(LAST_RUN_KEY)) || null;
 let signing = null;
 
 const initialsEl = document.getElementById('initials');
-const skipBtn    = document.getElementById('skip-btn');
 
 // The initials field while it is open, and null otherwise - which is what
 // hands the keyboard back to the game.
 let entry = null;
 
 // Only a run that beats your own hi-score asks. Most runs go straight to
-// Again, and a first run with any points at all is always a hi-score, so a
+// the verdict's menu, and a first run with any points at all is always a hi-score, so a
 // new player still signs the board after one run.
 function wantsInitials(points, bestBefore) {
   return points > 0 && points > bestBefore;
@@ -3588,49 +3728,46 @@ function cleanInitials(text) {
   return String(text || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
 }
 
-// A note replaces "Sign the board." until the player types.
-function openInitials(note) {
+// AAA on a first visit, as the cabinets did; last time's initials after.
+function openInitials() {
   initialsEl.innerHTML =
-    '<p class="initials-label" id="initials-label">Sign the board.</p>' +
+    '<p class="initials-label" id="initials-label">The dojo will not print that.</p>' +
     '<input class="initials-input" id="initials-input" ' +
     'autocomplete="off" autocorrect="off" autocapitalize="characters" ' +
     'spellcheck="false" enterkeyhint="done" aria-label="initials">';
   entry = document.getElementById('initials-input');
-  entry.value = cleanInitials(localStorage.getItem(INITIALS_KEY));
-  // Last time's initials fill the field, and a full field used to refuse
-  // another letter, so typing did nothing until you deleted first. Found on
-  // the iPad simulator. Now a letter typed into a full field starts over,
-  // the way an arcade cabinet's entry did. There is no maxlength for the
-  // same reason: Safari drops the extra letter before the page ever hears
-  // about it, which leaves nothing to start over from.
+  entry.value = cleanInitials(localStorage.getItem(INITIALS_KEY)) || 'AAA';
+  // A full field used to refuse another letter, so typing did nothing
+  // until you deleted first. Found on the iPad simulator. Now a letter
+  // typed into a full field starts over, the way an arcade cabinet's entry
+  // did. There is no maxlength for the same reason: Safari drops the extra
+  // letter before the page ever hears about it, which leaves nothing to
+  // start over from.
   entry.addEventListener('input', (event) => {
     const typed = entry.value.toUpperCase().replace(/[^A-Z]/g, '');
     entry.value = typed.length > 3 && event.data ? cleanInitials(event.data) : cleanInitials(typed);
     showInitials();
   });
   initialsEl.hidden = false;
-  skipBtn.hidden = false;
-  playBtn.textContent = 'Sign';
   showInitials();
-  if (note) document.getElementById('initials-label').textContent = note;
   if (!matchMedia('(pointer: coarse)').matches) entry.focus({ preventScroll: true });
-  showRankingsBtn();
+  showMenus();
 }
 
-// Output only: reflects the field, decides nothing.
+// Output only: reflects the field, decides nothing. The next empty slot
+// carries the cursor; a full field has none, since SIGN is what comes next.
 function showInitials() {
   const initials = cleanInitials(entry.value);
-  const blocked = BLOCKED_INITIALS.includes(initials);
-  playBtn.disabled = initials.length !== 3 || blocked;
-  document.getElementById('initials-label').textContent =
-    blocked ? 'The dojo will not print that.' : 'Sign the board.';
+  for (let i = 0; i < 3; i++) {
+    entry.style.setProperty('--u' + i, i === initials.length ? 'var(--cursor)' : 'var(--text)');
+  }
+  initialsEl.classList.toggle('blocked', BLOCKED_INITIALS.includes(initials));
 }
 
+// Letters, and the keys SIGN's menu does not take.
 function initialsKeydown(event) {
-  // preventDefault on Enter also stops a focused button from turning the
-  // same key press into a click, which would sign and then start a run.
-  if (event.key === 'Enter') { event.preventDefault(); signInitials(); return; }
-  if (event.key === 'Escape') { event.preventDefault(); skipInitials(); return; }
+  // No skip, hidden or otherwise: an arcade never had one. UNR-137.
+  if (event.key === 'Escape') { event.preventDefault(); return; }
 
   // A keyboard on a tablet: the field was never focused, so the first
   // letter focuses it and goes in, rather than vanishing.
@@ -3642,11 +3779,26 @@ function initialsKeydown(event) {
   }
 }
 
-// The row is built before anything waits, so pressing Again mid-save can't
-// change what gets saved. While it saves the entry is closed, so Enter or a
-// second tap can't send it twice, and Again works: a run never waits on the
-// network. If it fails, the entry comes back filled in, and Sign is the
-// retry - no extra button. Resolves once the save, and the board it
+// SIGN is always lit. Short of three letters, or on a set the dojo will not
+// print, it refuses out loud rather than sitting there looking disabled.
+function sign() {
+  const initials = cleanInitials(entry && entry.value);
+  if (initials.length !== 3 || BLOCKED_INITIALS.includes(initials)) {
+    playSound('refuse');
+    if (entry) entry.focus({ preventScroll: true });
+    return;
+  }
+  playSound('select');
+  signInitials();
+}
+
+// The row is built before anything waits, so pressing Rematch mid-save
+// can't change what gets saved. The entry closes at once, so Enter or a
+// second tap can't send it twice, and the verdict's menu takes its place:
+// a run never waits on the network, and your row arriving on the table is
+// the confirmation. A save that fails does not ask again - with no skip,
+// that would trap an offline player here - so the table comes up without
+// your row, which says it. Resolves once the save, and the board it
 // reloads, have settled, for tests.
 async function signInitials(send = globalThis.fetch) {
   const initials = cleanInitials(entry && entry.value);
@@ -3654,7 +3806,6 @@ async function signInitials(send = globalThis.fetch) {
   localStorage.setItem(INITIALS_KEY, initials);
   const record = runRecord(initials, currentDojo());
   signing = record;
-  showSigned('Signing…', initials);
   endEntry();
 
   const saved = await submitScore(record, send);
@@ -3664,43 +3815,24 @@ async function signInitials(send = globalThis.fetch) {
   }
   if (signing !== record) return;            // the verdict has gone
   signing = null;
-  if (!saved) return openInitials('Not saved. Sign again to try once more.');
-  showSigned('Signed.', initials);
-  // The places have moved now your run is on it, so load it again.
   boardDue = true;
+  if (!saved) return showBoard();
+  // The places have moved now your run is on it, so load it again.
   await loadBoard(saved.id, send);
-}
-
-// Output only.
-function showSigned(label, initials) {
-  initialsEl.innerHTML =
-    `<p class="initials-label">${label}</p>` +
-    `<p class="initials-done">${initials}</p>`;
-}
-
-function skipInitials() {
-  hideInitials();
-  dueBoard();
 }
 
 function endEntry() {
   if (entry) entry.blur();
   entry = null;
-  skipBtn.hidden = true;
-  playBtn.disabled = false;
-  playBtn.textContent = 'Again';
-  showRankingsBtn();
+  initialsEl.hidden = true;
+  initialsEl.innerHTML = '';
+  showMenus();
 }
 
 function hideInitials() {
-  endEntry();
   signing = null;
-  initialsEl.hidden = true;
-  initialsEl.innerHTML = '';
-  showRankingsBtn();
+  endEntry();
 }
-
-skipBtn.addEventListener('click', skipInitials);
 
 // ---- the board --------------------------------------------------------
 // Seen between runs, on the defeat screen, never over a live run. UNR-108.
@@ -3759,7 +3891,7 @@ function badgeSvg(dojo) {
 
 const boardEl = document.getElementById('board');
 
-// What the board holds right now, or null: { rows, you, standings }.
+// What the board holds right now, or null: { rows, you }.
 let board = null;
 // Whether the screen is at the point where the board belongs: after a
 // defeat with nothing to sign, or after signing or skipping.
@@ -3851,19 +3983,18 @@ async function readRows(url, send = globalThis.fetch) {
 // that was reset - just means no highlight.
 async function fetchBoard(runId, send = globalThis.fetch) {
   const ask = boardRequests(SCORE_SERVICE, runId);
-  const [top, players, mine] = await Promise.all([
+  const [top, mine] = await Promise.all([
     readRows(ask.top, send),
-    readRows(ask.dojos, send),
     ask.you ? readRows(ask.you, send) : []
   ]);
-  if (!top || !players || !mine) return null;
+  if (!top || !mine) return null;
   const you = mine[0] || null;
   let near = [];
   if (you && you.place > PODIUM_REACH) {
     near = await readRows(neighbourRequest(SCORE_SERVICE, you.place), send);
     if (!near) return null;
   }
-  return { rows: podiumRows(top, near, you), you, standings: dojoStandings(players, BOARD_TEAM) };
+  return { rows: podiumRows(top, near, you), you };
 }
 
 // Load the board for a run and show it if it is still wanted. Resolves
@@ -3891,12 +4022,10 @@ function dropBoard() {
 
 // Output only: shows what board and boardDue say, decides nothing.
 function showBoard() {
-  showRankingsBtn();
   const shown = boardDue && board !== null && entry === null && signing === null;
   boardEl.hidden = !shown;
   overlay.classList.toggle('with-board', shown);
   if (!shown) return;
-  initialsEl.hidden = true;
 
   const cell = (text, className) => {
     const td = document.createElement('td');
@@ -3937,32 +4066,15 @@ function showBoard() {
     tr.append(cell(String(r.place), 'place'), cell(r.initials), dojo, beltCell, cell(String(r.score), 'score'));
   }
 
-  const yours = board.you ? board.you.dojo : currentDojo();
-  const dojos = document.createElement('div');
-  dojos.className = 'dojos';
-  for (const d of board.standings) {
-    const div = document.createElement('div');
-    if (d.dojo === yours) div.className = 'mine';
-    const total = document.createElement('b');
-    total.textContent = d.students ? String(d.total) : '—';
-    // Where it stands, shown only in the short layout, where yours is the
-    // only dojo left. A dojo with nobody has no standing to state.
-    const standing = document.createElement('span');
-    standing.className = 'standing';
-    if (d.students) standing.textContent = ` · ${ordinal(d.place)} of ${board.standings.length}`;
-    div.append(badge(d.dojo), ' ', total, standing, ` · ${studentsLabel(d.students)}`);
-    dojos.append(div);
-  }
-
-  boardEl.replaceChildren(table, dojos);
+  boardEl.replaceChildren(table);
 }
 
 // =====================================================================
 //  11. DOJO SELECT - choose a side. UNR-114
 // =====================================================================
-// A screen of its own after the title, the first time only: every run
-// counts for a dojo, so there is no dojo-less player. The start screen
-// says which dojo you are in and offers to change it. Settled from a mock
+// A screen of its own, opened every time Arcade is chosen: every run that
+// counts, counts for a dojo, so choosing your side is part of the ritual.
+// It opens on the dojo you had. UNR-137. Settled from a mock
 // whose README records each choice: design/dojo-select-compare/ at 09df41e.
 //
 // Arcade rules: 30 seconds on the clock, and when it runs out the lit dojo
@@ -4081,17 +4193,6 @@ function fitDojoSelect() {
 }
 if (typeof addEventListener === 'function') addEventListener('resize', fitDojoSelect);
 
-function showDojoLine() {
-  const dojo = currentDojo();
-  dojoLineEl.hidden = !dojo;
-  if (dojo) document.getElementById('dojo-line-name').textContent = DOJO_NAMES[dojo];
-}
-showDojoLine();
-document.getElementById('dojo-change').addEventListener('click', (event) => {
-  event.preventDefault();
-  openDojoSelect(false);
-});
-
 // Output only: lights the card at dojoAt and the room behind it.
 function showDojoHighlight() {
   dojoCards.forEach((li, i) => {
@@ -4145,8 +4246,8 @@ function tickDojoClock() {
   }
 }
 
-// Open the select, from the title screen or from the start screen's
-// change link. The title fades out first; the select fades in as one
+// Open the select, from the title or from a Practice verdict's Arcade row.
+// From the title, the title fades out first; the select fades in as one
 // piece with the lit card already lit.
 function openDojoSelect(fromTitle) {
   if (dojoPhase !== 'closed') return;
@@ -4301,8 +4402,7 @@ async function chooseDojo(i, timedOut) {
   closeDojoSelect();
 }
 
-// Back to the game: the start screen, with the dojo you chose on it. The
-// first time, arrival brings the board in; after a change, it fades back.
+// Straight into the fight, under the dojo you chose, as the board fades in.
 function closeDojoSelect() {
   dojoPhase = 'closed';
   clearInterval(dojoTimer);
@@ -4314,12 +4414,9 @@ function closeDojoSelect() {
                     dojoVerdict.querySelector('span'), ...dojoCards, ...dojoCards.map(li => li.querySelector('.card'))]) {
     if (el.getAnimations) el.getAnimations().filter(a => !(a instanceof CSSAnimation) && !(a instanceof CSSTransition)).forEach(a => a.cancel());
   }
-  showDojoLine();
-  showRankingsBtn();
-  startArrival();
-  if (arrivalStart !== null) return;
+  showMenus();
+  startGame();
   if (REDUCED_MOTION.matches) return;
-  flickTongue(2);
   for (const el of [crestEl, stageEl, document.querySelector('.scores'), hintEl]) {
     if (el && el.animate) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 360, easing: 'ease-out' });
   }
@@ -4336,16 +4433,15 @@ function closeDojoSelect() {
 // second list that made no sense beside the first. The defeat screen still
 // carries every dojo's total.
 //
-// Its own screen, like dojo select, reached from the start screen and the
-// defeat screen with B or the rankings button, never during a run. It
+// Its own screen, like dojo select, reached from the title's menu and the
+// verdict's, or with B, never during a run. It
 // scrolls as a page, so on a tablet a swipe scrolls it; the stage, where a
 // swipe steers, is hidden while it is open.
 //
 // Filtered to a dojo, places are counted within the dojo: its best run is
 // 1st. Chosen 17 September over keeping the tournament place.
 //
-// Only a dojo's runs are ranked. There is no dojo-less run to leave out
-// yet; when quick play arrives (UNR-137) it keeps its hi-score at home.
+// Only a dojo's runs are ranked. Practice runs are never posted (UNR-137).
 
 const RANKINGS_TOP = 10;
 const RANKINGS_FILTERS = [null, ...DOJO_IDS];     // null is All
@@ -4423,7 +4519,6 @@ const rankingsEl       = document.getElementById('rankings');
 const rankingsFilterEl = document.getElementById('rankings-filter');
 const rankingsRunsEl   = document.getElementById('rankings-runs');
 const rankingsCrestsEl = document.getElementById('rankings-crests');
-const rankingsBtn      = document.getElementById('rankings-btn');
 
 let rankingsOpen = false;
 let rankingsAt = 0;           // index into RANKINGS_FILTERS
@@ -4453,7 +4548,10 @@ function closeRankings() {
   rankingsEl.hidden = true;
   pageEl.classList.remove('ranking');
   if (typeof scrollTo === 'function') scrollTo(0, 0);
-  showRankingsBtn();
+  if (rankingsFromTitle) {
+    rankingsFromTitle = false;
+    showTitle(titleMenu.items.indexOf('rankings'));
+  }
 }
 
 // Changing dojo while scrolled down starts the new list at its top, just
@@ -4502,13 +4600,7 @@ function rankingsEmpty(dojo, mine) {
   return `No student of ${DOJO_NAMES[dojo]} has fought yet.`;
 }
 
-// Output only: the button is there when the screen behind it may open.
-function showRankingsBtn() {
-  rankingsBtn.hidden = !canOpenRankings();
-}
-
-rankingsBtn.addEventListener('click', () => { rankingsBtn.blur(); openRankings(); });
-document.getElementById('rankings-back').addEventListener('click', closeRankings);
+document.getElementById('rankings-back').addEventListener('click', () => closeRankings());
 
 const rankingsPicks = RANKINGS_FILTERS.map((dojo, i) => {
   const li = document.createElement('li');
@@ -4618,7 +4710,6 @@ function showRankings() {
   rankingsRunsEl.replaceChildren(table);
 }
 
-showRankingsBtn();
 </script>
 
 </body>

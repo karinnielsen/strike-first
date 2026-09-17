@@ -80,6 +80,7 @@ const handlers = {};
 const sandbox = {
   document: {
     getElementById: () => makeElement(),
+    querySelector: () => makeElement(),
     querySelectorAll: () => [],
     createElement: () => makeElement(),
     addEventListener: (type, fn) => { (handlers[type] ||= []).push(fn); }
@@ -160,11 +161,11 @@ globalThis.game = {
   TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt,
   DEFEAT_LINES, defeatLine, defeatPool, fillLine, showVerdict,
   BOW_MS, bowPose, bowElapsed,
-  ARRIVAL_MS, ARRIVAL_CREST_MS, ARRIVAL_ENTRY, arrivalElapsed,
-  arrivalCrest, arrivalDot, arrivalShift, arrivalEgg, arrivalOverlay,
   DEFEAT_MS, DEFEAT_HOLD_MS, defeatRecoil, defeatDrain, defeatJolt, defeatBow, canRestart,
   get defeat() { return defeat },
-  get arrivalStart() { return arrivalStart }, set arrivalStart(v) { arrivalStart = v },
+  get mode() { return mode }, set mode(v) { mode = v },
+  menuStep, showOverlay, titleMenu, mercyMenu, signMenu, verdictMenu, forfeit, toTitle, playPractice,
+  get startPressed() { return startPressed },
   SPRITE, SPRITE_SIZE, drawSprite,
   SOUNDS, startGame, toggleSound,
   get muted() { return muted }, set muted(v) { muted = v },
@@ -185,7 +186,7 @@ globalThis.game = {
   get lastRunId() { return lastRunId }, get lastDefeatLine() { return lastDefeatLine },
   BOARD_TEAM, PODIUM, PODIUM_REACH, boardRequests, neighbourRequest,
   podiumRows, dojoStandings, studentsLabel, readRows, fetchBoard, loadBoard,
-  dropBoard, dueBoard, skipInitials, DOJO_BADGES, badgeSvg, ordinal,
+  dropBoard, dueBoard, DOJO_BADGES, badgeSvg, ordinal,
   RANKINGS_TOP, RANKINGS_FILTERS, rankingsAllowed, rankingsRequests, rankingsNearRequests,
   rankingRows, fetchRankings, openRankings, closeRankings, filterRankings, rankingsEmpty,
   get rankingsOpen() { return rankingsOpen }, get rankingsAt() { return rankingsAt },
@@ -306,21 +307,42 @@ describe('the title screen', () => {
     is(game.titling, true, 'still on the title');
   });
 
-  test('any key presses start, and does nothing else', () => {
+  test('any key opens the menu in its place, and does nothing else', () => {
     game.phase = 'ready';
     pressKey(' ');
-    is(game.titling, false, 'titling');
+    is(game.startPressed, true, 'menu up');
+    is(game.titling, true, 'still on the title');
+    is(game.titleMenu.at, 0, 'Arcade lit');
     is(game.phase, 'ready', 'phase - Space must not also start a run');
-  });
-
-  test('with no dojo chosen, start opens dojo select', () => {
-    is(game.currentDojo(), null, 'no dojo yet');
-    is(game.dojoPhase, 'open', 'dojo select');
   });
 
   test('pressing start again does nothing', () => {
     game.pressStart();
-    is(game.titling, false, 'titling');
+    is(game.titleMenu.at, 0, 'Arcade still lit');
+  });
+
+  test('the menu moves with arrows, W and S, and Tab, and wraps', () => {
+    pressKey('ArrowDown');
+    is(game.titleMenu.at, 1, 'down');
+    pressKey('s');
+    is(game.titleMenu.at, 2, 's');
+    pressKey('Tab');
+    is(game.titleMenu.at, 0, 'Tab wraps');
+    pressKey('w');
+    is(game.titleMenu.at, 2, 'w wraps');
+    pressKey('ArrowUp');
+    pressKey('ArrowUp');
+    is(game.titleMenu.at, 0, 'back on Arcade');
+    is(game.menuStep(0, -1, 3), 2, 'menuStep wraps back');
+    is(game.menuStep(2, 1, 3), 0, 'menuStep wraps on');
+  });
+
+  test('Arcade opens dojo select, with no dojo chosen yet', () => {
+    is(game.currentDojo(), null, 'no dojo yet');
+    pressKey('Enter');
+    is(game.titling, false, 'left the title');
+    is(game.mode, 'arcade', 'mode');
+    is(game.dojoPhase, 'open', 'dojo select');
   });
 });
 
@@ -339,11 +361,12 @@ describe('dojo select', () => {
     is(game.phase, 'ready', 'r does not restart behind the select');
   });
 
-  test('closing it hands the keys back to the game', () => {
+  test('closing it goes straight into the fight', () => {
     game.commitDojo('eagle-fang');
     game.closeDojoSelect();
     is(game.dojoPhase, 'closed', 'closed');
     is(game.currentDojo(), 'eagle-fang', 'the dojo chosen');
+    is(game.phase, 'bowing', 'the run has begun');
   });
 
   test('the highlight starts on your dojo, or a random one', () => {
@@ -1403,58 +1426,6 @@ describe('the opening bow', () => {
 });
 
 
-describe('arrival', () => {
-  test('ends on the start screen, so a skip cannot break anything', () => {
-    const end = game.ARRIVAL_MS;
-    is(game.arrivalCrest(end), {opacity: 1, rise: 0}, 'crest');
-    is(game.arrivalDot(end, 0, 0), 1, 'dot');
-    is(game.arrivalShift(end), 0, 'shift');
-    is(game.arrivalEgg(end), 1, 'egg');
-    is(game.arrivalOverlay(end), 1, 'menu');
-  });
-
-  test('not arriving is the start screen too', () => {
-    is(game.arrivalCrest(Infinity), {opacity: 1, rise: 0}, 'crest');
-    is(game.arrivalOverlay(Infinity), 1, 'menu');
-    is(game.arrivalShift(Infinity), 0, 'shift');
-  });
-
-  test('opens on an empty mat', () => {
-    is(game.arrivalCrest(0).opacity, 0, 'crest');
-    is(game.arrivalDot(0, 10, 10), 0, 'dot');
-    is(game.arrivalEgg(0), 0, 'egg');
-    is(game.arrivalOverlay(0), 0, 'menu');
-  });
-
-  test('the snake starts wholly off the board', () => {
-    game.reset();
-    const tail = game.snake[game.snake.length - 1];
-    is(game.snake[0].x - game.arrivalShift(0) < 0, true, 'head off');
-    is(tail.x - game.arrivalShift(0) < 0, true, 'tail off');
-  });
-
-  test('the snake slides in a whole cell at a time', () => {
-    for (let ms = 0; ms < game.ARRIVAL_MS; ms += 17) {
-      is(Number.isInteger(game.arrivalShift(ms)), true, 'at ' + ms);
-    }
-  });
-
-  test('the grid lights from the spawn outward', () => {
-    is(game.arrivalDot(450, 10, 10) > game.arrivalDot(450, 0, 0), true, 'centre first');
-  });
-
-  test('a key ends arrival and still does its job', () => {
-    game.reset();
-    game.phase = 'ready';
-    game.arrivalStart = 0;
-    is(game.arrivalElapsed(), 0, 'arriving');
-    pressKey(' ');
-    is(game.arrivalElapsed(), Infinity, 'arrival over');
-    is(game.phase, 'bowing', 'space started the run');
-  });
-});
-
-
 describe('scores - how a run is measured, UNR-106', () => {
   // performance.now() is frozen at 0 in the fake browser. These tests move
   // it by hand, then put it back.
@@ -1817,7 +1788,7 @@ describe('initials', () => {
   });
 
   test('blocked initials cannot be signed', () => {
-    game.entry = { value: 'KYS', focus() {}, blur() {} };
+    game.entry = { value: 'KYS', focus() {}, blur() {}, style: { setProperty() {} } };
     game.signInitials();
     is(game.entry && game.entry.value, 'KYS', 'still open, not signed');
     game.entry = null;
@@ -1832,7 +1803,7 @@ describe('initials', () => {
     game.runMs = 12000;
     game.best = 12;
     game.phase = 'over';
-    game.entry = { value: initials, focus() {}, blur() {} };
+    game.entry = { value: initials, focus() {}, blur() {}, style: { setProperty() {} } };
   };
 
   testAsyncInOrder('signing sends the run, under your dojo, and keeps its id', async () => {
@@ -1851,11 +1822,13 @@ describe('initials', () => {
     is(sandbox.localStorage.getItem('strikeFirstLastRun'), '42', 'id remembered');
   });
 
-  testAsyncInOrder('a failed save opens the entry again, filled in', async () => {
+  // With no skip, asking again would trap an offline player on the entry.
+  testAsyncInOrder('a failed save goes straight to the menu, and does not ask again', async () => {
     signable('KAR');
     await quietly(() => game.signInitials(async () => { throw new Error('offline'); }));
-    is(game.entry && game.entry.value, 'KAR', 'Sign is the retry');
-    game.hideInitials();
+    is(game.entry, null, 'no entry');
+    is(game.boardDue, true, 'the table, without your row, is due');
+    game.dropBoard();
   });
 
   testAsyncInOrder('a save that fails after the next run started reopens nothing', async () => {
@@ -1871,11 +1844,112 @@ describe('initials', () => {
   test('while initials are open, game keys do not restart', () => {
     freshGame();
     game.phase = 'over';
-    game.entry = { value: '', focus() {}, blur() {} };
+    game.entry = { value: '', focus() {}, blur() {}, style: { setProperty() {} } };
     pressKey('r');
     pressKey(' ');
     is(game.phase, 'over', 'still on the verdict');
     is(game.entry.value, 'R', 'r went into the initials');
+    game.entry = null;
+  });
+});
+
+
+describe('repeat play, UNR-137', () => {
+  test('R does nothing mid-run, paused or not', () => {
+    freshGame();
+    pressKey('r');
+    is(game.phase, 'playing', 'playing');
+    game.toggleMercy();
+    pressKey('r');
+    is(game.phase, 'paused', 'paused');
+  });
+
+  test('R is Rematch on the verdict', () => {
+    freshGame();
+    game.phase = 'over';
+    pressKey('r');
+    is(game.phase, 'bowing', 'a new run');
+  });
+
+  test('Esc calls mercy and answers it, like Space', () => {
+    freshGame();
+    pressKey('Escape');
+    is(game.phase, 'paused', 'called');
+    is(game.mercyMenu.at, 0, 'Continue lit');
+    pressKey('Escape');
+    is(game.phase, 'playing', 'answered');
+  });
+
+  test('in mercy, Space picks the lit row', () => {
+    freshGame();
+    pressKey(' ');
+    is(game.phase, 'paused', 'called');
+    pressKey(' ');
+    is(game.phase, 'playing', 'Continue');
+  });
+
+  test('Quit with nothing scored goes to the title, on the mode you played', () => {
+    freshGame();
+    game.mode = 'practice';
+    pressKey(' ');
+    pressKey('ArrowDown');
+    pressKey('Enter');
+    is(game.titling, true, 'on the title');
+    is(game.titleMenu.at, 1, 'Practice lit');
+    is(game.phase, 'ready', 'no run');
+    game.playPractice();                       // off the title again, for the tests after
+    is(game.titling, false, 'left the title');
+    is(game.phase, 'bowing', 'Practice starts at once');
+    game.mode = 'arcade';
+  });
+
+  test('Quit with points is a forfeit, which counts', () => {
+    freshGame({ score: 5 });
+    game.toggleMercy();
+    game.forfeit();
+    is(game.phase, 'over', 'a verdict, not a death');
+    is(game.defeat.cause, 'forfeit', 'cause');
+    game.hideInitials();
+  });
+
+  test('Practice keeps no hi-score and no belt', () => {
+    freshGame({ score: 20 });
+    game.mode = 'practice';
+    game.best = 3;
+    game.addScore(game.EGG_POINTS, 'egg');
+    is(game.score, 21, 'the run still scores');
+    is(game.best, 3, 'hi-score untouched');
+    game.mode = 'arcade';
+  });
+
+  test('the verdict offers Rankings after Arcade, and Arcade after Practice', () => {
+    freshGame();
+    game.phase = 'over';
+    game.showOverlay('DEFEATED', '');
+    is(game.verdictMenu.items, ['rematch', 'rankings', 'menu'], 'Arcade');
+    game.mode = 'practice';
+    game.showOverlay('DEFEATED', '');
+    is(game.verdictMenu.items, ['again', 'arcade', 'menu'], 'Practice');
+    game.mode = 'arcade';
+  });
+
+  test('Enter on the verdict is Rematch, with no dojo select', () => {
+    freshGame();
+    game.phase = 'over';
+    game.showOverlay('DEFEATED', '');
+    pressKey('Enter');
+    is(game.phase, 'bowing', 'a new run');
+    is(game.dojoPhase, 'closed', 'no select');
+  });
+
+  test('SIGN refuses short of three letters, and Esc does not skip', () => {
+    freshGame();
+    game.phase = 'over';
+    game.entry = { value: 'KA', focus() {}, blur() {}, style: { setProperty() {} } };
+    pressKey('Enter');
+    is(game.entry && game.entry.value, 'KA', 'still signing');
+    pressKey('Escape');
+    is(game.entry && game.entry.value, 'KA', 'no skip');
     game.entry = null;
   });
 });
@@ -2005,7 +2079,7 @@ describe('the board', () => {
   testAsyncInOrder('board: never shown alongside the initials entry', async () => {
     freshGame();
     game.phase = 'over';
-    game.entry = { value: 'KAR', focus() {}, blur() {} };
+    game.entry = { value: 'KAR', focus() {}, blur() {}, style: { setProperty() {} } };
     await game.loadBoard(117, database(forty));
     game.dueBoard();
     is(game.board !== null, true, 'loaded');
@@ -2031,11 +2105,6 @@ describe('the board', () => {
     is(game.board, null, 'nothing kept');
   });
 
-  testAsyncInOrder('board: skipping the initials makes it due', async () => {
-    game.skipInitials();
-    is(game.boardDue, true, 'due');
-    game.dropBoard();
-  });
 });
 
 

@@ -58,9 +58,13 @@ a deliberate decision, not a preference.
 | Difficulty tier inside a run | **level** | stage, wave, round, speed |
 | Persistent rank across runs | **belt** | rank, grade, tier, badge |
 | Pausing | **mercy** | pause, break, hold |
-| Starting a run | **Enter the dojo** | Play, Start, Begin |
-| Restarting after death | **Again** | Retry, Play again, Try again |
+| The game that counts | **Arcade** | Play, Start, Ranked |
+| The game that doesn't | **Practice** | Quick play, Free play, Training |
+| Going again after an Arcade run | **Rematch** | Retry, Play again, Try again |
+| Going again after a Practice run | **Again** | Retry, Play again, Try again |
+| Back to the title | **Main menu** | Menu, Home, Title, Exit |
 | Dying | **DEFEATED** | Game Over, You died, Wasted |
+| Quitting a run from mercy | **FORFEIT** | Quit, Gave up, Surrender |
 | A run the rules could not produce | **DISQUALIFIED** | Cheater, Invalid, Error |
 | Crossing a belt threshold | **promotion** | level up, rank up, unlock |
 | The play area | **the mat** in prose, **the board** in code | grid, arena, field |
@@ -116,11 +120,11 @@ the underlying string stays a normal word and can be reused anywhere.
 
 | Element | Rule | Example |
 | -- | -- | -- |
-| **Buttons and CTAs** | Sentence case. First word capitalised, nothing else | `Enter the dojo`, `Again`, `Continue` |
-| Overlay body text | Sentence case, full stop if it is a sentence | `Press space to fight on` |
+| **Menu rows** | Sentence case in the markup, shown uppercase. No helper text under a row | `Main menu`, `Rematch`, `Continue` |
+| Overlay body text | Sentence case, full stop if it is a sentence | a defeat line |
 | Defeat lines | Sentence case, always a full stop | `The wall does not move. You do.` |
 | Header labels | Lowercase, always | `score`, `level`, `hi-score`, `belt` |
-| Footer hint | Lowercase, always | `arrows / wasd · space = mercy · r = restart` |
+| Footer hint | Lowercase, always | `arrows / wasd · space = mercy · m = sound · b = rankings` |
 | Belt names in prose | Capitalise the first word only | `Midnight blue`, not `Midnight Blue` |
 
 **Buttons never take caps of either kind.** A button sits directly under an
@@ -337,18 +341,16 @@ The complete inventory, so nothing drifts unnoticed.
 | `place` `team score` `students` `top` `Sensei` — a dojo card's back | Utility |
 | `<DOJO>` / the dojo's creed — the banner confirming a pick, in voice caps | Dojo |
 | `Too slow. Sensei chose for you.` — the banner, when the clock runs out | Dojo |
-| `Dojo: <dojo> · change` — start overlay | Utility |
-| `Strike hard. No mercy.` — start overlay | Dojo |
-| `arrows or wasd to move` — start overlay | Utility |
-| `swipe to move` — start overlay, touch screens | Utility |
-| `Enter the dojo` — start button | Dojo |
-| `MERCY` / `Press space to fight on` / `Continue` — pause | Dojo |
-| `Tap continue to fight on` — pause, touch screens | Dojo |
-| `DEFEATED` / a defeat line / `Again` — defeat | Dojo |
-| `DISQUALIFIED` / a disqualified line / `Again` — a tampered run | Dojo |
+| `Arcade` / `Practice` / `Rankings` — the title's menu | Utility |
+| `MERCY` / `Continue` / `Quit` — pause | Dojo |
+| `DEFEATED` / a defeat line / `Rematch` `Rankings` `Main menu` — defeat | Dojo |
+| `Again` `Arcade` `Main menu` — defeat, after Practice | Utility |
+| `FORFEIT` / the same menu — quitting from mercy | Dojo |
+| `Sign` / `The dojo will not print that.` — initials | Dojo |
+| `DISQUALIFIED` / a disqualified line / the same menu — a tampered run | Dojo |
 | `<BELT> BELT` — promotion announcement | Dojo |
 | `score` `level` `hi-score` `belt` — header labels | Utility |
-| `arrows / wasd · space = mercy · r = restart` — footer | Utility |
+| `arrows / wasd · space = mercy · m = sound · b = rankings` — footer | Utility |
 | `swipe to move · ❚❚ = mercy` — footer, touch screens | Utility |
 | `mercy` — the touch pause button's accessible name | Utility |
 | Belt names — header and promotion | — |
