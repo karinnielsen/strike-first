@@ -178,7 +178,7 @@ globalThis.game = {
   POINTS_PER_MOVE, POINTS_PER_SQUARE, TIMING_SLACK, TIMING_SLACK_MS, fastestRun, plausibleRun,
   SCORE_SERVICE, DOJO_IDS, runDuration, scoreRecord, runRecord, scoreRequest, submitScore,
   wantsInitials, cleanInitials, BLOCKED_INITIALS, signInitials, hideInitials,
-  currentDojo, commitDojo, dojoOrNull, DOJO_KEY, DOJO_SECONDS, DOJO_CREEDS, DOJO_SENSEIS,
+  currentDojo, commitDojo, dojoOrNull, get bestDojoEl() { return bestDojoEl }, DOJO_NAMES, DOJO_KEY, DOJO_SECONDS, DOJO_CREEDS, DOJO_SENSEIS,
   DOJO_GLOWS, dojoStart, dojoStep, dojoBacks, closeDojoSelect,
   get dojoPhase() { return dojoPhase }, get dojoAt() { return dojoAt },
   get entry() { return entry }, set entry(v) { entry = v },
@@ -387,6 +387,14 @@ describe('dojo select', () => {
     game.commitDojo('miyagi-do');
     is(game.currentDojo(), 'miyagi-do', 'chosen');
     is(sandbox.localStorage.getItem(game.DOJO_KEY), 'miyagi-do', 'remembered');
+  });
+
+  test('the header wears the dojo you chose, UNR-156', () => {
+    game.commitDojo('cobra-kai');
+    const badge = game.bestDojoEl;
+    is(badge.hidden, false, 'shown');
+    is(badge.title, game.DOJO_NAMES['cobra-kai'], 'named');
+    is(badge.innerHTML.startsWith('<svg'), true, 'the crest');
   });
 
   test('every dojo has a creed, a sensei and a light', () => {

@@ -135,6 +135,8 @@ Choosing lands like a kick, and the dojo's creed comes up with its name, and
 the fight begins. The select opens every time you choose Arcade — choosing your
 side is part of the ritual — but a **Rematch** skips it.
 
+Once you have a dojo, you wear its crest in the header, beside your belt.
+
 ### The bow
 
 Every run opens with a bow, the way every lost one closes with one. The snake
