@@ -2118,12 +2118,14 @@ const TAIL_ART_WIDTH = 11.3;
 // These overflow the cell slightly and that is correct - so does the
 // snake's own hood.
 //
-// The ROTTEN egg is deliberately the largest thing on the board. The tilt
-// foreshortens it, so at matching numbers it reads as the smaller of the
-// two, which is backwards for the thing you are meant to notice and avoid.
+// The ROTTEN egg used to be the largest thing on the board, at 1.45,
+// because the tilt foreshortens it and at matching numbers it read as the
+// smaller of the two. In play that made it too big: its fumes and halo
+// already make it the thing you notice, so the shell doesn't need size as
+// well. Chosen at actual size, beside the egg, on 17 September (UNR-155).
 const SPRITE_SIZE = {
   egg:       { scale: 1.35, cx: 10.0, cy: 10.0 },
-  rottenEgg: { scale: 1.45, cx: 10.5, cy: 11.2 },
+  rottenEgg: { scale: 1.25, cx: 10.5, cy: 11.2 },
   mouse:     { scale: 1.25, cx:  9.4, cy: 10.4 }
 };
 

@@ -1210,13 +1210,14 @@ describe('sprites', () => {
 
   // The rule the delivered mouse broke: at 20px a shape gets a silhouette
   // and about one internal detail. Ten paths read worse than five.
-  // The hazard must be the biggest thing on the board. The tilt
-  // foreshortens it, so at matching numbers it reads as the SMALLER of
-  // the two, which is backwards for the thing you are meant to avoid.
-  test('the rotten egg is drawn larger than the good one', () => {
+  // The hazard must not outgrow the egg. It was once the biggest thing on
+  // the board, to make up for its tilt, and in play that read as too big:
+  // the fumes already make it findable. The legibility test below keeps
+  // it from shrinking too far the other way. See UNR-155.
+  test('the rotten egg is drawn no larger than the good one', () => {
     const egg    = 12.8 * game.SPRITE_SIZE.egg.scale;
     const rotten = 13.6 * game.SPRITE_SIZE.rottenEgg.scale;
-    is(rotten > egg, true, 'rotten ' + rotten.toFixed(1) + ' vs egg ' + egg.toFixed(1));
+    is(rotten <= egg, true, 'rotten ' + rotten.toFixed(1) + ' vs egg ' + egg.toFixed(1));
   });
 
   // A reward you cannot read is not a reward. These should carry about
