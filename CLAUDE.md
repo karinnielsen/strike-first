@@ -38,6 +38,17 @@ Workspace **Unruly labs** (`UNR`). Project: **Strike First** —
   Promotion is always a deliberate decision, never drift. That's what stops the
   backlog becoming a graveyard, and it's why an idea landing in `Idea` costs
   nothing.
+- **Once work starts, the status follows the code.** The three tiers above are
+  about commitment and stop at `Todo`; these are about what exists.
+  - `In Progress` — being built right now.
+  - `In Review` — written and committed on the branch, waiting for the merge.
+    This is what "in the release" looks like on the board.
+  - `Done` — set by the merge, or by hand when the keyword doesn't fire.
+
+  Settled 17 September, because four issues whose code was committed were
+  still sitting in `Backlog` and `Todo`, so the board didn't show what was
+  built. It also makes the merge check mechanical: everything `In Review`
+  should be `Done` afterwards, and whatever isn't, the keyword missed.
 - **Always assign new issues to Karin.** She is the only member of the team, so
   an unassigned issue is never correct. Set `assignee: "me"` on creation.
 - **The label set is deliberately small and complete:** Feature, Improvement,
