@@ -158,7 +158,7 @@ motion keeps the flash and the drain, and nothing moves.
 
 Under the verdict is a menu that sits in the same place on every defeat:
 **Rematch**, **Rankings** and **Main menu**. After a Practice run it is
-**Again**, **Arcade** and **Main menu** instead, with no signing and no board.
+**Practice**, **Arcade** and **Main menu** instead — the title's own menu — with no signing and no board.
 
 **Quit** from mercy is a forfeit, and it counts. The heading reads
 **FORFEIT**, and everything else goes as it would after a defeat. A run

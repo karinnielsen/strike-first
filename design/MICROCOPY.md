@@ -61,7 +61,7 @@ a deliberate decision, not a preference.
 | The game that counts | **Arcade** | Play, Start, Ranked |
 | The game that doesn't | **Practice** | Quick play, Free play, Training |
 | Going again after an Arcade run | **Rematch** | Retry, Play again, Try again |
-| Going again after a Practice run | **Again** | Retry, Play again, Try again |
+| Going again after a Practice run | **Practice**, the mode's own name | Again, Rematch, Practice again |
 | Back to the title | **Main menu** | Menu, Home, Title, Exit |
 | Dying | **DEFEATED** | Game Over, You died, Wasted |
 | Quitting a run from mercy | **FORFEIT** | Quit, Gave up, Surrender |
@@ -178,7 +178,7 @@ The dojo voice's grammar is the house style, and every dojo speaks it: nine
 words or fewer, full stops, never an exclamation mark, never explain the joke.
 The rules in section 7 about knowing how they died, never sneering at a good
 run and a near miss outranking a joke apply to every dojo. The vocabulary in
-section 2 is locked for all of them — `mercy`, `DEFEATED`, `Again` do not
+section 2 is locked for all of them — `mercy`, `DEFEATED`, `Rematch` do not
 change with the dojo, because they are the game's interface, not a sensei's
 opinion.
 
@@ -304,7 +304,7 @@ sees most, so they get their own rules.
   same line never lands twice in a row.
 * **A near miss outranks a joke.** Falling a few points short of the hi-score,
   or of the next belt on a new hi-score, gets a line that says by how much.
-  "Two points from your hi-score" is a better reason to press Again than
+  "Two points from your hi-score" is a better reason to press Rematch than
   anything witty about the wall. Numbers are words: `two points`, `one point`.
 * **Nod to the series, never quote it.** "The wall swept your leg" is ours;
   the leg sweep is theirs.
@@ -344,7 +344,7 @@ The complete inventory, so nothing drifts unnoticed.
 | `Arcade` / `Practice` / `Rankings` — the title's menu | Utility |
 | `MERCY` / `Continue` / `Quit` — pause | Dojo |
 | `DEFEATED` / a defeat line / `Rematch` `Rankings` `Main menu` — defeat | Dojo |
-| `Again` `Arcade` `Main menu` — defeat, after Practice | Utility |
+| `Practice` `Arcade` `Main menu` — defeat, after Practice | Utility |
 | `FORFEIT` / the same menu — quitting from mercy | Dojo |
 | `Sign` / `The dojo will not print that.` — initials | Dojo |
 | `DISQUALIFIED` / a disqualified line / the same menu — a tampered run | Dojo |

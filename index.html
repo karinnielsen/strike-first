@@ -2951,14 +2951,15 @@ for (const type of ['pointerup', 'pointercancel']) {
 // and it has its own moment below the board rather than a line in here.
 //
 // Whatever it says, its menus open on their first row: Continue, Sign,
-// Rematch. After a Practice run the verdict offers Arcade where Rankings
-// would be, so the way into the game that counts is the next choice, and
-// no line has to say that practice did not.
+// Rematch. After a Practice run the verdict is Practice / Arcade / Main
+// menu, the title's own names in the title's own order, so the way into the
+// game that counts is as close as another practice, and no line has to say
+// that practice did not count.
 function showOverlay(title, text) {
   titleEl.textContent = title;
   textEl.textContent  = text;
   for (const menu of [mercyMenu, signMenu, verdictMenu]) menu.at = 0;
-  verdictMenu.items = mode === 'practice' ? ['again', 'arcade', 'menu'] : ['rematch', 'rankings', 'menu'];
+  verdictMenu.items = mode === 'practice' ? ['practice', 'arcade', 'menu'] : ['rematch', 'rankings', 'menu'];
   overlay.classList.remove('hidden');
   showMenus();
 }
@@ -2981,7 +2982,7 @@ function showOverlay(title, text) {
 //   nothing  - scored nothing at all
 //   tie      - exactly matched the hi-score
 //   nearBest - fell a few points short of it
-// The near misses are the strongest reason to press Again, which is why
+// The near misses are the strongest reason to press Rematch, which is why
 // they outrank being witty about the wall.
 //
 // {points} becomes "three points" or "one point", {Points} the same with
@@ -3287,7 +3288,7 @@ const FIRST_FLICK_MS = 700;
 const MENU_LABELS = {
   arcade: 'Arcade', practice: 'Practice', rankings: 'Rankings',
   continue: 'Continue', quit: 'Quit', sign: 'Sign',
-  rematch: 'Rematch', again: 'Again', menu: 'Main menu'
+  rematch: 'Rematch', menu: 'Main menu'
 };
 
 // Which row a step lands on, wrapping at either end. Pure.
@@ -3354,7 +3355,7 @@ function pickMenu(menu) {
   else if (item === 'rankings') menu === titleMenu ? openTitleRankings() : openRankings();
   else if (item === 'continue') toggleMercy();
   else if (item === 'quit') forfeit();
-  else if (item === 'rematch' || item === 'again') startGame();
+  else if (item === 'rematch') startGame();
   else if (item === 'menu') toTitle();
 }
 

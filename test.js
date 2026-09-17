@@ -1929,7 +1929,7 @@ describe('repeat play, UNR-137', () => {
     is(game.verdictMenu.items, ['rematch', 'rankings', 'menu'], 'Arcade');
     game.mode = 'practice';
     game.showOverlay('DEFEATED', '');
-    is(game.verdictMenu.items, ['again', 'arcade', 'menu'], 'Practice');
+    is(game.verdictMenu.items, ['practice', 'arcade', 'menu'], 'Practice');
     game.mode = 'arcade';
   });
 
