@@ -178,9 +178,19 @@
     100% { transform: scale(1);    }
   }
 
-  /* .stage is the positioning parent so the overlay can sit on top of the canvas */
+  /* .stage is the board: the panel, its border and the positioning parent
+     for the canvas and the overlay. The panel is drawn here rather than in
+     the canvas so the canvas can be larger than it. */
   .stage {
     position: relative;
+    box-sizing: border-box;
+    width: 632px;
+    aspect-ratio: 1;
+    background: var(--panel);
+    /* Lighter than --line: against the mat, a --line border left the board
+       with no visible edge. */
+    border: 1px solid #4b4652;
+    border-radius: 10px;
     /* The board is where you swipe to steer, so the browser must not treat
        a swipe as a scroll, a bounce or a zoom. Only here: the rest of the
        page still scrolls normally. */
@@ -261,18 +271,31 @@
     .hud button:focus-visible .key-tip { opacity: 1; }
   }
 
+  /* THE CANVAS BLEEDS PAST THE BOARD. The hood is wider than a cell, so on
+     an edge row a canvas that ended at the grid sliced it flat (UNR-154).
+     The canvas is the grid plus BOARD_BLEED (14 of its 630 units) on every
+     side, laid over the board so the grid lines up with the inside of the
+     border. The wall stays at the border; only artwork crosses it.
+     Percentages, so it holds at every board size. Taps land on the board,
+     never on the bleed.
+
+     14, measured: the tongue into a wall and food on an edge reach 12
+     past the grid, the hood 5, and the queasy shiver adds a little. It
+     must stay under the page's 16px padding, or the bleed makes the page
+     scroll. */
   canvas {
     display: block;
-    background: var(--panel);
-    /* Lighter than --line: against the mat, a --line border left the board
-       with no visible edge. */
-    border: 1px solid #4b4652;
-    border-radius: 10px;
+    position: absolute;
+    top:  calc(-14 / 630 * 100%);
+    left: calc(-14 / 630 * 100%);
+    width:  calc(658 / 630 * 100%);
+    height: calc(658 / 630 * 100%);
+    pointer-events: none;
   }
 
   .overlay {
     position: absolute;
-    inset: 1px;          /* inside the border, which it used to darken away */
+    inset: 0;            /* inside the border, which it used to darken away */
     display: grid;
     place-content: center;
     gap: 10px;
@@ -534,7 +557,7 @@
     35%  { box-shadow: 0 0 0 5px var(--belt), 0 0 34px 6px var(--belt); }
     100% { box-shadow: 0 0 0 0 rgba(0,0,0,0), 0 0 0 0 rgba(0,0,0,0); }
   }
-  .stage.promoting canvas {
+  .stage.promoting {
     border-color: var(--belt);
     animation: promote-ring 1400ms ease-out forwards;
   }
@@ -553,7 +576,7 @@
      colour change stays, so the moment still reads without animating.
      The canvas side of this is REDUCED_MOTION in the script. See UNR-104. */
   @media (prefers-reduced-motion: reduce) {
-    .stage.promoting canvas { animation: none; box-shadow: 0 0 0 4px var(--belt); }
+    .stage.promoting { animation: none; box-shadow: 0 0 0 4px var(--belt); }
 
     /* The slab keeps its edge and its travel - those are not motion, they
        are what makes it look pressable. Only the pulse stops. */
@@ -635,14 +658,14 @@
        window shorter than that scrolls rather than shrinking the board
        past where it reads. Swipes steer by distance moved, so a smaller
        board changes nothing about input. */
-    .stage { grid-column: 1; grid-row: 2 / -1; }
-
-    canvas {
+    .stage {
+      grid-column: 1;
+      grid-row: 2 / -1;
+      align-self: start;         /* square, not stretched down the rows */
       width: clamp(420px,
                    min(calc(100svh - 48px - var(--crest-w) * 0.36),
                        calc(100vw - 384px)),   /* padding, gap, stats, a scrollbar */
                    632px);
-      height: auto;
     }
 
     /* THE STATS AS A LIST. One thing per row, label left and value right,
@@ -1079,7 +1102,7 @@
   </section>
 
   <div class="stage" id="stage">
-    <canvas id="game" width="630" height="630"></canvas>
+    <canvas id="game" width="658" height="658"></canvas>
 
     <!-- Only ever inside a run or at its end: mercy, signing, the verdict.
          The start menu lives on the title, not here. UNR-137. -->
@@ -1130,8 +1153,14 @@ const ctx    = canvas.getContext('2d');
 // The whole game happens on a grid of squares, not on free pixels.
 // That makes collisions easy: two things collide if their x/y match.
 const CELL = 30;                      // one grid square = 30 pixels
-const COLS = canvas.width  / CELL;    // 21 columns across
-const ROWS = canvas.height / CELL;    // 21 rows down
+
+// The canvas is larger than the grid by this much on every side, so
+// artwork on an edge square can overhang the board instead of being cut
+// off. Drawing is shifted by it; the grid and the rules never see it. The
+// CSS for `canvas` carries the same 14 and 630. UNR-154.
+const BOARD_BLEED = 14;
+const COLS = (canvas.width  - 2 * BOARD_BLEED) / CELL;    // 21 columns across
+const ROWS = (canvas.height - 2 * BOARD_BLEED) / CELL;    // 21 rows down
 
 // Single source of truth for the version. Bump this, add a CHANGELOG entry,
 // update the Current version line in README.md, and tag the commit - those
@@ -1908,15 +1937,17 @@ function showMercy() {
 // Note that drawing never CHANGES anything. It only shows what update()
 // already decided. Keeping those two jobs separate keeps games sane.
 function draw() {
-  // Wipe the previous frame, otherwise we'd smear trails everywhere.
-  ctx.fillStyle = '#131316';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Wipe the previous frame, otherwise we'd smear trails everywhere. The
+  // panel colour is the board element's, behind the canvas, so the bleed
+  // around the grid stays see-through.
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // The defeat jolt moves the whole mat, so it is applied once, here.
+  // The defeat jolt moves the whole mat, so it is applied once, here, on
+  // top of the shift that puts the grid inside the bleed.
   const ms = defeatElapsed();
   const jolt = defeatJolt(ms, defeat && defeat.dir, REDUCED_MOTION.matches);
   ctx.save();
-  ctx.translate(jolt.x, jolt.y);
+  ctx.translate(BOARD_BLEED + jolt.x, BOARD_BLEED + jolt.y);
 
   // Faint dot in the middle of each grid square, just for looks.
   ctx.fillStyle = '#1e1e24';

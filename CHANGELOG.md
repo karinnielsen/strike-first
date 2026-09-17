@@ -33,6 +33,13 @@ player has to *do*, and they aren't renumbered.
 - **Mercy works during a bow,** and its button no longer blinks out while
   the snake bows.
 
+### Fixed
+
+- **The hood is no longer cut off at the edge of the board** (UNR-154). The
+  canvas now reaches a little past the board on every side, so the hood, the
+  tongue and food on an edge square can overhang the border. The wall is
+  still the border.
+
 ## [0.5.5] — 2026-09-17
 
 Start screen and repeat play. The game gets its menus: one on the title, and
