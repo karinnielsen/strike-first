@@ -96,8 +96,11 @@
      "hi-score" rather than "high score" is the arcade string.
 
      Sizes raised on 17 September, because the labels were hard to read
-     (UNR-147). Measured at the top rank with a dojo crest, with 1234 as
-     the hi-score, the row still uses under 500 of its 632px. */
+     (UNR-147). Measured at the top rank with 1234 as the hi-score, the
+     row uses under 500 of its 632px.
+
+     Your dojo's crest was tried beside the belt (UNR-156) and taken out:
+     seven things in one row read as busy. */
   .scores {
     display: flex;
     justify-content: space-between;
@@ -106,14 +109,6 @@
   }
   .scores .group { display: flex; gap: 20px; }
   .scores b { color: var(--text); font-size: 17px; }
-
-  /* Your dojo, worn beside your belt: both are who you are, and neither
-     a run can take away. The same 18px pixel crest the rankings use, and
-     no words, since the crest is the dojo's name in a glance. Nothing is
-     shown until a dojo is chosen. An <i>, like the swatch, because the
-     side-by-side layout styles every span in the stats as a row. UNR-156. */
-  .rank .dojo-badge { margin-left: 4px; align-self: center; }
-  .rank .dojo-badge[hidden] { display: none; }
 
   /* The swatch sits on `best` rather than in a column of its own, because
      your best score is literally what produces your rank. Putting them
@@ -1072,7 +1067,7 @@
       <!-- Standing: these are what you hold, and a run cannot take them away. -->
       <div class="group">
         <span>hi-score <b id="best">0</b></span>
-        <span class="rank">belt <i class="belt-swatch" id="best-belt"></i><em id="best-belt-name"></em><i class="dojo-badge" id="best-dojo" role="img" hidden></i></span>
+        <span class="rank">belt <i class="belt-swatch" id="best-belt"></i><em id="best-belt-name"></em></span>
       </div>
     </div>
   </header>
@@ -3611,7 +3606,6 @@ function commitDojo(dojo) {
   if (!dojoOrNull(dojo)) return;
   chosenDojo = dojo;
   try { localStorage.setItem(DOJO_KEY, dojo); } catch (e) {}
-  showDojoBadge();                 // it has only ever run after load
 }
 
 // Initials the dojo will not print. Slurs, hate, sexual terms and
@@ -3974,18 +3968,6 @@ function badgeSvg(dojo) {
     DOJO_BADGES[dojo].map(([fill, d]) => `<path fill="${fill}" d="${d}"/>`).join('') +
     '</svg>';
 }
-
-// Your dojo's crest in the header, beside your belt, once you have one.
-const bestDojoEl = document.getElementById('best-dojo');
-
-function showDojoBadge() {
-  const dojo = currentDojo();
-  bestDojoEl.hidden = !dojo;
-  bestDojoEl.innerHTML = dojo ? badgeSvg(dojo) : '';   // constants, never data
-  bestDojoEl.setAttribute('aria-label', dojo ? DOJO_NAMES[dojo] : '');
-  bestDojoEl.title = dojo ? DOJO_NAMES[dojo] : '';
-}
-showDojoBadge();
 
 const boardEl = document.getElementById('board');
 

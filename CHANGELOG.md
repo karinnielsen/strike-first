@@ -33,8 +33,6 @@ player has to *do*, and they aren't renumbered.
 - **Mercy works during a bow,** and its button no longer blinks out while
   the snake bows.
 
-- **Your dojo's crest in the header,** beside your belt, once you have
-  chosen one (UNR-156). No words: the crest is the name.
 - **Easier to read.** The grey used for labels, hints and keys is lighter,
   up from about 4.4:1 to 5.4:1 against the mat, and the version line now
   uses it too instead of its own darker grey. The header's labels and
