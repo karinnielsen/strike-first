@@ -16,6 +16,50 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+## [0.5.5] — 2026-09-17
+
+Start screen and repeat play. The game gets its menus: one on the title, and
+one inside every run for mercy, signing and what comes after a defeat. It
+reshapes the journey without adding a mechanic, so it is a patch. UNR-137.
+
+### Added
+- **A menu under the crest.** Press start and **Arcade**, **Practice** and
+  **Rankings** take its place, Arcade lit. The lit row takes PRESS START's
+  voice; the others are the same letters with the power off. Arrows, W and
+  S, or Tab move it, Enter or Space chooses, and a mouse or a tap works too.
+  **B** jumps to Rankings, and back from them lands on the title.
+- **Practice.** Straight into a run, and it keeps nothing: no rankings, no
+  hi-score, no belt. Its defeat menu is **Practice / Arcade / Main menu**,
+  with no signing and no board.
+- **Quit, from mercy, is a forfeit, and it counts.** The verdict reads
+  **FORFEIT** and everything else goes as after a defeat, signing included.
+  Quit with nothing scored goes straight back to the title.
+- **Esc calls mercy and answers it,** the way Space does.
+
+### Changed
+- **Arcade opens dojo select every time,** lit on your dojo, and goes
+  straight into the fight. **Rematch** skips it.
+- **Mercy is MERCY with Continue / Quit.** The helper line is gone.
+- **The defeat screen is DEFEATED with Rematch / Rankings / Main menu,**
+  anchored near the top so nothing moves while the board loads. DEFEATED,
+  MERCY and DISQUALIFIED are larger.
+- **Signing is an arcade entry.** Centred on the board, **AAA** the first
+  time, the next empty slot blinking yellow, and a single **Sign** row,
+  which buzzes when there are fewer than three letters. Refused initials get
+  a note under the letters. A save that fails goes to the menu rather than
+  asking again.
+- **R is Rematch on the defeat screen, and does nothing mid-run.** A bad run
+  can no longer be thrown away off the record.
+
+### Removed
+- **The start screen on the board:** *Strike hard. No mercy.*, *arrows or
+  wasd to move*, the dojo line with **change**, and **Enter the dojo**.
+- **Arrival,** the grid lighting and the snake sliding in, which led only to
+  that start screen.
+- **Skip** on signing, **Again**, the **rankings** link under the call to
+  action, and the dojo totals under the defeat board — the Rankings row does
+  that job.
+
 ## [0.5.4] — 2026-09-17
 
 Corner controls. Sound and mercy become buttons everyone already recognises,
