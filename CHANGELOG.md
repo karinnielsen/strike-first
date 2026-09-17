@@ -39,6 +39,10 @@ player has to *do*, and they aren't renumbered.
   numbers are a size up (UNR-147). The labels are bone rather than grey,
   since they carry information, and the numbers are a pale yellow so they
   still stand apart.
+- **Grey only where it carries nothing.** Hints, keys, column headings, the
+  dojo select's stat names and sensei, the rankings filter and the verdict's
+  line are bone now. Dojo stats read label in bone, value in pale yellow,
+  like the header. The rankings podium's places stand out by weight.
 - **Menu rows are bone, not grey,** when they aren't lit. The grey was too
   muted and read as disabled. The lit row is still the only yellow one.
 

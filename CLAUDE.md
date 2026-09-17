@@ -79,6 +79,12 @@ everything else in the game keeps the monospace. As of v0.3.1 that voice is
 and there is no display face in the page at all. Reaching for one again would
 be adding a second voice, not restoring the first.
 
+**Grey is only for styling that carries no information.** Grey on black
+is hard to read, so anything a player needs to read is bone: labels, hints,
+keys, unlit menu rows, column headings. `--dim` is left for things like
+the version line and the title's credit. A number beside its label is the
+pale `--value`, so it still leads. Settled 17 September.
+
 **Update and draw stay separate.** `update()` decides what is true; `draw()`
 only shows it. Never mix them.
 

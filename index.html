@@ -28,9 +28,9 @@
     --panel:  #131316;   /* the board itself           */
     --line:   #2a2a30;
     --text:   #ece6da;   /* bone                       */
-    --dim:    #8a838f;   /* 5.4:1 on the mat, 5.1:1 on the board. Was
-                            #7b7480, which fell under 4.5:1 at the small
-                            sizes it is used at. UNR-147. */
+    --dim:    #8a838f;   /* ONLY for styling that carries no information:
+                            the version line, the title's credit. Anything
+                            you need to read is bone. UNR-147. */
     --yellow: #ffff00;   /* the dojo's own yellow: reward, and the
                             one thing the screen is asking you to do.
                             Rank is --belt and has never been this. */
@@ -268,7 +268,7 @@
       font-size: 12px;
       font-weight: normal;
       white-space: nowrap;
-      color: var(--dim);
+      color: var(--text);
       background: var(--bg);
       border-radius: 4px;
       opacity: 0;
@@ -320,7 +320,7 @@
     margin: 0; font-size: 34px; letter-spacing: 0.16em; color: var(--yellow);
     text-shadow: 0 4px 0 var(--yellow-deep);
   }
-  .overlay p  { margin: 0; font-size: 13px; color: var(--dim); }
+  .overlay p  { margin: 0; font-size: 13px; color: var(--text); }
   .overlay #overlay-text:empty { display: none; }
 
   /* MENUS. UNR-137. One style everywhere: the title's Arcade / Practice /
@@ -389,7 +389,7 @@
     padding: 0 12px;
     font-size: 12px;
     font-weight: normal;
-    color: var(--dim);
+    color: var(--text);
     background: transparent;
     box-shadow: none;
     animation: none;
@@ -456,7 +456,7 @@
   .board table { border-collapse: collapse; margin: 0 auto; width: 280px; text-align: left; }
   .board td { padding: 0 6px; height: 30px; color: var(--text); white-space: nowrap; }
   .board .gap td { height: 22px; padding: 0; }
-  .board .place { color: var(--dim); text-align: right; width: 2ch; }
+  .board .place { color: var(--text); text-align: right; width: 2ch; }
   .board .score { text-align: right; }
   .board .belt-swatch { display: inline-block; vertical-align: middle; }
   .board .you td { color: var(--yellow); font-weight: bold; }
@@ -546,7 +546,7 @@
     margin: 12px 0 0;
     text-align: center;
     font-size: 12px;
-    color: var(--dim);
+    color: var(--text);
   }
 
   /* THE PROMOTION MOMENT.
@@ -736,7 +736,7 @@
 
   .title-screen { display: grid; justify-items: center; gap: 10px; }
   .title-screen[hidden] { display: none; }
-  .title-screen p { margin: 0; font-size: 13px; color: var(--dim); }
+  .title-screen p { margin: 0; font-size: 13px; color: var(--text); }
 
   /* Not the slab: that is for actions on a panel, and here the whole screen
      is the target. So it takes the other house treatment, the one for
@@ -767,6 +767,7 @@
     justify-content: space-between;
     gap: 16px;
     letter-spacing: 1px;
+    color: var(--dim);         /* credit and coin state: styling, so grey */
   }
   .title-screen #start-btn[hidden] { display: none; }
   .title-screen #start-btn:focus-visible { outline: 2px solid var(--text); outline-offset: 8px; }
@@ -825,7 +826,7 @@
   .dojo-select .count.beat { animation: count-beat 0.35s ease-out; }
   @keyframes count-beat { from { transform: scale(1.35); } to { transform: scale(1); } }
   /* The keys are what the eye hunts for: bone and bold, the words dim. */
-  .dojo-select .how, .rankings .how { margin: 0; font-size: 14px; letter-spacing: 0.5px; color: var(--dim); }
+  .dojo-select .how, .rankings .how { margin: 0; font-size: 14px; letter-spacing: 0.5px; color: var(--text); }
   .dojo-select .how kbd, .rankings .how kbd { font: inherit; font-weight: bold; color: var(--text); }
 
   .dojo-select ul {
@@ -834,7 +835,7 @@
   }
   .dojo-select li {
     position: relative; display: grid; justify-items: center;
-    color: var(--dim); transition: color 0.15s, opacity 0.3s;
+    color: var(--text); transition: color 0.15s, opacity 0.3s;
   }
   /* No scale and no lift: scaled text renders between pixels and blurs. */
   .dojo-select li.on { color: rgb(var(--glow)); }
@@ -881,11 +882,11 @@
     display: flex; justify-content: space-between; align-items: baseline;
     padding: 9px 0; border-bottom: 1px solid var(--line);
   }
-  .dojo-select .stats dt { color: var(--dim); white-space: nowrap; }
-  .dojo-select .stats dd { white-space: nowrap; margin: 0 0 0 12px; font-weight: bold; color: var(--text); font-size: 15px; }
+  .dojo-select .stats dt { color: var(--text); white-space: nowrap; }
+  .dojo-select .stats dd { white-space: nowrap; margin: 0 0 0 12px; font-weight: bold; color: var(--value); font-size: 15px; }
   .dojo-select .sensei {
     display: grid; gap: 4px; font-size: 11px; letter-spacing: 3px;
-    text-transform: uppercase; color: var(--dim);
+    text-transform: uppercase; color: var(--text);
   }
   .dojo-select .sensei b { font-size: 16px; letter-spacing: 1px; text-transform: none; color: rgb(var(--glow)); }
 
@@ -987,7 +988,7 @@
     display: flex; flex-wrap: nowrap; justify-content: center;
     gap: clamp(40px, 6vw, 64px); white-space: nowrap;
   }
-  .rankings li { color: var(--dim); transition: color 0.15s; }
+  .rankings li { color: var(--text); transition: color 0.15s; }
   .rankings li.on { color: rgb(var(--glow)); }
   .rankings .pick { all: unset; cursor: pointer; min-height: 44px; display: grid; align-items: center; }
   /* The lit name is the selection. The keys move it without moving focus,
@@ -1019,10 +1020,10 @@
   .rankings .board { font-size: 16px; }
   .rankings .board table { width: auto; }
   .rankings .board td, .rankings .board th { height: 44px; padding: 0 24px; text-align: left; }
-  /* Column names, the way an arcade table printed RANK SCORE NAME: dim
-     and small, in the key line's lowercase. */
+  /* Column names, the way an arcade table printed RANK SCORE NAME: small,
+     in the key line's lowercase. */
   .rankings .board th {
-    font-size: 14px; font-weight: normal; color: var(--dim); white-space: nowrap;
+    font-size: 14px; font-weight: normal; color: var(--text); white-space: nowrap;
     position: sticky; top: var(--bar); z-index: 1; background: var(--bg);
   }
   /* Aligned by kind, header and cells alike: numbers right so their digits
@@ -1030,9 +1031,9 @@
      names. Chosen 17 September on a board of 1,500 invented runs. */
   .rankings .board .place, .rankings .board .score { text-align: right; }
   .rankings .board .dojo, .rankings .board .belt { text-align: center; }
-  /* The podium's places in bone rather than dim: the top three stand out
-     without a colour of their own. Medals wait for the tournament (UNR-143). */
-  .rankings .board tr.podium:not(.you) td.place { color: var(--text); }
+  /* Every place is bone now, so the podium's stand out by weight rather
+     than a colour of their own. Medals wait for the tournament (UNR-143). */
+  .rankings .board tr.podium:not(.you) td.place { font-weight: bold; }
 
   @media (prefers-reduced-motion: reduce) {
     .rankings li { transition: none; }
