@@ -123,8 +123,18 @@ invariant is what kept them honest — so the fix was to put the fourth thing
 *inside* the invariant rather than to try to remember harder.
 
 Read the numbers in game terms: **major** when it plays differently enough to be
-a new thing, **minor** for a new mechanic or mode, **patch** for balance, art
-and fixes.
+a new thing, **minor** for a new mechanic or mode, or a new step in the
+player's journey (a screen they pass through, or a choice every player
+makes), **patch** for balance, art, copy and fixes within the screens that
+already exist.
+
+**The journey counts, settled 17 September.** The rule used to ask only
+what the player has to *do*, and by that test character select came out a
+patch. Karin reversed it: character select changes the onboarding journey
+and touches many screens a player sees directly, so if the rule called that
+a patch, the rule was wrong. The title screen and arrival had been kept as
+patches on 16 September under the old wording. Past versions aren't
+renumbered.
 
 **Artwork is a patch, however much of it there is.** This used to be ambiguous:
 `CHANGELOG.md` said minor meant "new mechanic, mode or content", which made a
@@ -132,7 +142,8 @@ pile of commissioned artwork arguable either way. Settled 12 September — the
 two files now say the same thing. v0.3.1 replaced the wordmark with a drawn
 crest, retired gold for electric yellow across the whole palette and made the
 board artwork legible, and it was still a patch, because nothing played
-differently afterwards. The test is what the player has to *do*.
+differently afterwards. Artwork on screens that already exist is a patch;
+artwork that arrives with a new step is part of that step's minor.
 
 A corollary worth knowing: the milestones in Linear each name the version they
 ship as, all the way to v1.0.0. Spending a minor early means renumbering every

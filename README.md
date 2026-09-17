@@ -333,13 +333,15 @@ A test fails if the first three disagree.
 Read the numbers in game terms:
 
 - **major** — the game plays differently enough to be a new thing
-- **minor** — a new mechanic or mode
-- **patch** — balance tuning, art, copy, bug fixes
+- **minor** — a new mechanic or mode, or a new step in the player's journey:
+  a screen they pass through, or a choice every player makes
+- **patch** — balance tuning, art, copy and bug fixes within the screens that
+  already exist
 
 **Artwork is a patch, however much of it there is.** v0.3.1 replaced the
 wordmark with a drawn crest, moved the whole palette and made the board
-artwork legible, and it was still a patch, because nothing played differently
-afterwards. The test is what the player has to do, not how much changed.
+artwork legible, and it was still a patch, because it added no step to the
+journey and nothing played differently afterwards.
 
 ### Files
 
