@@ -354,10 +354,14 @@ breaks a `check` constraint: an allowed insert fails with `23514`, a forbidden
 one with `42501`, and neither writes anything. Updates and deletes should
 always come back `42501`.
 
-**The Browser tool's `space` key arrives as an empty key name**, so the game
-never sees it. Arrows and letters are fine. To press mercy, dispatch a real
-`KeyboardEvent('keydown', {key: ' '})` at the document, which still goes
-through the game's own input handler.
+**The Browser tool sends an empty key name for some keys**, so the game
+never sees them. Checked 17 September: `space`/`Space`, `Return` and `Down`
+all arrive as `""`. Use the browser's own key names, which do arrive:
+`Enter`, `ArrowDown`, `Escape`, `Tab` and letters. Space has no name that
+works, so to press mercy dispatch a real `KeyboardEvent('keydown', {key: ' '})`
+at the document, which still goes through the game's own input handler. If
+a walk-through seems to ignore a key, log `event.key` before suspecting the
+game.
 
 **Don't hand-code detailed SVG illustrations.** A cobra crest was attempted
 twice as inline paths and rejected both times. Detailed artwork wants to be
