@@ -294,6 +294,18 @@ describe('the title screen', () => {
     is(game.titling, true, 'titling');
   });
 
+  // Someone playing in an office has to be able to silence the game
+  // before it makes a sound, without that also starting it.
+  test('M mutes and does not press start', () => {
+    game.muted = false;
+    pressKey('m');
+    is(game.muted, true, 'muted');
+    is(game.titling, true, 'still on the title');
+    pressKey('M');
+    is(game.muted, false, 'capital M too');
+    is(game.titling, true, 'still on the title');
+  });
+
   test('any key presses start, and does nothing else', () => {
     game.phase = 'ready';
     pressKey(' ');
