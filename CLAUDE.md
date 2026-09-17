@@ -170,6 +170,26 @@ still allowed; it just has to be a written decision. Merges are exempt. It
 needs enabling once per clone — `git config core.hooksPath .githooks` — and
 never bypass it with `--no-verify`.
 
+## Walk every journey before a release
+
+**Before tagging a release, play every path a player can take, end to end,
+with real input.** Not just the screen that changed. The title, dojo select
+on a first visit and on a return, the start screen, a run, mercy, defeat,
+initials, rankings and back again. Use keyboard, mouse and touch, and both
+the stacked and the side-by-side layout.
+
+Checking each change on its own screen is how flawed work reached production
+on 17 September. v0.5.3 and v0.5.4 each passed where they were changed, but
+nobody walked the whole way through. Pressing M on the title started the
+game instead of muting it. The start screen had become a pile of controls
+that didn't belong together. **Enter the dojo** read as if it opened dojo
+select, when it actually started a run. Nobody knew the game existed yet, so
+it cost nothing, but that won't stay true.
+
+When reporting a release as ready, say which journeys were walked. **A
+journey that wasn't walked** (the real iPad is the usual one) **is a decision
+for Karin before release,** not a footnote after it.
+
 ## Running it
 
 The board is **21 x 21 cells at 30px**, so a 630px canvas. The grid is the
