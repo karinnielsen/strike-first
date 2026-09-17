@@ -186,6 +186,9 @@ globalThis.game = {
   BOARD_TEAM, PODIUM, PODIUM_REACH, boardRequests, neighbourRequest,
   podiumRows, dojoStandings, studentsLabel, readRows, fetchBoard, loadBoard,
   dropBoard, dueBoard, skipInitials, DOJO_BADGES, badgeSvg, ordinal,
+  RANKINGS_TOP, RANKINGS_FILTERS, rankingsAllowed, rankingsRequests, rankingsNearRequests,
+  rankingRows, fetchRankings, openRankings, closeRankings, filterRankings, rankingsEmpty,
+  get rankingsOpen() { return rankingsOpen }, get rankingsAt() { return rankingsAt },
   get board() { return board }, get boardDue() { return boardDue },
   get boardShown() { return !boardEl.hidden }
 };`;
@@ -2020,6 +2023,144 @@ describe('the board', () => {
     game.skipInitials();
     is(game.boardDue, true, 'due');
     game.dropBoard();
+  });
+});
+
+
+describe('All Valley Rankings, UNR-134', () => {
+  const DOJOS = ['cobra-kai', 'miyagi-do', 'eagle-fang'];
+  // Forty runs, dojos taking turns: Cobra Kai holds places 1, 4, 7 ...
+  const runs = Array.from({ length: 40 }, (_, i) =>
+    ({ id: 100 + i + 1, initials: 'AAA', dojo: DOJOS[i % 3], score: 300 - i, belt: 'White', place: i + 1 }));
+  const places = (rows) => rows.map(r => r === null ? '-' : r.you ? r.place + '*' : r.place);
+
+  // A pretend database for the views, with the filters the rankings use.
+  const database = (rows, players = []) => async (url, options) => {
+    const q = new URL(url);
+    let out = q.pathname.endsWith('dojo_players') ? players : rows;
+    for (const [key, value] of q.searchParams) {
+      const [op, ...rest] = value.split('.');
+      const v = rest.join('.');
+      const want = /^\d+$/.test(v) ? Number(v) : v;
+      if (op === 'eq') out = out.filter(r => r[key] === want);
+      if (op === 'lt') out = out.filter(r => r[key] < want);
+      if (op === 'gt') out = out.filter(r => r[key] > want);
+      if (op === 'lte') out = out.filter(r => r[key] <= want);
+    }
+    const order = q.searchParams.get('order');
+    if (order) out = [...out].sort((a, b) => order.endsWith('.desc') ? b.place - a.place : a.place - b.place);
+    if (q.searchParams.get('limit')) out = out.slice(0, Number(q.searchParams.get('limit')));
+    return { ok: options.headers.apikey === game.SCORE_SERVICE.key, status: 200, json: async () => out };
+  };
+
+  test('opens between runs only, never over an entry', () => {
+    const between = { titling: false, dojoPhase: 'closed', entry: null, signing: null };
+    is(['ready', 'over', 'playing', 'paused', 'dying', 'bowing']
+      .map(phase => game.rankingsAllowed({ ...between, phase })), [true, true, false, false, false, false], 'phases');
+    is(game.rankingsAllowed({ ...between, phase: 'over', entry: {} }), false, 'initials open');
+    is(game.rankingsAllowed({ ...between, phase: 'over', signing: {} }), false, 'signing');
+    is(game.rankingsAllowed({ ...between, phase: 'ready', titling: true }), false, 'title screen');
+    is(game.rankingsAllowed({ ...between, phase: 'ready', dojoPhase: 'open' }), false, 'dojo select');
+  });
+
+  test('All first, then every dojo', () => {
+    is(game.RANKINGS_FILTERS, [null, ...game.DOJO_IDS], 'filters');
+  });
+
+  test('the requests: a top ten, filtered by dojo when asked', () => {
+    const all = game.rankingsRequests(game.SCORE_SERVICE, null, 42);
+    is(all.top.includes('order=place&limit=10') && !all.top.includes('dojo='), true, 'all');
+    is(all.you.endsWith('&id=eq.42'), true, 'yours, by id');
+    is(game.rankingsRequests(game.SCORE_SERVICE, 'miyagi-do', null).top.includes('&dojo=eq.miyagi-do'), true, 'dojo');
+    is(game.rankingsRequests(game.SCORE_SERVICE, null, null).you, null, 'no run, no request');
+    is(game.rankingsNearRequests(game.SCORE_SERVICE, null, 17).ahead, null, 'All needs no counting');
+    is(game.rankingsNearRequests(game.SCORE_SERVICE, 'eagle-fang', 17).ahead.includes('select=id&dojo=eq.eagle-fang&place=lt.17'), true, 'counting');
+  });
+
+  test('rows: in the top ten, no gap; below it, a gap and your neighbourhood', () => {
+    const top = runs.slice(0, 10);
+    is(places(game.rankingRows(top, [], top[3])), [1, 2, 3, '4*', 5, 6, 7, 8, 9, 10], 'inside');
+    is(places(game.rankingRows(top, [runs[15], runs[16], runs[17]], runs[16])),
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, '-', 16, '17*', 18], 'below');
+    // 11th: the run above you is already on the list, so it is not repeated.
+    is(places(game.rankingRows(top, [runs[9], runs[10], runs[11]], runs[10])),
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, '-', '11*', 12], 'just below');
+    is(places(game.rankingRows(top, [], null)), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 'no run');
+  });
+
+  test('an empty list says so, and asks your own dojo to go first', () => {
+    is(game.rankingsEmpty(null, 'cobra-kai'), 'No one has fought yet.', 'all');
+    is(game.rankingsEmpty('eagle-fang', 'cobra-kai'), 'No student of Eagle Fang has fought yet.', 'another dojo');
+    is(game.rankingsEmpty('eagle-fang', 'eagle-fang'), 'Be the first to fight for Eagle Fang.', 'yours');
+  });
+
+  testAsyncInOrder('rankings: an empty dojo is an empty list, not an error', async () => {
+    const loaded = await game.fetchRankings('eagle-fang', null, database(runs.filter(r => r.dojo !== 'eagle-fang')));
+    is(loaded.rows, [], 'no rows');
+  });
+
+  testAsyncInOrder('rankings: All places you in the tournament', async () => {
+    const loaded = await game.fetchRankings(null, 117, database(runs));
+    is(places(loaded.rows), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, '-', 16, '17*', 18], 'rows');
+  });
+
+  testAsyncInOrder('rankings: a dojo counts places within itself', async () => {
+    // Cobra Kai's runs hold places 1, 4, 7 ... so its 10th is place 28.
+    const top = await game.fetchRankings('cobra-kai', null, database(runs));
+    is(places(top.rows), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 'numbered 1 to 10');
+    is(top.rows.every(r => r.dojo === 'cobra-kai'), true, 'only the dojo');
+    is(top.rows[9].score, 300 - 27, 'its tenth is the tournament 28th');
+    // Place 37 is Cobra Kai's 13th.
+    const far = await game.fetchRankings('cobra-kai', 137, database(runs));
+    is(places(far.rows), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, '-', 12, '13*', 14], 'your neighbourhood, in dojo places');
+    is(far.rows.slice(-3).map(r => r.id), [134, 137, 140], 'the dojo runs either side');
+  });
+
+  testAsyncInOrder('rankings: another dojo has no you in it', async () => {
+    const loaded = await game.fetchRankings('miyagi-do', 137, database(runs));
+    is(loaded.rows.some(r => r && r.you), false, 'no highlight');
+    is(loaded.rows.includes(null), false, 'no gap');
+  });
+
+  testAsyncInOrder('rankings: offline is a message, not an error', async () => {
+    is(await quietly(() => game.fetchRankings(null, 117, async () => { throw new Error('offline'); })), null, 'offline');
+  });
+
+  testAsyncInOrder('rankings: B opens them on the verdict, and no key reaches the game behind', async () => {
+    freshGame();
+    game.phase = 'over';
+    game.entry = null;
+    pressKey('b');
+    is(game.rankingsOpen, true, 'open');
+    pressKey('ArrowRight');
+    is(game.rankingsAt, 1, 'a dojo');
+    pressKey('Tab');
+    pressKey('ArrowLeft');
+    pressKey('a');
+    is(game.rankingsAt, 0, 'back to All');
+    pressKey('ArrowLeft');
+    is(game.rankingsAt, 3, 'wraps');
+    pressKey('r');
+    pressKey(' ');
+    is(game.phase, 'over', 'no restart behind the rankings');
+    pressKey('ArrowUp');
+    pressKey('w');
+    is(game.turnQueue, [], 'no turn queued');
+    pressKey('Escape');
+    is(game.rankingsOpen, false, 'Esc goes back');
+    pressKey('b');
+    pressKey('b');
+    is(game.rankingsOpen, false, 'B goes back too');
+    await quietly(() => new Promise(r => setImmediate(r)));
+  });
+
+  testAsyncInOrder('rankings: never during a run', async () => {
+    freshGame();
+    pressKey('b');
+    is(game.rankingsOpen, false, 'playing');
+    game.phase = 'paused';
+    game.openRankings();
+    is(game.rankingsOpen, false, 'paused');
   });
 });
 
