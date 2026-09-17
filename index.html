@@ -1958,6 +1958,17 @@ function draw() {
   const ms = defeatElapsed();
   const jolt = defeatJolt(ms, defeat && defeat.dir, REDUCED_MOTION.matches);
   ctx.save();
+
+  // The overhang is only for a board you can see. Mercy and the verdict
+  // darken the board with an overlay that stops at its border, so a hood
+  // reaching past it stayed bright beside the dimmed board. While one is
+  // up, the drawing stops at the edge again.
+  if (!overlay.classList.contains('hidden')) {
+    ctx.beginPath();
+    ctx.rect(BOARD_BLEED, BOARD_BLEED, COLS * CELL, ROWS * CELL);
+    ctx.clip();
+  }
+
   ctx.translate(BOARD_BLEED + jolt.x, BOARD_BLEED + jolt.y);
 
   // Faint dot in the middle of each grid square, just for looks.

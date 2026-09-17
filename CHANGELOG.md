@@ -45,7 +45,8 @@ player has to *do*, and they aren't renumbered.
 - **The hood is no longer cut off at the edge of the board** (UNR-154). The
   canvas now reaches a little past the board on every side, so the hood, the
   tongue and food on an edge square can overhang the border. The wall is
-  still the border.
+  still the border. Under mercy and the verdict the drawing stops at the
+  edge again, so nothing bright pokes out beside the darkened board.
 
 ## [0.5.5] — 2026-09-17
 
