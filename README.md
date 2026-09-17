@@ -15,8 +15,8 @@ Current version: **v0.5.5** — see [CHANGELOG.md](CHANGELOG.md).
 ## Play
 
 - **Arrow keys** or **WASD** to move
-- **Space** or **Esc** to pause — the game calls it mercy. Continuing gives you
-  one full step before the snake moves again
+- **Space** or **Esc** to pause — the game calls it mercy. Continuing bows
+  you back in, so you have a moment to find the snake again
 - **R** for a rematch, once you have lost. There is no restart mid-run: the way
   out of a run is mercy, then **Quit**
 - **M** to turn sound off or on, on any screen — the title included, where it
@@ -141,7 +141,12 @@ Every run opens with a bow, the way every lost one closes with one. The snake
 dips its head, draws back, and its first step is a strike. Half a second, and
 the snake does not move until it is over, so it never eats into your reaction
 time. Press a direction during it and that is your first move, straight away.
-Reduced motion skips it.
+
+Continuing from mercy bows too, because the board has been covered and you
+need a moment to find the snake. The bow is the same length at every level,
+since the faster the game, the more you need it. A direction cuts it short
+here as well, but never to less than one step. With reduced motion the head
+holds still for the same half second instead of bowing.
 
 ### Defeat
 

@@ -1894,7 +1894,7 @@ function showSound() {
 // while you are in mercy. It keeps its slot either way, so sound never
 // moves. Shows state rather than deciding it, like draw().
 function showMercy() {
-  const inRun = (phase === 'playing' || phase === 'paused')
+  const inRun = (phase === 'playing' || phase === 'bowing' || phase === 'paused')
     && !['titling', 'selecting', 'ranking'].some(c => pageEl.classList.contains(c));
   mercyBtn.classList.toggle('idle', !inRun);
   mercyBtn.classList.toggle('paused', phase === 'paused');
@@ -2786,7 +2786,7 @@ document.addEventListener('keydown', (event) => {
   if (rankingsOpen) { rankingsKeydown(event); return; }
 
   // Esc calls mercy and answers it, the way Space does.
-  if (key === 'Escape' && (phase === 'playing' || phase === 'paused')) {
+  if (key === 'Escape' && (phase === 'playing' || phase === 'bowing' || phase === 'paused')) {
     event.preventDefault();
     toggleMercy();
     return;
@@ -2819,7 +2819,7 @@ document.addEventListener('keydown', (event) => {
   }
 
   if (key === ' ') {
-    if (phase === 'playing') toggleMercy();
+    if (phase === 'playing' || phase === 'bowing') toggleMercy();
     else if (phase === 'dying' && canRestart()) startGame();
     return;
   }
@@ -2829,22 +2829,28 @@ document.addEventListener('keydown', (event) => {
 });
 
 // Space and the mercy button do the same thing, so they share one path.
+//
+// Mercy can be called during a bow too. The snake hasn't moved, so there
+// is nothing to gain, and the button doesn't blink out while it bows.
 function toggleMercy() {
-  if (phase === 'playing') {
+  if (phase === 'playing' || phase === 'bowing') {
     phase = 'paused';
     pausedAt = performance.now();
     showOverlay('MERCY', '');
   } else if (phase === 'paused') {
-    phase = 'playing';
     if (pausedAt !== null) pausedMs += performance.now() - pausedAt;
     pausedAt = null;
     overlay.classList.add('hidden');
-    // A full step before the snake moves again, not whatever was left of
-    // the one mercy interrupted. It gives you a beat to find the keys, and
-    // it keeps a run honest: without it, mercy on every move would take
-    // time off the clock that the moves themselves had used. UNR-132.
-    clearTimeout(loopTimer);
-    loopTimer = setTimeout(loop, stepDelay());
+    // Continue bows back into the fight. The overlay has been covering the
+    // board, so you come back needing to find the snake, and a single step
+    // was 70ms at level 9: the better the run, the less time you got. The
+    // bow is the same length at every level for that reason. UNR-149.
+    //
+    // It still can't be cut shorter than the one step Continue always
+    // waited, and the bow counts as time in the run, not in mercy. Between
+    // them, mercy on every move can never make the moves look faster than
+    // they were. UNR-132.
+    bowIn(stepDelay());
   }
   showMercy();
 }
@@ -2869,14 +2875,23 @@ showSound();
 // same rules and a swipe can never do something a key press couldn't.
 function queueTurn(turn) {
   // A direction during the bow cuts it short and is the first move, taken
-  // now: impatience costs nothing, and the key is not thrown away.
-  if (phase === 'bowing') {
-    phase = 'playing';
-    queueTurn(turn);
-    loop();
-    return;
+  // now: impatience costs nothing, and the key is not thrown away. After
+  // mercy "now" can't come sooner than the bow's floor, so the bow jumps
+  // to its strike and the move lands on the floor instead.
+  if (phase === 'bowing' && !bowCut) {
+    const early = bowFloor - bowElapsed();
+    if (early <= 0) {
+      phase = 'playing';
+      queueTurn(turn);
+      loop();
+      return;
+    }
+    bowCut = true;
+    bowStart -= BOW_MS - bowFloor;
+    clearTimeout(loopTimer);
+    loopTimer = setTimeout(loop, early);
   }
-  if (phase !== 'playing') return;
+  if (phase !== 'playing' && phase !== 'bowing') return;
 
   // Check the turn against the direction it will ACTUALLY follow: the last
   // one already queued, or the current one if nothing is waiting. Checking
@@ -3154,13 +3169,7 @@ function startGame() {
   hideInitials();
   dropBoard();
   overlay.classList.add('hidden');
-  if (REDUCED_MOTION.matches) {
-    phase = 'playing';
-    return;
-  }
-  phase = 'bowing';
-  bowStart = performance.now();
-  requestAnimationFrame(bowFrame);
+  bowIn(0);
 }
 
 // ---- the opening bow ----
@@ -3168,7 +3177,24 @@ function startGame() {
 // a step, so it drives its own. When it ends the first step is taken on the
 // spot and the heartbeat starts from there, so the snake's first move is
 // never early or late by part of a step.
+//
+// Every start bows, and so does every Continue from mercy. With reduced
+// motion the head holds still for the same time rather than skipping it,
+// because the beat is for finding the snake, not for the animation.
 let bowStart = 0;
+let bowFloor = 0;      // how soon a direction may cut the bow short, in ms
+let bowCut   = false;  // already cut: later directions just queue
+
+function bowIn(floor) {
+  phase    = 'bowing';
+  bowStart = performance.now();
+  bowFloor = floor;
+  bowCut   = false;
+  requestAnimationFrame(bowFrame);
+  // The heartbeat ends the bow too, for a hidden tab with no frames.
+  clearTimeout(loopTimer);
+  loopTimer = setTimeout(loop, BOW_MS);
+}
 
 function bowElapsed() {
   return phase === 'bowing' ? performance.now() - bowStart : Infinity;

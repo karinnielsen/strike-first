@@ -1404,10 +1404,12 @@ describe('the opening bow', () => {
     is(game.snake[0], {x: head.x, y: head.y - 1}, 'head');
   });
 
-  test('space does not restart a bow in progress', () => {
+  test('space during a bow calls mercy, and never restarts it', () => {
     bowing();
+    const snake = JSON.stringify(game.snake);
     pressKey(' ');
-    is(game.phase, 'bowing', 'phase');
+    is(game.phase, 'paused', 'phase');
+    is(JSON.stringify(game.snake), snake, 'snake');
   });
 
   test('starts and ends standing, so neither end jumps', () => {
@@ -1686,8 +1688,8 @@ describe('scores you can trust', () => {
       game.reset();
       game.phase = 'playing';
       game.loop();                                  // the first move, on the beat
-      while (game.phase === 'playing' && game.moves < maxMoves) {
-        if (Math.random() < mercy) {
+      while ((game.phase === 'playing' || game.phase === 'bowing') && game.moves < maxMoves) {
+        if (game.phase === 'playing' && Math.random() < mercy) {
           clock += Math.random() * (timer.at - clock);
           game.toggleMercy();
           clock += Math.random() * 3000;
@@ -1705,7 +1707,7 @@ describe('scores you can trust', () => {
                            ...game.reachableSquare(game.MOUSE_LIFE) };
         }
       }
-      if (game.phase === 'playing') {               // out of patience, not out of room
+      if (game.phase !== 'dying') {                 // out of patience, not out of room
         clock = timer.at;
         game.gameOver('wall', {x: -1, y: 0});
       }
@@ -1722,21 +1724,65 @@ describe('scores you can trust', () => {
     run.score <= game.POINTS_PER_SQUARE * (run.length - 3) &&
     run.durationMs >= game.fastestRun(run.moves, run.length);
 
-  test('continuing from mercy waits a full step before the next move', () => {
+  // Continue bows back in, UNR-149. A fake clock and heartbeat, so the
+  // moment of the next move can be read off rather than waited for.
+  function afterContinue(check, score = 0) {
     const saved = [sandbox.performance.now, sandbox.setTimeout, sandbox.clearTimeout];
+    let clock = 500;
     let timer = null;
-    sandbox.performance.now = () => 500;
+    sandbox.performance.now = () => clock;
     sandbox.setTimeout = (fn, ms) => { timer = { fn, ms }; return 1; };
     sandbox.clearTimeout = () => { timer = null; };
     try {
       freshGame();
+      game.score = score;
       game.toggleMercy();
-      timer = null;
       game.toggleMercy();
-      is(timer && timer.ms, game.stepDelay(), 'a whole step');
+      check({ at: (ms) => { clock = 500 + ms; }, beat: () => timer });
     } finally {
       [sandbox.performance.now, sandbox.setTimeout, sandbox.clearTimeout] = saved;
+      game.phase = 'ready';
     }
+  }
+
+  test('continuing from mercy bows before the next move', () => {
+    afterContinue(({ beat }) => {
+      is(game.phase, 'bowing', 'bowing');
+      is(beat() && beat().ms, game.BOW_MS, 'the whole bow');
+    });
+  });
+
+  test('the bow after mercy is as long at level 9 as at level 1', () => {
+    const top = game.LEVELS[game.LEVELS.length - 1].from;
+    afterContinue(({ beat }) => {
+      is(game.stepDelay(), game.LEVELS[game.LEVELS.length - 1].ms, 'at level 9');
+      is(beat() && beat().ms, game.BOW_MS, 'the whole bow');
+    }, top);
+  });
+
+  test('a direction straight after Continue still waits out one step', () => {
+    afterContinue(({ at, beat }) => {
+      const head = game.snake[0];
+      const step = game.stepDelay();
+      at(10);
+      pressKey('ArrowUp');
+      is(game.snake[0], head, 'not yet');
+      is(beat() && beat().ms, step - 10, 'moves on the step');
+      at(step);
+      beat().fn();
+      is(game.phase, 'playing', 'phase');
+      is(game.snake[0], {x: head.x, y: head.y - 1}, 'head');
+    });
+  });
+
+  test('a direction once a step has passed is the move, at once', () => {
+    afterContinue(({ at }) => {
+      const head = game.snake[0];
+      at(game.stepDelay() + 1);
+      pressKey('ArrowUp');
+      is(game.phase, 'playing', 'phase');
+      is(game.snake[0], {x: head.x, y: head.y - 1}, 'head');
+    });
   });
 
   test('every run the game plays is accepted, mercy or not', () => {
@@ -1877,7 +1923,7 @@ describe('repeat play, UNR-137', () => {
     is(game.phase, 'paused', 'called');
     is(game.mercyMenu.at, 0, 'Continue lit');
     pressKey('Escape');
-    is(game.phase, 'playing', 'answered');
+    is(game.phase, 'bowing', 'answered, and bowing back in');
   });
 
   test('in mercy, Space picks the lit row', () => {
@@ -1885,7 +1931,7 @@ describe('repeat play, UNR-137', () => {
     pressKey(' ');
     is(game.phase, 'paused', 'called');
     pressKey(' ');
-    is(game.phase, 'playing', 'Continue');
+    is(game.phase, 'bowing', 'Continue, bowing back in');
   });
 
   test('Quit with nothing scored goes to the title, on the mode you played', () => {

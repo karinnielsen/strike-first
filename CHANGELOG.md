@@ -16,6 +16,19 @@ new wordmark, a new palette and legible board artwork and was still a patch.
 
 ## [Unreleased]
 
+### Changed
+
+- **Continuing from mercy bows you back in** (UNR-149). It used to wait one
+  step, which was 70ms at level 9: the better the run, the less time you
+  had to find the snake after the overlay had covered it. The bow is the
+  same half second at every level. A direction cuts it short, but never to
+  less than one step, so pausing on every move still can't make a run look
+  faster than it was.
+- **Reduced motion gets the same beat,** held still, on every start and
+  every Continue. It used to start cold.
+- **Mercy works during a bow,** and its button no longer blinks out while
+  the snake bows.
+
 ## [0.5.5] — 2026-09-17
 
 Start screen and repeat play. The game gets its menus: one on the title, and
