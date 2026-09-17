@@ -38,6 +38,9 @@
     --brand:  #ee3524;   /* the wordmark, hotter than the gameplay red */
     --bone:   #e8e2d6;   /* the cobra                  */
     --yellow-deep: #7a7a00; /* the shadow side of it    */
+    --value:  #fff7b8;   /* the header's numbers: pale, so they stand
+                            apart from their bone labels without
+                            claiming the call-to-action yellow */
   }
 
   * { box-sizing: border-box; }
@@ -105,10 +108,10 @@
     display: flex;
     justify-content: space-between;
     font-size: 14px;
-    color: var(--dim);
+    color: var(--text);        /* labels are information, so not grey */
   }
   .scores .group { display: flex; gap: 20px; }
-  .scores b { color: var(--text); font-size: 17px; }
+  .scores b { color: var(--value); font-size: 17px; }
 
   /* The swatch sits on `best` rather than in a column of its own, because
      your best score is literally what produces your rank. Putting them
@@ -135,7 +138,7 @@
     font-size: 12px;
     letter-spacing: 1px;
     text-transform: uppercase;
-    color: var(--dim);
+    color: var(--text);
   }
 
   /* The span has to be "relative" so the floating +N can be positioned
@@ -599,9 +602,9 @@
   }
 
   @keyframes bump-glow {
-    0%   { color: var(--text);   }
+    0%   { color: var(--value);  }
     40%  { color: var(--yellow); }
-    100% { color: var(--text);   }
+    100% { color: var(--value);  }
   }
 
   .version {

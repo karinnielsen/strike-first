@@ -36,7 +36,9 @@ player has to *do*, and they aren't renumbered.
 - **Easier to read.** The grey used for labels, hints and keys is lighter,
   up from about 4.4:1 to 5.4:1 against the mat, and the version line now
   uses it too instead of its own darker grey. The header's labels and
-  numbers are a size up (UNR-147).
+  numbers are a size up (UNR-147). The labels are bone rather than grey,
+  since they carry information, and the numbers are a pale yellow so they
+  still stand apart.
 - **Menu rows are bone, not grey,** when they aren't lit. The grey was too
   muted and read as disabled. The lit row is still the only yellow one.
 
