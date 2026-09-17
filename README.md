@@ -10,17 +10,21 @@ One HTML file of code, no build step and nothing to install — open it and play
 Beside it sit a few images: the dojo crests and the sharing preview. Its one
 outside connection is a hosted database for scores. Made for desktop and tablet.
 
-Current version: **v0.5.4** — see [CHANGELOG.md](CHANGELOG.md).
+Current version: **v0.5.5** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Play
 
 - **Arrow keys** or **WASD** to move
-- **Space** to pause — the game calls it mercy. Continuing gives you one full
-  step before the snake moves again
-- **R** to restart
+- **Space** or **Esc** to pause — the game calls it mercy. Continuing gives you
+  one full step before the snake moves again
+- **R** for a rematch, once you have lost. There is no restart mid-run: the way
+  out of a run is mercy, then **Quit**
 - **M** to turn sound off or on, on any screen — the title included, where it
   mutes without starting the game
 - **B** between runs for the All Valley Rankings
+
+Every menu works the same way: **↑ ↓**, **W S** or **Tab** to move, **Enter**
+or **Space** to choose, or point and click.
 
 In the top-right corner of every screen, for mouse or finger: the **speaker**
 turns sound off or on, and **❚❚** calls mercy during a run.
@@ -31,8 +35,7 @@ On a tablet or any touch screen:
   right-then-up in one unbroken stroke rounds a corner
 - **The ❚❚ button** in the top-right corner for mercy, beside the speaker for
   sound
-- Tap the button on the board to start, continue or go again, and
-  **rankings** under it for the All Valley Rankings
+- Tap a menu row to choose it
 
 The board is 21×21 squares, drawn at 30px a square. The grid is the game; the
 cell size is only how large it is drawn.
@@ -104,31 +107,33 @@ never also starts a run. A touch screen is told to tap rather than press a
 key. It shows every time the page loads. With reduced motion it holds still
 instead of blinking.
 
+Pressing start puts the menu in its place, under the crest:
+
+- **Arcade** is the real game, and the only one whose runs count: choose your
+  dojo, then fight
+- **Practice** goes straight into a run and keeps nothing — no rankings, no
+  hi-score, no belt
+- **Rankings** opens the All Valley Rankings without playing
+
+Arcade is lit every time the menu opens. The lit row blinks its marker, and
+with reduced motion it holds still.
+
 ### Dojo select
 
-Every run counts for a dojo, so the first time you press start you choose one:
+Every Arcade run counts for a dojo, so choosing Arcade opens the select:
 **Cobra Kai**, **Miyagi-Do** or **Eagle Fang**, each a card with its crest. It
 is an arcade select screen, so there are 30 seconds on the clock, and when it
-runs out the lit dojo is chosen for you. The highlight starts on a random dojo,
-so no dojo is everyone's default.
+runs out the lit dojo is chosen for you. The first time, the highlight starts on a
+random dojo, so no dojo is everyone's default; after that it starts on yours.
 
 - **← →** or **Tab** to choose, **Enter** or **Space** to bow in
 - **↑ ↓** to flip a card. The back shows where the dojo stands, its team score,
   its students, its top student and its sensei. On a touch screen, tap a card
   to choose it and tap its turned-down corner to flip it
 
-Choosing lands like a kick, and the dojo's creed comes up with its name. The
-choice is remembered. After that, the start screen says which dojo you are in,
-and **change** brings the select back.
-
-### Arrival
-
-The first time you reach the start screen in a session, the game arrives rather
-than just being there. The crest settles and flicks its tongue, the grid on the mat
-lights up from the middle outward, and the snake slides in from the left wall
-a cell at a time. Then the egg, then the menu. About a second and a half. Any
-key, click or tap skips straight to the start screen and still does what it
-would have done there, so Space starts a run at once. Reduced motion skips it.
+Choosing lands like a kick, and the dojo's creed comes up with its name, and
+the fight begins. The select opens every time you choose Arcade — choosing your
+side is part of the ritual — but a **Rematch** skips it.
 
 ### The bow
 
@@ -151,13 +156,25 @@ Space, **R** or a tap skips it once the first moment has passed, so the key you
 were hammering when you died does not restart the game by accident. Reduced
 motion keeps the flash and the drain, and nothing moves.
 
-After a new hi-score the defeat screen asks you to **sign the board** with
-three letters, the way an arcade cabinet did. Last time's initials come back
-filled in, so signing again is Enter or a single tap on **Sign**, and typing
-over them starts afresh. **Escape** or **skip** passes. A short list of rude
-initials is refused, in the page and in the database. On a tablet, tap the
-letters to bring up the keyboard. Signing saves the run to a shared
-leaderboard. If the save fails the entry comes back, and **Sign** tries again.
+Under the verdict is a menu that sits in the same place on every defeat:
+**Rematch**, **Rankings** and **Main menu**. After a Practice run it is
+**Practice**, **Arcade** and **Main menu** instead — the title's own menu — with no signing and no board.
+
+**Quit** from mercy is a forfeit, and it counts. The heading reads
+**FORFEIT**, and everything else goes as it would after a defeat. A run
+quit with nothing scored has nothing to record, and goes straight back to
+the title.
+
+After a new hi-score in Arcade, the defeat screen asks you to **sign the
+board** with three letters, the way an arcade cabinet did. The first time
+they read **AAA**, after that last time's initials, so signing again is
+Enter or a single tap on **Sign**, and typing over them starts afresh. The
+next empty slot blinks yellow. There is no skip, as there never was on a
+cabinet. **Sign** with fewer than three letters buzzes. A short list of rude
+initials is refused, in the page and in the database, with a note under the
+letters. On a tablet, tap the letters to bring up the keyboard. Signing saves
+the run to a shared leaderboard. If the save fails, the menu comes up anyway,
+and the board shows without your row.
 
 The database only takes runs the game could have produced. A run's score,
 length, moves and time are tied together by the rules, so a score typed in
@@ -170,27 +187,23 @@ nothing and the hi-score it set is taken back.
 ### The board
 
 The defeat screen shows the leaderboard whenever there is nothing to sign, and
-once you have signed or skipped. It is a podium: the top three, then the run
+once you have signed. It is a podium: the top three, then the run
 above yours, yours in yellow, and the run below. If you are fifth or higher it
 is just the top five. Each row is the place, the initials, the dojo's pixel
 badge, the belt and the score. Your run is the one you just signed, or your last signed run
 if this one wasn't a hi-score.
 
-Under it are the dojos, each scored as the total of its best three players,
-with how many students it has. Every score counts for you and for your dojo.
-A run counts for the dojo you were in when you signed it, even if you change
-later.
+Every score counts for you and for your dojo. A run counts for the dojo you
+were in when you signed it, even if you change later.
 
 When the board is drawn small, the runs either side of yours are left out
-rather than squeezing the rest, and the dojos come down to one line: yours,
-with where it stands, such as `708 · 2nd of 3 · 9 students`. If the leaderboard can't be reached, there is
+rather than squeezing the rest. If the leaderboard can't be reached, there is
 no board, and nothing else waits for it.
 
 ### All Valley Rankings
 
-The whole board, on a screen of its own. Open it with **B** or the **rankings**
-button on the start screen or the defeat screen — never during a run, and not
-while you are signing. **Esc**, **B** or **back** returns you to where you were.
+The whole board, on a screen of its own. Open it from the title's menu or the defeat
+screen's, or with **B** — never during a run, and not while you are signing. **Esc**, **B** or **back** returns you to where you were.
 
 It is the top ten, then a gap and your run with the ones either side of it if
 you are further down. The columns are named along the top — rank, name,
@@ -199,7 +212,7 @@ dojo, belt, score — and the top three places are picked out in bone.
 Choose **All**, **Cobra Kai**, **Miyagi-Do** or **Eagle Fang** along the top
 with **← →** or **Tab**, or by tapping. Filtered to a dojo, the places count
 within that dojo, so its best run is 1st, and the dojo's crest sits above the
-list. Each dojo's total is on the defeat screen. On All each row carries its dojo's badge; filtered, the badge is left off,
+list. Each dojo's team score is on the back of its card in dojo select. On All each row carries its dojo's badge; filtered, the badge is left off,
 because every row would repeat it.
 
 It scrolls like a page, so on a tablet a swipe scrolls the rankings and never
@@ -209,9 +222,10 @@ steers a snake behind them.
 
 80s/90s arcade sound, generated in the page from square and pulse waves rather
 than shipped as audio files. A blip for an egg, a squeak and a ding for a
-mouse, a burp for a rotten egg, a quick run of chords for a promotion, and a
-long fall for defeat. A promotion replaces the sound of the food that earned
-it. Nothing plays until you start a game.
+mouse, a burp for a rotten egg, a quick run of chords for a promotion, a
+long fall for defeat, and a blip and a chord as you move through a menu and
+choose. A promotion replaces the sound of the food that earned
+it. Nothing plays until you press start.
 
 Turn it off with **M**, or with the speaker in the top-right corner of every
 screen. The game remembers the choice.

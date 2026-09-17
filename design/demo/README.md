@@ -13,7 +13,9 @@ Plays the game by itself. Append it inside the game's own `<script>` and it
 drives with **real key events**, through the game's own input handling — so
 anything the demo does, a player could do. It chases the mouse when one is on
 the board (worth five times an egg, and it expires), otherwise the egg, avoids
-the rotten egg entirely, and restarts on death.
+the rotten egg entirely, and plays Practice through the menus: press start,
+Practice, and Practice again after every defeat. Practice posts nothing, so a
+demo never reaches the real leaderboard.
 
 Breadth-first pathfinding on a 21×21 grid. There is nothing to optimise.
 

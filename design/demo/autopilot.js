@@ -54,8 +54,16 @@
     return null;
   }
 
+  // Between runs it plays Practice, through the menus like anyone would:
+  // press start, down to Practice, choose; after a defeat, Practice again.
+  // Practice posts nothing, so a demo never lands on the real board.
   setInterval(() => {
-    if (phase === 'ready' || phase === 'over') { playBtn.click(); return; }
+    if (titling) {
+      if (!startPressed || titleMenu.items[titleMenu.at] === 'practice') key('Enter');
+      else key('ArrowDown');
+      return;
+    }
+    if (phase === 'over') { key('Enter'); return; }
     if (phase !== 'playing') return;
 
     // Chase the mouse when there is one - it is worth five times as much
