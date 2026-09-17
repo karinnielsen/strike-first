@@ -58,7 +58,7 @@ at seventy milliseconds a move.
 | | Worth | Costs you | Sticks around |
 | --- | --- | --- | --- |
 | **Egg** | 1 | 1 length | always exactly one, never expires |
-| **Mouse** | 5 | **2 length** | 60 of your moves |
+| **Mouse** | 5 | **2 length** | a clock set by how far away it is |
 | **Rotten egg** | **−3** | leaves you queasy for 14 moves | 45 of your moves |
 
 Roughly two eggs in five bring a visitor along, and about two in five of those
@@ -87,8 +87,17 @@ is strictly better with no cost isn't a decision — you take it every time and
 nothing about how you play changes. Five points for two squares is a real
 question late in a run.
 
-A mouse is always **reachable when it spawns**, so missing one is a decision
-that went wrong rather than bad luck.
+A mouse lands **in a tight spot** — hard against a wall, in a corner, or fenced
+in by your own body — so going for one means committing to a square you may not
+get back out of. It never sits in a dead end with only one way in, and never
+within 8 squares of your head: one at your feet would be a gift rather than a
+choice.
+
+And it is a **race**. A mouse doesn't get a fixed lifetime; its clock is set
+from how far away it actually is, so every mouse asks the same question wherever
+it lands — can you find the direct route and commit to it now? You are always
+given enough moves to reach it, so missing one is a decision that went wrong
+rather than bad luck. What you can't afford is to dither on the way.
 
 A rotten egg deliberately costs you no length. Taking length *off* would be a
 relief late in a run, which is the opposite of a punishment.

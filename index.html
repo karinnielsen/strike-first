@@ -1259,21 +1259,19 @@ const MOUSE_GROWTH  = 2;    // Settled by play on 8 September. The whole point
 const VISITOR_CHANCE = 0.4;  // roughly two eggs in five bring something along
 const ROTTEN_SHARE   = 0.4;  // ...and this fraction of those are rotten
 
-// How many of YOUR MOVES a visitor sticks around for.
+// How many of YOUR MOVES a rotten egg sticks around for. A mouse no longer
+// has a flat number: its clock is set from how far away it actually is,
+// down in MOUSE_SLACK.
 //
-// This was cut to 45 on the arithmetic that the longest crossing is 40
-// moves. Playing it showed that was wrong: 40 assumes you spot the thing
-// instantly and travel in a straight line, and you do neither. Mice were
-// vanishing before there was a fair chance at them.
-//
-// The timer is no longer what makes a mouse a decision. Reachability is
-// guaranteed at spawn instead, so the cost of going for one is the extra
-// length it leaves you carrying and the risk of boxing yourself in - not
-// whether you happened to notice in time. Missing one should be a
-// decision that went wrong, never bad luck.
-const MOUSE_LIFE    = 60;
+// The history is worth keeping. The flat number was cut to 45 once, on the
+// arithmetic that the longest crossing is 40 moves, and that was wrong,
+// because 40 assumes you spot the thing instantly and travel in a straight
+// line and you do neither. It went to 60, and 60 turned out to be long
+// enough to STROLL: you saw the mouse, finished what you were doing, and
+// collected it on your own schedule. Deriving the clock from the distance
+// is what lets it be tight without being unfair.
 const ROTTEN_LIFE   = 45;
-const WARNING_MOVES = 15;   // moves left when a visitor starts flashing
+const WARNING_MOVES = 15;   // moves left when a rotten egg starts flashing
 
 // Where a rotten egg lands, and when it is allowed to. UNR-155.
 //
@@ -1297,10 +1295,42 @@ const ROTTEN_COOLDOWN = 3;   // rewards eaten before another rotten egg may come
 const BELT_STRETCH    = 5;   // points before a belt score where it lands beside the egg
 const ROTTEN_GAP      = 3;   // never closer than this to the head: no ambush at speed
 
-// How far a visitor may spawn from your head, as a fraction of its life.
-// The rest of the budget is slack for noticing it and for the fact that
-// nobody travels in a straight line.
-const REACH_BUDGET  = 0.5;
+// Where a mouse lands, how long it stays, and how it sits there. UNR-159,
+// all three settled from play on 17 September.
+//
+// A mouse on any old reachable square asks nothing of you: out in open
+// board, five points for a short detour is a pickup rather than a choice.
+// Three things make it a decision instead.
+//
+// THE TIGHT SPOT. It lands where the approach is the cost - hard against a
+// wall, in a corner, or fenced in by your own body - so going for one means
+// committing to a square you may not get back out of. Real cobras take
+// rodents in burrows and under things, not in the open. A square with only
+// ONE way in is a dead end, though, and a mouse you cannot survive taking
+// is a tease rather than a decision: two open sides is a floor as well as
+// the target.
+//
+// THE DISTANCE. One at your feet is a gift, so it keeps away from you as
+// well. The far end of the band is what the snake could cross while still
+// having slack for noticing it and for the fact that nobody travels in a
+// straight line.
+//
+// THE RACE. The clock is set FROM the distance, so every mouse asks the
+// same question wherever it lands: can I find the direct route and commit
+// to it, NOW? It is still never bad luck, because the route is always
+// there to be found - what you can no longer afford is to dither.
+const MOUSE_CRAMP  = 2;    // open sides: 2 is a corner or a pocket, 3 is a wall
+const MOUSE_NEAR   = 8;    // never closer to the head than this
+const MOUSE_FAR    = 30;   // ...nor further away than this
+const MOUSE_SLACK  = 1.5;  // moves allowed per step of the direct route
+const MOUSE_FLOOR  = 10;   // ...but never so few that a close one is a trick
+
+// How often the mouse twitches, counted in YOUR MOVES like everything else
+// that has to mean the same thing at 260ms a move and at 70ms. It has to be
+// moves rather than milliseconds for a second reason too: draw() runs once
+// per step, so a wall-clock wobble is sampled far too slowly to be a wobble
+// at all. See UNR-161.
+const MOUSE_TWITCH = 6;
 
 // How long the snake looks ill after a rotten egg. Counted in YOUR MOVES
 // like everything else, so it lasts the same number of decisions at every
@@ -1408,19 +1438,38 @@ function isOccupied(spot) {
   return false;
 }
 
-// Pick a free square close enough that the snake could actually get there
-// before the visitor leaves. A mouse parked in the far corner isn't a
-// decision, it's a tease; and a rotten egg out there is neither a threat
-// nor a choice. Either way the slot is wasted.
-function reachableSquare(life) {
-  const head   = snake[0];
-  const budget = Math.floor(life * REACH_BUDGET);
-  for (let tries = 0; tries < 200; tries++) {
-    const spot = randomEmptySquare();
-    const steps = Math.abs(spot.x - head.x) + Math.abs(spot.y - head.y);
-    if (steps <= budget) return spot;
+// How many of a square's four sides are open: 4 out in the board, 3 against
+// a wall, 2 in a corner or fenced by your own body.
+function openSides(spot) {
+  return [{x: 1, y: 0}, {x: -1, y: 0}, {x: 0, y: 1}, {x: 0, y: -1}]
+    .map(d => ({x: spot.x + d.x, y: spot.y + d.y}))
+    .filter(s => onBoard(s) && !isOccupied(s)).length;
+}
+
+// Where a mouse goes: the tightest square in the band, a pocket first, then
+// a wall, then wherever it can. A preference rather than a rule, because
+// early in a run on an open board there may be nothing tight in range at
+// all - and a mouse that doesn't come is worse than one in open board.
+function mouseSquare() {
+  const head  = snake[0];
+  const spots = [];
+  for (let tries = 0; tries < 300; tries++) {
+    const spot  = randomEmptySquare();
+    const steps = stepsBetween(spot, head);
+    if (steps >= MOUSE_NEAR && steps <= MOUSE_FAR) spots.push(spot);
   }
-  return randomEmptySquare();   // give up rather than spin forever
+  if (!spots.length) return randomEmptySquare();   // give up rather than spin
+  const pick   = list => list[Math.floor(Math.random() * list.length)];
+  const pocket = spots.filter(s => openSides(s) === MOUSE_CRAMP);
+  if (pocket.length) return pick(pocket);
+  const wall = spots.filter(s => openSides(s) === MOUSE_CRAMP + 1);
+  if (wall.length) return pick(wall);
+  return pick(spots);
+}
+
+// The clock a mouse arrives with, counted from how far it actually is.
+function mouseClock(spot) {
+  return Math.max(MOUSE_FLOOR, Math.ceil(stepsBetween(snake[0], spot) * MOUSE_SLACK));
 }
 
 function placeEgg() {
@@ -1458,7 +1507,7 @@ function maybeSpawnVisitor() {
     if (spot) spawn('rotten', spot);
     return;
   }
-  spawn('mouse', reachableSquare(MOUSE_LIFE));
+  spawn('mouse', mouseSquare());
 }
 
 function spawn(kind, spot) {
@@ -1466,8 +1515,10 @@ function spawn(kind, spot) {
     kind,
     x:      spot.x,
     y:      spot.y,
-    life:   kind === 'rotten' ? ROTTEN_LIFE : MOUSE_LIFE,
-    facing: Math.random() < 0.5 ? 1 : -1        // which way it happens to sit
+    life:   kind === 'rotten' ? ROTTEN_LIFE : mouseClock(spot),
+    born:   kind === 'rotten' ? ROTTEN_LIFE : mouseClock(spot),   // for the warning
+    facing: Math.random() < 0.5 ? 1 : -1,       // which way it happens to sit
+    beat:   Math.floor(Math.random() * MOUSE_TWITCH)   // so two mice never twitch in step
   };
 }
 
@@ -2109,7 +2160,13 @@ function draw() {
     // Flash when it's nearly out of time, so you get fair warning either
     // way: that a mouse is about to bolt, or that a rotten one is about
     // to stop being your problem.
-    const panicking = visitor.life < WARNING_MOVES;
+    // A flat fifteen moves of flashing would be most of a short clock, so a
+    // mouse warns for a third of whatever it was given. A rotten egg's life
+    // never varies, so it keeps the flat count.
+    const warn = visitor.kind === 'mouse'
+      ? Math.max(4, Math.round(visitor.born / 3))
+      : WARNING_MOVES;
+    const panicking = visitor.life < warn;
     if (!(panicking && Math.floor(Date.now() / 140) % 2 === 0)) {
       if (visitor.kind === 'mouse') drawMouse();
       else                          drawRottenEgg();
@@ -2350,15 +2407,33 @@ function drawRottenEgg() {
 // ---- the mouse --------------------------------------------------------
 // The temptation. Warmer than the egg on purpose - it is worth five times
 // as much, so it should catch the eye - and it faces the way it is going.
+// Alive without moving square. The egg breathes on a clock; a mouse is a
+// different animal - it holds still and then TWITCHES, which is what makes
+// it read as prey rather than as furniture, and it is the more enticing
+// reward, so it should not be the stiller one.
+//
+// Counted in moves, and one drawn pose rather than a curve, because the
+// canvas is drawn once per step. See MOUSE_TWITCH and UNR-161. Held still
+// for reduced motion, like everything else that moves for its own sake.
+function mouseIdle() {
+  if (REDUCED_MOTION.matches) return { lift: 0, tilt: 0 };
+  const beat = moves + visitor.beat;
+  if (beat % MOUSE_TWITCH !== 0) return { lift: 0, tilt: 0 };
+  const side = Math.floor(beat / MOUSE_TWITCH) % 2 ? 1 : -1;   // one way, then the other
+  return { lift: -1.5, tilt: 0.12 * side };
+}
+
 function drawMouse() {
   const cx = visitor.x * CELL + CELL / 2;
   const cy = visitor.y * CELL + CELL / 2;
+  const idle = mouseIdle();
 
   // The artwork is drawn facing right, so facing left is a mirror about
   // the centre of the cell rather than a second set of paths.
   const size = SPRITE_SIZE.mouse;
   ctx.save();
-  ctx.translate(cx, cy);
+  ctx.translate(cx, cy + idle.lift);
+  ctx.rotate(idle.tilt * visitor.facing);
   const m = size.scale * CELL_SCALE;
   ctx.scale(m * visitor.facing, m);   // facing -1 mirrors it
   ctx.translate(-size.cx, -size.cy);

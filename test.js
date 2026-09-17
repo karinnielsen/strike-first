@@ -150,10 +150,12 @@ globalThis.game = {
   get phase()         { return phase },         set phase(v)         { phase = v },
   COLS, ROWS, CELL, VERSION,
   EGG_POINTS, MOUSE_POINTS, ROTTEN_POINTS, EGG_GROWTH, MOUSE_GROWTH,
-  MOUSE_LIFE, ROTTEN_LIFE, WARNING_MOVES, QUEASY_MOVES,
-  LEVELS, REACH_BUDGET, TURN_QUEUE_MAX, SWIPE_MIN, swipeDirection, queueTurn,
+  ROTTEN_LIFE, WARNING_MOVES, QUEASY_MOVES,
+  LEVELS, TURN_QUEUE_MAX, SWIPE_MIN, swipeDirection, queueTurn,
   update, reset, isOccupied, stepDelay, mixColour, KEYS, addScore, queasiness,
-  levelFor, reachableSquare,
+  levelFor,
+  MOUSE_CRAMP, MOUSE_NEAR, MOUSE_FAR, MOUSE_SLACK, MOUSE_FLOOR, MOUSE_TWITCH,
+  openSides, mouseSquare, mouseClock, mouseIdle, spawn,
   ROTTEN_COOLDOWN, BELT_STRETCH, ROTTEN_GAP, beltStretch, routeSquares, besideSquares,
   rottenSquare, maybeSpawnVisitor, VISITOR_CHANCE, ROTTEN_SHARE,
   get sinceRotten() { return sinceRotten }, set sinceRotten(v) { sinceRotten = v },
@@ -585,15 +587,89 @@ describe('the visitor countdown', () => {
 });
 
 
+describe('the mouse: where it lands, and for how long', () => {
+  // UNR-159. A mouse in open board asks nothing of you; these are the three
+  // things that turn it back into a decision.
+
+  test('it lands tight: a pocket or a wall, never out in the open', () => {
+    freshGame();
+    const sides = [];
+    for (let i = 0; i < 200; i++) sides.push(game.openSides(game.mouseSquare()));
+    is(sides.every(n => n <= game.MOUSE_CRAMP + 1), true, 'never four open sides');
+    is(sides.filter(n => n === game.MOUSE_CRAMP).length > 100, true, 'usually a pocket');
+  });
+
+  test('never a dead end, because a mouse you cannot survive is a tease', () => {
+    freshGame();
+    for (let i = 0; i < 200; i++) {
+      is(game.openSides(game.mouseSquare()) >= 2, true, 'a way in and a way out');
+    }
+  });
+
+  test('the clock is set from the distance, so the route always exists', () => {
+    freshGame();
+    for (let i = 0; i < 200; i++) {
+      const spot  = game.mouseSquare();
+      const head  = game.snake[0];
+      const steps = Math.abs(spot.x - head.x) + Math.abs(spot.y - head.y);
+      is(game.mouseClock(spot) >= steps, true, 'reachable in the time given');
+    }
+  });
+
+  test('a close mouse still gets the floor, a far one gets more', () => {
+    freshGame({ snake: [{x: 10, y: 10}, {x: 9, y: 10}, {x: 8, y: 10}] });
+    is(game.mouseClock({x: 11, y: 10}), game.MOUSE_FLOOR, 'one step away: the floor');
+    is(game.mouseClock({x: 10, y: 20}),
+       Math.max(game.MOUSE_FLOOR, Math.ceil(10 * game.MOUSE_SLACK)), 'ten away: scaled');
+    const near = game.mouseClock({x: 13, y: 10});   //  3 steps, so the floor
+    const far  = game.mouseClock({x:  0, y:  0});   // 20 steps, so well over it
+    is(far > near, true, 'further is longer');
+  });
+
+  test('it is a race: the clock is far shorter than the old flat sixty', () => {
+    freshGame();
+    const clocks = [];
+    for (let i = 0; i < 200; i++) clocks.push(game.mouseClock(game.mouseSquare()));
+    const mean = clocks.reduce((a, b) => a + b, 0) / clocks.length;
+    is(mean < 40, true, 'well under the sixty it replaced');
+    is(clocks.every(c => c >= game.MOUSE_FLOOR), true, 'never under the floor');
+  });
+
+  test('a spawned mouse remembers the clock it was given', () => {
+    freshGame();
+    game.visitor = null;
+    game.spawn('mouse', {x: 5, y: 15});
+    is(game.visitor.life, game.visitor.born, 'starts full');
+    is(game.visitor.born, game.mouseClock({x: 5, y: 15}), 'from the distance');
+  });
+
+  test('it twitches on your moves, not on the clock', () => {
+    freshGame();
+    game.visitor = null;
+    game.spawn('mouse', {x: 5, y: 15});
+    game.visitor.beat = 0;
+    const tilts = [];
+    for (let m = 0; m < game.MOUSE_TWITCH * 2 + 1; m++) {
+      game.moves = m;
+      tilts.push(game.mouseIdle().tilt);
+    }
+    is(tilts.filter(t => t !== 0).length, 3, 'once per MOUSE_TWITCH moves');
+    is(tilts[0] !== 0 && tilts[game.MOUSE_TWITCH] !== 0, true, 'on the beat');
+    is(Math.sign(tilts[0]) === -Math.sign(tilts[game.MOUSE_TWITCH]), true,
+       'alternating sides');
+    is(tilts.slice(1, game.MOUSE_TWITCH).every(t => t === 0), true, 'still between');
+  });
+});
+
+
 describe('where visitors appear', () => {
-  test('never further away than the snake could get in time', () => {
+  test('a mouse lands inside its band, never at your feet', () => {
     freshGame();
     for (let i = 0; i < 300; i++) {
-      const spot = game.reachableSquare(game.MOUSE_LIFE);
+      const spot = game.mouseSquare();
       const head = game.snake[0];
       const steps = Math.abs(spot.x - head.x) + Math.abs(spot.y - head.y);
-      is(steps <= Math.floor(game.MOUSE_LIFE * game.REACH_BUDGET), true,
-         'within reach');
+      is(steps >= game.MOUSE_NEAR && steps <= game.MOUSE_FAR, true, 'in the band');
     }
   });
 
@@ -605,7 +681,7 @@ describe('where visitors appear', () => {
         const head = game.snake[0];
         const steps = Math.abs(game.visitor.x - head.x)
                     + Math.abs(game.visitor.y - head.y);
-        const life = game.visitor.kind === 'mouse' ? game.MOUSE_LIFE : game.ROTTEN_LIFE;
+        const life = game.visitor.kind === 'mouse' ? game.visitor.born : game.ROTTEN_LIFE;
         is(steps <= life, true, 'reachable within its whole life');
         is(game.visitor.life > 0, true, 'alive');
       }
@@ -1854,8 +1930,9 @@ describe('scores you can trust', () => {
         timer = null;
         beat.fn();
         if (lucky && game.score === before + game.EGG_POINTS && !game.visitor) {
-          game.visitor = { kind: 'mouse', life: game.MOUSE_LIFE, facing: 1,
-                           ...game.reachableSquare(game.MOUSE_LIFE) };
+          const spot = game.mouseSquare();
+          game.visitor = { kind: 'mouse', life: game.mouseClock(spot), facing: 1,
+                           born: game.mouseClock(spot), beat: 0, ...spot };
         }
       }
       if (game.phase !== 'dying') {                 // out of patience, not out of room
