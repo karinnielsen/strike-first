@@ -20,6 +20,25 @@ repos, changing Linear.
 **When genuinely unsure whether she wants discussion or action, ask.** She has
 said explicitly that she prefers being asked.
 
+**Anything added to the stack has to be safe to test from the outset.** When
+the game starts talking to something new — a database, a hosted service, an
+API, an integration — the way to exercise it *without touching anything real,
+shared or public* arrives with it, in the same piece of work. Not once it
+hurts.
+
+Settled 18 September, after testing against the one live database for three
+days and finally writing a junk score onto the board people are about to be
+shown (see the gotcha below, and UNR-162). The reason it is a rule rather than
+a note is that the damage always lands at the worst moment: the thing that
+exercises a new dependency hardest is the release walk-through, which happens
+precisely when the real one is about to matter. Retrofitting a sandbox is also
+never cheaper later — it is the same work, done after it has already cost
+something.
+
+In practice that means asking, before the first commit that writes or calls
+out: what does this look like when it is *me* running it, and how do I tell
+that apart from the real thing?
+
 ## Linear
 
 Workspace **Unruly labs** (`UNR`). Project: **Strike First** —
@@ -370,6 +389,20 @@ To check those permissions without leaving rows behind, send an insert that
 breaks a `check` constraint: an allowed insert fails with `23514`, a forbidden
 one with `42501`, and neither writes anything. Updates and deletes should
 always come back `42501`.
+
+**There is one database, and testing has been writing to it since 15 September.**
+The sandbox should have arrived with the database, in `c4ad96e`, and didn't.
+Three days later a release walk-through pressed Enter on a signing screen that
+was already filled in with `AAA`, and put a real row on the live board — score
+6, Cobra Kai. It can't be taken back from the page, because the publishable key
+may not delete; it needs the SQL Editor or the v1.0 wipe.
+
+The lesson isn't "be careful with Enter" — it is the rule at the top of this
+file, about testing stack additions safely from the outset. Having a sandbox
+from `c4ad96e` would also have solved the next problem for free: from the
+moment the repo invites contributors, every one of them running the game
+locally writes to the real board too. UNR-162 is the fix, and it sits in Wax
+on, wax off rather than in Dojo recruitment for that reason.
 
 **The Browser tool sends an empty key name for some keys**, so the game
 never sees them. Checked 17 September: `space`/`Space`, `Return` and `Down`
