@@ -101,6 +101,9 @@ const sandbox = {
   requestAnimationFrame: () => 0,
   cancelAnimationFrame: () => {},
   performance: { now: () => 0 },
+  // The tests run as if served from your own machine, which is what they
+  // are: that means the sandbox database, never the real board.
+  location: { hostname: 'localhost', href: 'http://localhost:8765/' },
   // The window, a laptop's worth, for the code that sizes dojo select.
   innerWidth: 1280,
   innerHeight: 800,
@@ -157,6 +160,7 @@ globalThis.game = {
   MOUSE_CRAMP, MOUSE_NEAR, MOUSE_FAR, MOUSE_SLACK, MOUSE_FLOOR, MOUSE_TWITCH,
   openSides, mouseSquare, mouseClock, mouseIdle, spawn,
   TONGUE_GAP_MIN, TONGUE_GAP_MAX, nextFlickIn,
+  SCORE_SERVICES, SCORE_TARGET, serviceFor,
   get tongueOut() { return tongueOut }, set tongueOut(v) { tongueOut = v },
   get flickAt() { return flickAt }, set flickAt(v) { flickAt = v },
   ROTTEN_COOLDOWN, BELT_STRETCH, ROTTEN_GAP, beltStretch, routeSquares, besideSquares,
@@ -678,16 +682,23 @@ describe('where visitors appear', () => {
 
   test('a spawned visitor is always reachable and always has a life', () => {
     freshGame({ egg: {x: 6, y: 5} });
+    // Checked at the MOMENT IT APPEARS, not on every step afterwards. A
+    // mouse's clock is set from where your head was when it arrived; you
+    // are then free to walk away from it, and a run where you do is not a
+    // broken spawn. Asserting it every step made this test fail about one
+    // run in eight.
+    let already = null;
     for (let i = 0; i < 120; i++) {
       if (game.phase !== 'playing') break;
-      if (game.visitor) {
+      if (game.visitor && game.visitor !== already) {
+        already = game.visitor;
         const head = game.snake[0];
         const steps = Math.abs(game.visitor.x - head.x)
                     + Math.abs(game.visitor.y - head.y);
         const life = game.visitor.kind === 'mouse' ? game.visitor.born : game.ROTTEN_LIFE;
-        is(steps <= life, true, 'reachable within its whole life');
-        is(game.visitor.life > 0, true, 'alive');
+        is(steps <= life, true, 'reachable in the time it was given');
       }
+      if (game.visitor) is(game.visitor.life > 0, true, 'alive');
       game.update();
     }
   });
@@ -1803,9 +1814,42 @@ describe('scores - how a run is measured, UNR-106', () => {
     is(options.body, '{"score":1}', 'body');
   });
 
-  test('only a publishable key is ever in the page', () => {
+  test('only publishable keys are ever in the page', () => {
     is(game.SCORE_SERVICE.key.startsWith('sb_publishable_'), true, 'publishable');
+    for (const [name, service] of Object.entries(game.SCORE_SERVICES)) {
+      is(service.key.startsWith('sb_publishable_'), true, name + ' publishable');
+      is(service.url.startsWith('https://'), true, name + ' over https');
+    }
     is(/sb_secret_|service_role/.test(html), false, 'no secret key');
+  });
+
+  // UNR-162. The board people see must never be written to by someone
+  // testing, whichever machine or device they are testing from.
+  test('your own machine and your own network get the sandbox', () => {
+    for (const host of ['localhost', '127.0.0.1', '::1', '',
+                        'karins-mac.local', '192.168.1.23', '10.0.0.4',
+                        '172.16.5.9', '172.31.255.255']) {
+      is(game.serviceFor(host), 'sandbox', host || 'file://');
+    }
+  });
+
+  test('anywhere else is the real board', () => {
+    for (const host of ['karinnielsen.github.io', 'strike-first.example.com',
+                        '172.15.0.1', '172.32.0.1', '11.0.0.1', '193.168.1.1']) {
+      is(game.serviceFor(host), 'production', host);
+    }
+  });
+
+  test('the two databases are different places', () => {
+    is(game.SCORE_SERVICES.sandbox.url === game.SCORE_SERVICES.production.url,
+       false, 'different url');
+    is(game.SCORE_SERVICES.sandbox.key === game.SCORE_SERVICES.production.key,
+       false, 'different key');
+  });
+
+  test('the tests themselves run against the sandbox', () => {
+    is(game.SCORE_TARGET, 'sandbox', 'never the real board');
+    is(game.SCORE_SERVICE.url, game.SCORE_SERVICES.sandbox.url, 'the sandbox url');
   });
 
   const reply = (ok, body) => async () => ({

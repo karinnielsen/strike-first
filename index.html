@@ -607,6 +607,8 @@
     100% { color: var(--value);  }
   }
 
+  .sandbox { color: var(--bone); }
+
   .version {
     margin: 8px 0 0;
     text-align: center;
@@ -1170,7 +1172,19 @@ const ROWS = (canvas.height - 2 * BOARD_BLEED) / CELL;    // 21 rows down
 // update the Current version line in README.md, and tag the commit - those
 // four go together, always.
 const VERSION = '0.5.6';
-document.getElementById('version').textContent = 'v' + VERSION;
+// The version line also says which board you are on whenever it isn't the
+// real one. Bone rather than the dim grey around it, because that carries
+// information: it is the difference between a score that counts and one that
+// doesn't. Called from section 10, once the score service is known.
+function showVersion() {
+  const el = document.getElementById('version');
+  el.textContent = 'v' + VERSION;
+  if (SCORE_TARGET === 'production') return;
+  const tag = document.createElement('span');
+  tag.className = 'sandbox';
+  tag.textContent = 'sandbox scores';
+  el.append(' \u00b7 ', tag);
+}
 
 // Handy references to the bits of HTML we update as the game runs.
 const scoreEl   = document.getElementById('score');
@@ -3803,16 +3817,58 @@ setTimeout(idleTongue, TONGUE_PAUSE_MIN + FIRST_FLICK_MS);
 // only ever needs to add a row and read some back, and that is two HTTP
 // requests, not a dependency. UNR-106.
 //
-// The key below is PUBLIC ON PURPOSE. It is the publishable key, meant to
-// sit in a web page, and on its own it can do exactly two things: read the
-// scores table and add a row to it. The database refuses everything else -
-// changing a score, deleting one, choosing its own id or timestamp. Those
+// The keys below are PUBLIC ON PURPOSE. They are publishable keys, meant to
+// sit in a web page, and on their own they can do exactly two things: read
+// the scores table and add a row to it. The database refuses everything else
+// - changing a score, deleting one, choosing its own id or timestamp. Those
 // rules live in db/scores.sql, not here, because a rule in the page is a
-// suggestion. The secret key must never appear in this file.
-const SCORE_SERVICE = {
-  url: 'https://jsaaqqggpkpxxvhgyxrz.supabase.co',
-  key: 'sb_publishable_nmZm6yx0etkBIuw8y-IKog_2XC48LMH'
+// suggestion. A secret key must never appear in this file.
+//
+// TWO DATABASES, and the page picks by where it is being served from.
+// Testing used to write to the one live board, and on 18 September a release
+// walk-through put a score on it that could not be taken back. A sandbox
+// isn't a nicety: what exercises this code hardest is the release
+// walk-through, which happens exactly when the real board is about to be
+// shown to people. Anyone who clones the repo gets the same protection
+// without asking for it. UNR-162.
+//
+// db/scores.sql is the one schema. It is run in both projects.
+const SCORE_SERVICES = {
+  production: {
+    url: 'https://jsaaqqggpkpxxvhgyxrz.supabase.co',
+    key: 'sb_publishable_nmZm6yx0etkBIuw8y-IKog_2XC48LMH'
+  },
+  sandbox: {
+    url: 'https://tkyahqokmjxvnpbfltzq.supabase.co',
+    key: 'sb_publishable_IeTGmDgEsHiEYsXB4DqAdw_b11tZ1s3'
+  }
 };
+
+// Served from your own machine or your own network, the scores are a
+// sandbox. Served from anywhere else, they are real.
+//
+// The private network ranges matter as much as localhost: a tablet is
+// tested by serving the folder and opening it over the LAN, so the iPad
+// arrives as 192.168.x.x rather than as localhost. Without those ranges the
+// one journey that most needs a sandbox - signing, on a real device, at the
+// release gate - would be the one still writing to the live board.
+//
+// Takes a hostname rather than reading location itself, so every case that
+// matters can be tested.
+function serviceFor(hostname) {
+  const own = hostname === 'localhost' || hostname === '127.0.0.1'
+           || hostname === '::1'       || hostname === ''          // file://
+           || hostname.endsWith('.local')
+           || /^10\./.test(hostname)
+           || /^192\.168\./.test(hostname)
+           || /^172\.(1[6-9]|2\d|3[01])\./.test(hostname);
+  return own ? 'sandbox' : 'production';
+}
+
+const SCORE_TARGET  = serviceFor(location.hostname);
+const SCORE_SERVICE = SCORE_SERVICES[SCORE_TARGET];
+
+showVersion();
 
 // A slow database must never hold up a game. After this long, give up.
 const SCORE_TIMEOUT_MS = 8000;

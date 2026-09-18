@@ -354,6 +354,14 @@ Open `index.html` in a browser, or serve the folder:
 python3 -m http.server 8765
 ```
 
+**Scores you make locally go to a sandbox database, not the real board.** The
+page chooses by where it is served from: localhost, a `file://` open, or a
+private network address — which is how a tablet on your own wi-fi arrives —
+all use the sandbox. Anywhere else uses the live board. So you can play,
+sign a run and watch the rankings fill without touching what everyone else
+sees, and the version line says **sandbox scores** whenever that is what you
+are looking at.
+
 ### Versioning
 
 The version lives in four places and they move together:
