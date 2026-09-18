@@ -15,7 +15,8 @@ committed and pushed it. It had to be reverted.
 brainstorm is never a request to build.
 
 **Confirm before anything outward-facing** — committing, pushing, creating
-repos, changing Linear.
+repos, changing Linear configuration. Issue statuses and the two kinds of
+comment under Linear below don't need asking.
 
 **When genuinely unsure whether she wants discussion or action, ask.** She has
 said explicitly that she prefers being asked.
@@ -68,6 +69,20 @@ Workspace **Unruly labs** (`UNR`). Project: **Strike First** —
   still sitting in `Backlog` and `Todo`, so the board didn't show what was
   built. It also makes the merge check mechanical: everything `In Review`
   should be `Done` afterwards, and whatever isn't, the keyword missed.
+- **Traceability is the point of Linear here, not prose.**
+  - One issue per branch, named `unr-N-short-slug`. Release branches such as
+    `wax-on-wax-off` only receive merges from issue branches.
+  - An issue ID goes only where it should link. Any mention in a branch, PR
+    or commit links it, so never cite an ID for context. A release PR lists
+    one `Closes UNR-N` line per issue.
+  - No matching issue: ask before creating one.
+- **Write to be skimmed.** One person, so no knowledge transfer to do.
+  - New issue: a title, then two to five lines covering the problem and "done
+    when". Reasoning goes in the commit message, next to the code.
+  - Two kinds of comment, and no others. At `In Review`: what changed and how
+    it was checked, at most three bullets. A handoff, only when work stops
+    unfinished: status, blocker, next step, three lines.
+  - Don't rewrite old verbose issues. Trim one only when touching it anyway.
 - **Always assign new issues to Karin.** She is the only member of the team, so
   an unassigned issue is never correct. Set `assignee: "me"` on creation.
 - **The label set is deliberately small and complete:** Feature, Improvement,
@@ -425,9 +440,10 @@ seconds after its direct-to-main commit, and UNR-129 closed from a local merge
 commit. But on 14 September UNR-84 and UNR-85 did not close from merge commits
 worded exactly the same way, and both had to be closed by hand. So treat the
 keyword as a hope, not a mechanism: after pushing, check the status, and close
-it yourself if it hasn't moved. For work that only partly addresses an issue,
-keep the ID out of the branch name and write `Part of UNR-N` rather than
-`Closes`, since when the keyword does fire, it fires on partial work too.
+it yourself if it hasn't moved. When the keyword does fire, it fires on
+partial work too, so split an issue until each branch closes a whole one.
+Where splitting isn't worth it, leave the ID out of the branch name and write
+`Part of UNR-N` rather than `Closes`.
 
 **The page has one stylesheet, so a class name is global.** A new class can
 pick up rules written for a different screen, and it looks exactly like a
