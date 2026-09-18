@@ -18,10 +18,39 @@ still a patch. The journey counts as well as the mechanics, settled 17
 September: earlier versions were numbered under a rule that asked only what the
 player has to *do*, and they aren't renumbered.
 
-## [Unreleased]
+## [0.5.6] — 2026-09-18
+
+Wax on, wax off: back over the fundamentals before anyone new is invited in.
+The two things that share the board with the egg both stopped being scenery. A
+rotten egg now lands where dodging it costs you something, and a mouse has to
+be earned rather than collected. Nothing plays by a new rule, so it is a patch.
 
 ### Changed
 
+- **Rotten eggs threaten rather than decorate** (UNR-155). One on a random
+  square is one you steer around, which changes nothing about how you play.
+  It lands **in the way** now — on a shortest route between your head and the
+  egg — and it follows a sequence through the run rather than being thrown at
+  you from the first egg. Nothing until you have eaten three rewards since the
+  last one left, so two never arrive back to back. In the last five points
+  before a belt score it sits **right beside the egg**, on the side facing you,
+  and the first egg of that stretch always brings one, once per belt: just
+  before a belt is when you have most to lose. Eat the egg it was guarding and
+  it leaves with it. It never lands within three squares of your head, never
+  boxes the egg in, and if nothing fits, no rotten egg comes at all. It is also
+  a little smaller, just under the egg rather than over it.
+- **Mice have to be earned** (UNR-159). A mouse used to land on any square
+  you could reach, which out in open board is a pickup rather than a choice.
+  It lands in a **tight spot** now — hard against a wall, in a corner, or
+  fenced in by your own body — so going for one means committing to a square
+  you may not get back out of. Never a dead end with a single way in, and
+  never within eight squares of your head: one at your feet is a gift. And it
+  is a **race**: instead of a flat sixty moves, its clock is set from how far
+  away it actually is, so every mouse asks the same question wherever it
+  lands. You are always given enough moves to reach it — what you can no
+  longer afford is to dither. The warning flash scales with the clock, and the
+  mouse twitches every few of your moves, because the more tempting reward
+  should not be the stiller one.
 - **Continuing from mercy bows you back in** (UNR-149). It used to wait one
   step, which was 70ms at level 9: the better the run, the less time you
   had to find the snake after the overlay had covered it. The bow is the
@@ -48,6 +77,14 @@ player has to *do*, and they aren't renumbered.
 
 ### Fixed
 
+- **The snake flicks its tongue again** (UNR-160). It had quietly stopped,
+  and not because anything touched it: the flick was timed in milliseconds,
+  the board is drawn once per move, and the gentler level curve from v0.2.0
+  halved how often that happens. The flick went from three or four frames —
+  out, held, back — to one, which reads as a blink. It is counted in **your
+  moves** now, six to twenty between flicks, so the rhythm is the same whether
+  you are thinking your way through level 1 or flat out at level 9. A true
+  whip needs more than this and is still to come.
 - **The hood is no longer cut off at the edge of the board** (UNR-154). The
   canvas now reaches a little past the board on every side, so the hood, the
   tongue and food on an edge square can overhang the border. The wall is
