@@ -354,13 +354,17 @@ Open `index.html` in a browser, or serve the folder:
 python3 -m http.server 8765
 ```
 
-**Scores you make locally go to a sandbox database, not the real board.** The
-page chooses by where it is served from: localhost, a `file://` open, or a
-private network address — which is how a tablet on your own wi-fi arrives —
-all use the sandbox. Anywhere else uses the live board. So you can play,
-sign a run and watch the rankings fill without touching what everyone else
-sees, and the version line says **sandbox scores** whenever that is what you
-are looking at.
+**Scores go to a sandbox database, not the real board.** Until v1.0.0 that is
+true everywhere, the published link included — the real board is empty and is
+being kept that way, so the first thing anyone sees on it is scores players
+made rather than ours. The version line says **sandbox scores** whenever that
+is what you are looking at.
+
+After launch, the page chooses by where it is served from: localhost, a
+`file://` open, or a private network address — which is how a tablet on your
+own wi-fi arrives — keep using the sandbox, and only the published site keeps
+real scores. So you can always play, sign a run and watch the rankings fill
+without touching what everyone else sees.
 
 ### Versioning
 

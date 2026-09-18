@@ -160,7 +160,7 @@ globalThis.game = {
   MOUSE_CRAMP, MOUSE_NEAR, MOUSE_FAR, MOUSE_SLACK, MOUSE_FLOOR, MOUSE_TWITCH,
   openSides, mouseSquare, mouseClock, mouseIdle, spawn,
   TONGUE_GAP_MIN, TONGUE_GAP_MAX, nextFlickIn,
-  SCORE_SERVICES, SCORE_TARGET, serviceFor,
+  SCORE_SERVICES, SCORE_TARGET, serviceFor, BEFORE_LAUNCH,
   get tongueOut() { return tongueOut }, set tongueOut(v) { tongueOut = v },
   get flickAt() { return flickAt }, set flickAt(v) { flickAt = v },
   ROTTEN_COOLDOWN, BELT_STRETCH, ROTTEN_GAP, beltStretch, routeSquares, besideSquares,
@@ -1829,15 +1829,32 @@ describe('scores - how a run is measured, UNR-106', () => {
     for (const host of ['localhost', '127.0.0.1', '::1', '',
                         'karins-mac.local', '192.168.1.23', '10.0.0.4',
                         '172.16.5.9', '172.31.255.255']) {
-      is(game.serviceFor(host), 'sandbox', host || 'file://');
+      is(game.serviceFor(host, false), 'sandbox', host || 'file://');
     }
   });
 
-  test('anywhere else is the real board', () => {
+  test('after launch, anywhere else is the real board', () => {
     for (const host of ['karinnielsen.github.io', 'strike-first.example.com',
                         '172.15.0.1', '172.32.0.1', '11.0.0.1', '193.168.1.1']) {
-      is(game.serviceFor(host), 'production', host);
+      is(game.serviceFor(host, false), 'production', host);
     }
+  });
+
+  // Karin's call, 18 September, with the real board wiped: nothing writes to
+  // it until v1.0.0, the published link included, so the first scores on it
+  // are made by players rather than by us.
+  test('before launch, everything is the sandbox, published link included', () => {
+    for (const host of ['karinnielsen.github.io', 'localhost', 'anything.example']) {
+      is(game.serviceFor(host, true), 'sandbox', host);
+    }
+  });
+
+  // This one is meant to be changed, on the day, by hand. It is the tripwire
+  // that stops the flag being forgotten: launch without flipping it and the
+  // suite still passes, which is the failure worth preventing.
+  test('the launch flag is still set - flip it when v1.0.0 ships', () => {
+    is(game.BEFORE_LAUNCH, true, 'before launch');
+    is(game.SCORE_TARGET, 'sandbox', 'so nothing writes to the real board yet');
   });
 
   test('the two databases are different places', () => {

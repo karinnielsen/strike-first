@@ -3853,9 +3853,22 @@ const SCORE_SERVICES = {
 // one journey that most needs a sandbox - signing, on a real device, at the
 // release gate - would be the one still writing to the live board.
 //
-// Takes a hostname rather than reading location itself, so every case that
-// matters can be tested.
-function serviceFor(hostname) {
+// UNTIL v1.0.0 SHIPS, EVERYTHING RUNS ON THE SANDBOX - the published link
+// included. Karin's call on 18 September, along with wiping the real board.
+// Nobody knows the game exists yet, so the only scores the real board could
+// collect between now and launch are our own testing, and those would have
+// to be wiped again on the day. Keeping it empty until then means the board
+// people first see is the board players made.
+//
+// AT LAUNCH: set this to false. That is the entire change. The hostname rule
+// below then takes over, so the published game starts keeping real scores
+// while anyone running it locally, or on their own wi-fi, still doesn't.
+const BEFORE_LAUNCH = true;
+
+// Takes a hostname, and the flag, rather than reading either itself - so
+// both sides of launch day can be tested today.
+function serviceFor(hostname, beforeLaunch = BEFORE_LAUNCH) {
+  if (beforeLaunch) return 'sandbox';
   const own = hostname === 'localhost' || hostname === '127.0.0.1'
            || hostname === '::1'       || hostname === ''          // file://
            || hostname.endsWith('.local')
