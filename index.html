@@ -1179,7 +1179,7 @@ const ROWS = (canvas.height - 2 * BOARD_BLEED) / CELL;    // 21 rows down
 // Single source of truth for the version. Bump this, add a CHANGELOG entry,
 // update the Current version line in README.md, and tag the commit - those
 // four go together, always.
-const VERSION = '0.5.6';
+const VERSION = '0.5.7';
 // The version line also says which board you are on whenever it isn't the
 // real one. Bone rather than the dim grey around it, because that carries
 // information: it is the difference between a score that counts and one that
@@ -3088,8 +3088,8 @@ document.addEventListener('keydown', (event) => {
     return;
   }
 
-  // While dojo select is up every key is its own, and while the pick plays
-  // out no key does anything.
+  // While dojo select is up every key is its own, and while it fades in or
+  // the pick plays out no key does anything.
   if (dojoPhase !== 'closed') {
     if (dojoPhase === 'open') dojoKeydown(event);
     return;
@@ -4502,7 +4502,9 @@ const FLIPPED_KEY = 'strikeFirstFlipped';
 const DOJO_ART_MAX = 160;
 const DOJO_ART_MIN = 120;
 
-// 'closed', 'open' (choosing), or 'choosing' (the pick is playing out).
+// 'closed', 'opening' (fading in, not on screen yet), 'open' (choosing),
+// or 'choosing' (the pick is playing out). Keys and back wait for 'open':
+// a pick made before the cards are seen is not a choice. UNR-164.
 let dojoPhase = 'closed';
 let dojoAt = -1;          // index into DOJO_IDS of the lit card
 let dojoLeft = 0;         // seconds on the clock
@@ -4656,13 +4658,14 @@ function tickDojoClock() {
 // piece with the lit card already lit.
 function openDojoSelect(fromTitle) {
   if (dojoPhase !== 'closed') return;
-  dojoPhase = 'open';
+  dojoPhase = 'opening';
   loadDojoArt();
   const fading = fromTitle && !REDUCED_MOTION.matches && crestEl.animate
     ? [crestEl, titleScreenEl].map(el =>
         el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, easing: 'ease-in', fill: 'forwards' }))
     : [];
   const show = () => {
+    dojoPhase = 'open';
     if (fromTitle) leaveTitle();
     dojoAt = -1;
     dojoLeft = DOJO_SECONDS;
@@ -5135,16 +5138,16 @@ function showRankings() {
 // dojo's pick plays out, which is already committed.
 
 // Where back leaves from, or null where there is no back. Pure.
-function backFrom({ titling, dojoPhase, dojoShown, rankingsOpen, phase, entry }) {
+function backFrom({ titling, dojoPhase, rankingsOpen, phase, entry }) {
   if (titling) return null;
-  if (dojoPhase !== 'closed') return dojoPhase === 'open' && dojoShown ? 'dojo' : null;
+  if (dojoPhase !== 'closed') return dojoPhase === 'open' ? 'dojo' : null;
   if (rankingsOpen) return 'rankings';
   if (phase === 'over' && !entry) return 'verdict';
   return null;
 }
 
 function backNow() {
-  return backFrom({ titling, dojoPhase, dojoShown: !dojoSelectEl.hidden, rankingsOpen, phase, entry });
+  return backFrom({ titling, dojoPhase, rankingsOpen, phase, entry });
 }
 
 // Output only.
