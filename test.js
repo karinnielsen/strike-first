@@ -206,7 +206,7 @@ globalThis.game = {
   get rankingsOpen() { return rankingsOpen }, get rankingsAt() { return rankingsAt },
   get board() { return board }, get boardDue() { return boardDue },
   get boardShown() { return !boardEl.hidden },
-  backFrom, goBack, get backShown() { return !backHud.hidden }
+  backFrom, goBack, get backShown() { return !backHud.hidden }, crestEl, titleScreenEl
 };`;
 
 vm.createContext(sandbox);
@@ -2649,7 +2649,6 @@ describe('All Valley Rankings, UNR-134', () => {
     is(game.rankingsOpen, false, 'paused');
   });
 
-  // Last, because it leaves the game on the title.
   testAsyncInOrder('back: the verdict goes to the main menu; a run and signing have none', async () => {
     freshGame();
     is(game.goBack(), false, 'none in a run');
@@ -2665,15 +2664,46 @@ describe('All Valley Rankings, UNR-134', () => {
     is(game.phase, 'ready', 'and the run is gone');
     is(game.titleMenu.at, 0, 'Arcade lit, as Main menu does');
   });
+
+  // Last, because it leaves the game on the title. Straight after the one
+  // above, which leaves it there with Arcade lit.
+  testAsyncInOrder('dojo select: no key picks a dojo while it is still fading in, UNR-164', async () => {
+    const fades = [];
+    const fade = () => {
+      let done;
+      fades.push(() => done());
+      return { finished: new Promise(r => { done = r; }), cancel() {} };
+    };
+    game.crestEl.animate = game.titleScreenEl.animate = fade;
+    const had = game.currentDojo();
+    try {
+      pressKey('Enter');
+      is(game.dojoPhase, 'opening', 'Arcade starts the fade');
+      is(fades.length, 2, 'crest and title fading');
+      for (const key of ['Enter', ' ', 'ArrowRight', 'Escape']) pressKey(key);
+      is(game.dojoPhase, 'opening', 'still fading, nothing picked');
+      is(game.currentDojo(), had, 'nothing committed');
+      is(game.goBack(), false, 'no back before it is seen');
+      fades.forEach(f => f());
+      await new Promise(r => setImmediate(r));
+      is(game.dojoPhase, 'open', 'on screen, choosing');
+      is(game.backShown, true, 'and back is up');
+      pressKey('Escape');
+      is(game.titling, true, 'Esc leaves it as usual');
+    } finally {
+      delete game.crestEl.animate;
+      delete game.titleScreenEl.animate;
+    }
+  });
 });
 
 describe('back', () => {
-  const at = { titling: false, dojoPhase: 'closed', dojoShown: false, rankingsOpen: false, phase: 'ready', entry: null };
+  const at = { titling: false, dojoPhase: 'closed', rankingsOpen: false, phase: 'ready', entry: null };
   test('only on the screens you can leave', () => {
     is(game.backFrom({ ...at, titling: true }), null, 'title');
-    is(game.backFrom({ ...at, dojoPhase: 'open', dojoShown: true }), 'dojo', 'dojo select');
-    is(game.backFrom({ ...at, dojoPhase: 'open', dojoShown: false }), null, 'dojo select still fading in');
-    is(game.backFrom({ ...at, dojoPhase: 'choosing', dojoShown: true }), null, 'a dojo already chosen');
+    is(game.backFrom({ ...at, dojoPhase: 'open' }), 'dojo', 'dojo select');
+    is(game.backFrom({ ...at, dojoPhase: 'opening' }), null, 'dojo select still fading in');
+    is(game.backFrom({ ...at, dojoPhase: 'choosing' }), null, 'a dojo already chosen');
     is(game.backFrom({ ...at, rankingsOpen: true }), 'rankings', 'rankings');
     is(game.backFrom({ ...at, rankingsOpen: true, phase: 'over' }), 'rankings', 'rankings over a verdict');
     is(game.backFrom({ ...at, phase: 'over' }), 'verdict', 'verdict');

@@ -18,6 +18,16 @@ still a patch. The journey counts as well as the mechanics, settled 17
 September: earlier versions were numbered under a rule that asked only what the
 player has to *do*, and they aren't renumbered.
 
+## [0.5.7] — 2026-09-18
+
+### Fixed
+
+- **Enter during the fade into dojo select no longer picks a dojo you never
+  saw** (UNR-164). Since v0.5.0, pressing Enter or Space in the quarter-second
+  the title took to fade out chose the lit dojo unseen and skipped the select;
+  on a first visit that was always Cobra Kai. Keys and the back control now
+  wait until the cards are on screen.
+
 ## [0.5.6] — 2026-09-18
 
 Wax on, wax off: back over the fundamentals before anyone new is invited in.
