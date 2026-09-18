@@ -63,15 +63,19 @@ Workspace **Unruly labs** (`UNR`). Project: **Strike First** —
   - `In Progress` — being built right now.
   - `In Review` — written and committed on the branch, waiting for the merge.
     This is what "in the release" looks like on the board.
-  - `Done` — set by the merge, or by hand when the keyword doesn't fire.
+  - `Done` — set by merging the issue's pull request, or by hand if it
+    didn't move.
 
   Settled 17 September, because four issues whose code was committed were
   still sitting in `Backlog` and `Todo`, so the board didn't show what was
   built. It also makes the merge check mechanical: everything `In Review`
-  should be `Done` afterwards, and whatever isn't, the keyword missed.
+  should be `Done` afterwards, and whatever isn't gets closed by hand.
 - **Traceability is the point of Linear here, not prose.**
   - One issue per branch, named `unr-N-short-slug`. Release branches such as
     `wax-on-wax-off` only receive merges from issue branches.
+  - **Every issue branch merges through a GitHub pull request,** never a local
+    merge: `gh pr create`, then `gh pr merge --merge`. The PR is what closes
+    the issue (see the gotcha below).
   - An issue ID goes only where it should link. Any mention in a branch, PR
     or commit links it, so never cite an ID for context. A release PR lists
     one `Closes UNR-N` line per issue.
@@ -432,18 +436,22 @@ game.
 twice as inline paths and rejected both times. Detailed artwork wants to be
 drawn in a vector editor and dropped in as a file. See UNR-86.
 
-**Linear can close issues from git, without asking — but not reliably.**
-A merged pull request closes the issue its branch is named after — `unr-90-...`
-closes UNR-90. And a commit pushed to `main` whose message says `Closes UNR-N`
-(or `Fixes`) *can* close that issue too, no PR needed: UNR-128 went Done three
-seconds after its direct-to-main commit, and UNR-129 closed from a local merge
-commit. But on 14 September UNR-84 and UNR-85 did not close from merge commits
-worded exactly the same way, and both had to be closed by hand. So treat the
-keyword as a hope, not a mechanism: after pushing, check the status, and close
-it yourself if it hasn't moved. When the keyword does fire, it fires on
-partial work too, so split an issue until each branch closes a whole one.
-Where splitting isn't worth it, leave the ID out of the branch name and write
-`Part of UNR-N` rather than `Closes`.
+**Only a merged pull request closes a Linear issue. Commit messages don't.**
+When a PR merges, Linear closes the issue its branch is named after:
+`unr-90-...` closes UNR-90. A `Closes UNR-N` line in a *commit* message does
+nothing here. Linear never even attaches the commit to the issue. Checked 18
+September: every closure that worked came from a PR (UNR-90 from #1, UNR-129
+from #5), and every one merged without a PR missed: UNR-84, 85, 137, the
+seven at the v0.5.6 merge, and UNR-164. UNR-128 went Done three seconds after
+its commit was *made*, too soon for a push to reach Linear, so a session
+almost certainly closed it by hand. That one case is where the old belief
+that keywords "sometimes" work came from.
+
+So merge issue branches through a PR, and after the merge check the status
+anyway. Because the branch name is what closes it, a merged branch closes its
+issue even when the work is partial, so split an issue until each branch
+closes a whole one. Where splitting isn't worth it, leave the ID out of the
+branch name and write `Part of UNR-N` rather than `Closes`.
 
 **The page has one stylesheet, so a class name is global.** A new class can
 pick up rules written for a different screen, and it looks exactly like a
