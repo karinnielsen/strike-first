@@ -15,10 +15,30 @@ committed and pushed it. It had to be reverted.
 brainstorm is never a request to build.
 
 **Confirm before anything outward-facing** — committing, pushing, creating
-repos, changing Linear.
+repos, changing Linear configuration. Issue statuses and the two kinds of
+comment under Linear below don't need asking.
 
 **When genuinely unsure whether she wants discussion or action, ask.** She has
 said explicitly that she prefers being asked.
+
+**Anything added to the stack has to be safe to test from the outset.** When
+the game starts talking to something new — a database, a hosted service, an
+API, an integration — the way to exercise it *without touching anything real,
+shared or public* arrives with it, in the same piece of work. Not once it
+hurts.
+
+Settled 18 September, after testing against the one live database for three
+days and finally writing a junk score onto the board people are about to be
+shown (see the gotcha below, and UNR-162). The reason it is a rule rather than
+a note is that the damage always lands at the worst moment: the thing that
+exercises a new dependency hardest is the release walk-through, which happens
+precisely when the real one is about to matter. Retrofitting a sandbox is also
+never cheaper later — it is the same work, done after it has already cost
+something.
+
+In practice that means asking, before the first commit that writes or calls
+out: what does this look like when it is *me* running it, and how do I tell
+that apart from the real thing?
 
 ## Linear
 
@@ -38,6 +58,31 @@ Workspace **Unruly labs** (`UNR`). Project: **Strike First** —
   Promotion is always a deliberate decision, never drift. That's what stops the
   backlog becoming a graveyard, and it's why an idea landing in `Idea` costs
   nothing.
+- **Once work starts, the status follows the code.** The three tiers above are
+  about commitment and stop at `Todo`; these are about what exists.
+  - `In Progress` — being built right now.
+  - `In Review` — written and committed on the branch, waiting for the merge.
+    This is what "in the release" looks like on the board.
+  - `Done` — set by the merge, or by hand when the keyword doesn't fire.
+
+  Settled 17 September, because four issues whose code was committed were
+  still sitting in `Backlog` and `Todo`, so the board didn't show what was
+  built. It also makes the merge check mechanical: everything `In Review`
+  should be `Done` afterwards, and whatever isn't, the keyword missed.
+- **Traceability is the point of Linear here, not prose.**
+  - One issue per branch, named `unr-N-short-slug`. Release branches such as
+    `wax-on-wax-off` only receive merges from issue branches.
+  - An issue ID goes only where it should link. Any mention in a branch, PR
+    or commit links it, so never cite an ID for context. A release PR lists
+    one `Closes UNR-N` line per issue.
+  - No matching issue: ask before creating one.
+- **Write to be skimmed.** One person, so no knowledge transfer to do.
+  - New issue: a title, then two to five lines covering the problem and "done
+    when". Reasoning goes in the commit message, next to the code.
+  - Two kinds of comment, and no others. At `In Review`: what changed and how
+    it was checked, at most three bullets. A handoff, only when work stops
+    unfinished: status, blocker, next step, three lines.
+  - Don't rewrite old verbose issues. Trim one only when touching it anyway.
 - **Always assign new issues to Karin.** She is the only member of the team, so
   an unassigned issue is never correct. Set `assignee: "me"` on creation.
 - **The label set is deliberately small and complete:** Feature, Improvement,
@@ -78,6 +123,12 @@ everything else in the game keeps the monospace. As of v0.3.1 that voice is
 *drawn* rather than set — the crest's lettering is outlined into the artwork
 and there is no display face in the page at all. Reaching for one again would
 be adding a second voice, not restoring the first.
+
+**Grey is only for styling that carries no information.** Grey on black
+is hard to read, so anything a player needs to read is bone: labels, hints,
+keys, unlit menu rows, column headings. `--dim` is left for things like
+the version line and the title's credit. A number beside its label is the
+pale `--value`, so it still leads. Settled 17 September.
 
 **Update and draw stay separate.** `update()` decides what is true; `draw()`
 only shows it. Never mix them.
@@ -123,8 +174,18 @@ invariant is what kept them honest — so the fix was to put the fourth thing
 *inside* the invariant rather than to try to remember harder.
 
 Read the numbers in game terms: **major** when it plays differently enough to be
-a new thing, **minor** for a new mechanic or mode, **patch** for balance, art
-and fixes.
+a new thing, **minor** for a new mechanic or mode, or a new step in the
+player's journey (a screen they pass through, or a choice every player
+makes), **patch** for balance, art, copy and fixes within the screens that
+already exist.
+
+**The journey counts, settled 17 September.** The rule used to ask only
+what the player has to *do*, and by that test character select came out a
+patch. Karin reversed it: character select changes the onboarding journey
+and touches many screens a player sees directly, so if the rule called that
+a patch, the rule was wrong. The title screen and arrival had been kept as
+patches on 16 September under the old wording. Past versions aren't
+renumbered.
 
 **Artwork is a patch, however much of it there is.** This used to be ambiguous:
 `CHANGELOG.md` said minor meant "new mechanic, mode or content", which made a
@@ -132,7 +193,8 @@ pile of commissioned artwork arguable either way. Settled 12 September — the
 two files now say the same thing. v0.3.1 replaced the wordmark with a drawn
 crest, retired gold for electric yellow across the whole palette and made the
 board artwork legible, and it was still a patch, because nothing played
-differently afterwards. The test is what the player has to *do*.
+differently afterwards. Artwork on screens that already exist is a patch;
+artwork that arrives with a new step is part of that step's minor.
 
 A corollary worth knowing: the milestones in Linear each name the version they
 ship as, all the way to v1.0.0. Spending a minor early means renumbering every
@@ -343,10 +405,28 @@ breaks a `check` constraint: an allowed insert fails with `23514`, a forbidden
 one with `42501`, and neither writes anything. Updates and deletes should
 always come back `42501`.
 
-**The Browser tool's `space` key arrives as an empty key name**, so the game
-never sees it. Arrows and letters are fine. To press mercy, dispatch a real
-`KeyboardEvent('keydown', {key: ' '})` at the document, which still goes
-through the game's own input handler.
+**There is one database, and testing has been writing to it since 15 September.**
+The sandbox should have arrived with the database, in `c4ad96e`, and didn't.
+Three days later a release walk-through pressed Enter on a signing screen that
+was already filled in with `AAA`, and put a real row on the live board — score
+6, Cobra Kai. It can't be taken back from the page, because the publishable key
+may not delete; it needs the SQL Editor or the v1.0 wipe.
+
+The lesson isn't "be careful with Enter" — it is the rule at the top of this
+file, about testing stack additions safely from the outset. Having a sandbox
+from `c4ad96e` would also have solved the next problem for free: from the
+moment the repo invites contributors, every one of them running the game
+locally writes to the real board too. UNR-162 is the fix, and it sits in Wax
+on, wax off rather than in Dojo recruitment for that reason.
+
+**The Browser tool sends an empty key name for some keys**, so the game
+never sees them. Checked 17 September: `space`/`Space`, `Return` and `Down`
+all arrive as `""`. Use the browser's own key names, which do arrive:
+`Enter`, `ArrowDown`, `Escape`, `Tab` and letters. Space has no name that
+works, so to press mercy dispatch a real `KeyboardEvent('keydown', {key: ' '})`
+at the document, which still goes through the game's own input handler. If
+a walk-through seems to ignore a key, log `event.key` before suspecting the
+game.
 
 **Don't hand-code detailed SVG illustrations.** A cobra crest was attempted
 twice as inline paths and rejected both times. Detailed artwork wants to be
@@ -360,9 +440,10 @@ seconds after its direct-to-main commit, and UNR-129 closed from a local merge
 commit. But on 14 September UNR-84 and UNR-85 did not close from merge commits
 worded exactly the same way, and both had to be closed by hand. So treat the
 keyword as a hope, not a mechanism: after pushing, check the status, and close
-it yourself if it hasn't moved. For work that only partly addresses an issue,
-keep the ID out of the branch name and write `Part of UNR-N` rather than
-`Closes`, since when the keyword does fire, it fires on partial work too.
+it yourself if it hasn't moved. When the keyword does fire, it fires on
+partial work too, so split an issue until each branch closes a whole one.
+Where splitting isn't worth it, leave the ID out of the branch name and write
+`Part of UNR-N` rather than `Closes`.
 
 **The page has one stylesheet, so a class name is global.** A new class can
 pick up rules written for a different screen, and it looks exactly like a

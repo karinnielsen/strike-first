@@ -50,8 +50,8 @@ function makeElement() {
     textContent: '',
     className: '',
     offsetWidth: 0,
-    width: 630,          // 630 / CELL(30) = 21 columns, same as the real page
-    height: 630,
+    width: 658,          // (658 - 2 * BOARD_BLEED(14)) / CELL(30) = 21 columns, same as the real page
+    height: 658,
     style: { setProperty() {}, removeProperty() {}, getPropertyValue: () => '' },
     classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
     appendChild() {},
@@ -96,11 +96,15 @@ const sandbox = {
   // Swallowing the timer stops it spinning forever inside the test run.
   setTimeout: () => 0,
   clearTimeout: () => {},
-  setInterval: () => 0,
+  // Kept, not run, so a test can tick dojo select's clock by hand.
+  setInterval: (fn) => { sandbox.lastInterval = fn; return 0; },
   clearInterval: () => {},
   requestAnimationFrame: () => 0,
   cancelAnimationFrame: () => {},
   performance: { now: () => 0 },
+  // The tests run as if served from your own machine, which is what they
+  // are: that means the sandbox database, never the real board.
+  location: { hostname: 'localhost', href: 'http://localhost:8765/' },
   // The window, a laptop's worth, for the code that sizes dojo select.
   innerWidth: 1280,
   innerHeight: 800,
@@ -150,10 +154,20 @@ globalThis.game = {
   get phase()         { return phase },         set phase(v)         { phase = v },
   COLS, ROWS, CELL, VERSION,
   EGG_POINTS, MOUSE_POINTS, ROTTEN_POINTS, EGG_GROWTH, MOUSE_GROWTH,
-  MOUSE_LIFE, ROTTEN_LIFE, WARNING_MOVES, QUEASY_MOVES,
-  LEVELS, REACH_BUDGET, TURN_QUEUE_MAX, SWIPE_MIN, swipeDirection, queueTurn,
+  ROTTEN_LIFE, WARNING_MOVES, QUEASY_MOVES,
+  LEVELS, TURN_QUEUE_MAX, SWIPE_MIN, swipeDirection, queueTurn,
   update, reset, isOccupied, stepDelay, mixColour, KEYS, addScore, queasiness,
-  levelFor, reachableSquare,
+  levelFor,
+  MOUSE_CRAMP, MOUSE_NEAR, MOUSE_FAR, MOUSE_SLACK, MOUSE_FLOOR, MOUSE_TWITCH,
+  openSides, mouseSquare, mouseClock, mouseIdle, spawn,
+  TONGUE_GAP_MIN, TONGUE_GAP_MAX, nextFlickIn,
+  SCORE_SERVICES, SCORE_TARGET, serviceFor, BEFORE_LAUNCH,
+  get tongueOut() { return tongueOut }, set tongueOut(v) { tongueOut = v },
+  get flickAt() { return flickAt }, set flickAt(v) { flickAt = v },
+  ROTTEN_COOLDOWN, BELT_STRETCH, ROTTEN_GAP, beltStretch, routeSquares, besideSquares,
+  rottenSquare, maybeSpawnVisitor, VISITOR_CHANCE, ROTTEN_SHARE,
+  get sinceRotten() { return sinceRotten }, set sinceRotten(v) { sinceRotten = v },
+  get guardedBelts() { return guardedBelts }, set guardedBelts(v) { guardedBelts = v },
   BELTS, beltFor, promotionFor,
   BONE_BODY, DUSTY_TAIL, SICK_GREEN, blend, bodyColour, BELT_SEGMENT,
   QUEASY_SHAKE, queasyShake,
@@ -191,7 +205,8 @@ globalThis.game = {
   rankingRows, fetchRankings, openRankings, closeRankings, filterRankings, rankingsEmpty,
   get rankingsOpen() { return rankingsOpen }, get rankingsAt() { return rankingsAt },
   get board() { return board }, get boardDue() { return boardDue },
-  get boardShown() { return !boardEl.hidden }
+  get boardShown() { return !boardEl.hidden },
+  backFrom, goBack, get backShown() { return !backHud.hidden }
 };`;
 
 vm.createContext(sandbox);
@@ -359,6 +374,21 @@ describe('dojo select', () => {
     is(game.dojoAt, game.dojoStep(start, -1), 'left twice from one right');
     pressKey('r');
     is(game.phase, 'ready', 'r does not restart behind the select');
+  });
+
+  test('Esc leaves without choosing, and the clock cannot bow you in', () => {
+    is(game.backShown, true, 'the corner control is up');
+    const tick = sandbox.lastInterval;
+    pressKey('Escape');
+    is(game.dojoPhase, 'closed', 'closed');
+    is(game.titling, true, 'back on the title');
+    is(game.titleMenu.at, 0, 'Arcade lit');
+    is(game.currentDojo(), null, 'nothing committed');
+    for (let i = 0; i < game.DOJO_SECONDS + 1; i++) tick();
+    is(game.phase, 'ready', 'no run, however long the clock would have run');
+    is(game.backShown, false, 'nothing to go back to on the title');
+    pressKey('Enter');
+    is(game.dojoPhase, 'open', 'and Arcade opens it again');
   });
 
   test('closing it goes straight into the fight', () => {
@@ -581,32 +611,259 @@ describe('the visitor countdown', () => {
 });
 
 
+describe('the mouse: where it lands, and for how long', () => {
+  // UNR-159. A mouse in open board asks nothing of you; these are the three
+  // things that turn it back into a decision.
+
+  test('it lands tight: a pocket or a wall, never out in the open', () => {
+    freshGame();
+    const sides = [];
+    for (let i = 0; i < 200; i++) sides.push(game.openSides(game.mouseSquare()));
+    is(sides.every(n => n <= game.MOUSE_CRAMP + 1), true, 'never four open sides');
+    is(sides.filter(n => n === game.MOUSE_CRAMP).length > 100, true, 'usually a pocket');
+  });
+
+  test('never a dead end, because a mouse you cannot survive is a tease', () => {
+    freshGame();
+    for (let i = 0; i < 200; i++) {
+      is(game.openSides(game.mouseSquare()) >= 2, true, 'a way in and a way out');
+    }
+  });
+
+  test('the clock is set from the distance, so the route always exists', () => {
+    freshGame();
+    for (let i = 0; i < 200; i++) {
+      const spot  = game.mouseSquare();
+      const head  = game.snake[0];
+      const steps = Math.abs(spot.x - head.x) + Math.abs(spot.y - head.y);
+      is(game.mouseClock(spot) >= steps, true, 'reachable in the time given');
+    }
+  });
+
+  test('a close mouse still gets the floor, a far one gets more', () => {
+    freshGame({ snake: [{x: 10, y: 10}, {x: 9, y: 10}, {x: 8, y: 10}] });
+    is(game.mouseClock({x: 11, y: 10}), game.MOUSE_FLOOR, 'one step away: the floor');
+    is(game.mouseClock({x: 10, y: 20}),
+       Math.max(game.MOUSE_FLOOR, Math.ceil(10 * game.MOUSE_SLACK)), 'ten away: scaled');
+    const near = game.mouseClock({x: 13, y: 10});   //  3 steps, so the floor
+    const far  = game.mouseClock({x:  0, y:  0});   // 20 steps, so well over it
+    is(far > near, true, 'further is longer');
+  });
+
+  test('it is a race: the clock is far shorter than the old flat sixty', () => {
+    freshGame();
+    const clocks = [];
+    for (let i = 0; i < 200; i++) clocks.push(game.mouseClock(game.mouseSquare()));
+    const mean = clocks.reduce((a, b) => a + b, 0) / clocks.length;
+    is(mean < 40, true, 'well under the sixty it replaced');
+    is(clocks.every(c => c >= game.MOUSE_FLOOR), true, 'never under the floor');
+  });
+
+  test('a spawned mouse remembers the clock it was given', () => {
+    freshGame();
+    game.visitor = null;
+    game.spawn('mouse', {x: 5, y: 15});
+    is(game.visitor.life, game.visitor.born, 'starts full');
+    is(game.visitor.born, game.mouseClock({x: 5, y: 15}), 'from the distance');
+  });
+
+  test('it twitches on your moves, not on the clock', () => {
+    freshGame();
+    game.visitor = null;
+    game.spawn('mouse', {x: 5, y: 15});
+    game.visitor.beat = 0;
+    const tilts = [];
+    for (let m = 0; m < game.MOUSE_TWITCH * 2 + 1; m++) {
+      game.moves = m;
+      tilts.push(game.mouseIdle().tilt);
+    }
+    is(tilts.filter(t => t !== 0).length, 3, 'once per MOUSE_TWITCH moves');
+    is(tilts[0] !== 0 && tilts[game.MOUSE_TWITCH] !== 0, true, 'on the beat');
+    is(Math.sign(tilts[0]) === -Math.sign(tilts[game.MOUSE_TWITCH]), true,
+       'alternating sides');
+    is(tilts.slice(1, game.MOUSE_TWITCH).every(t => t === 0), true, 'still between');
+  });
+});
+
+
 describe('where visitors appear', () => {
-  test('never further away than the snake could get in time', () => {
+  test('a mouse lands inside its band, never at your feet', () => {
     freshGame();
     for (let i = 0; i < 300; i++) {
-      const spot = game.reachableSquare(game.MOUSE_LIFE);
+      const spot = game.mouseSquare();
       const head = game.snake[0];
       const steps = Math.abs(spot.x - head.x) + Math.abs(spot.y - head.y);
-      is(steps <= Math.floor(game.MOUSE_LIFE * game.REACH_BUDGET), true,
-         'within reach');
+      is(steps >= game.MOUSE_NEAR && steps <= game.MOUSE_FAR, true, 'in the band');
     }
   });
 
   test('a spawned visitor is always reachable and always has a life', () => {
     freshGame({ egg: {x: 6, y: 5} });
+    // Checked at the MOMENT IT APPEARS, not on every step afterwards. A
+    // mouse's clock is set from where your head was when it arrived; you
+    // are then free to walk away from it, and a run where you do is not a
+    // broken spawn. Asserting it every step made this test fail about one
+    // run in eight.
+    let already = null;
     for (let i = 0; i < 120; i++) {
       if (game.phase !== 'playing') break;
-      if (game.visitor) {
+      if (game.visitor && game.visitor !== already) {
+        already = game.visitor;
         const head = game.snake[0];
         const steps = Math.abs(game.visitor.x - head.x)
                     + Math.abs(game.visitor.y - head.y);
-        const life = game.visitor.kind === 'mouse' ? game.MOUSE_LIFE : game.ROTTEN_LIFE;
-        is(steps <= life, true, 'reachable within its whole life');
-        is(game.visitor.life > 0, true, 'alive');
+        const life = game.visitor.kind === 'mouse' ? game.visitor.born : game.ROTTEN_LIFE;
+        is(steps <= life, true, 'reachable in the time it was given');
       }
+      if (game.visitor) is(game.visitor.life > 0, true, 'alive');
       game.update();
     }
+  });
+});
+
+
+// Where a rotten egg lands, and when. UNR-155.
+describe('rotten egg placement', () => {
+  // Pin the dice, so a test can say what happens on a roll that brings
+  // nothing, or on one that brings a rotten egg.
+  function withRandom(value, fn) {
+    const math = vm.runInContext('Math', sandbox);
+    const real = math.random;
+    math.random = () => value;
+    try { fn(); } finally { math.random = real; }
+  }
+  const NOTHING = 0.99;   // above VISITOR_CHANCE: no visitor comes
+  const ROTTEN  = 0;      // under both odds: a visitor, and it's rotten
+  const same = (a, b) => !!a && !!b && a.x === b.x && a.y === b.y;
+
+  test('a belt stretch is the last few points before a belt score', () => {
+    is(game.beltStretch(10), 15, '10 is closing in on orange');
+    is(game.beltStretch(14), 15, '14 too');
+    is(game.beltStretch(9), null, '9 is not yet');
+    is(game.beltStretch(15), null, 'on the belt itself is past it');
+    is(game.beltStretch(0), null, 'white never counts');
+    is(game.beltStretch(272), 275, 'midnight blue counts');
+    is(game.beltStretch(275), null, 'nothing after midnight blue');
+  });
+
+  test('in the way means on a shortest route, and never right beside the egg', () => {
+    const head = {x: 3, y: 4}, egg = {x: 12, y: 16};
+    const route = game.routeSquares(head, egg);
+    is(route.length > 0, true, 'there are squares');
+    for (const s of route) {
+      is(Math.abs(s.x - head.x) + Math.abs(s.y - head.y) +
+         Math.abs(s.x - egg.x) + Math.abs(s.y - egg.y), 21, 'on a shortest route');
+      is(Math.abs(s.x - egg.x) + Math.abs(s.y - egg.y) >= 2, true, 'not beside the egg');
+    }
+  });
+
+  test('beside the egg means the side that faces the head', () => {
+    is(game.besideSquares({x: 5, y: 5}, {x: 10, y: 8}), [{x: 9, y: 8}, {x: 10, y: 7}], 'at an angle');
+    is(game.besideSquares({x: 5, y: 8}, {x: 10, y: 8}), [{x: 9, y: 8}], 'in line');
+  });
+
+  test('no rotten egg until the cooldown has passed', () => {
+    freshGame({ egg: {x: 15, y: 15} });
+    game.sinceRotten = game.ROTTEN_COOLDOWN - 1;
+    withRandom(ROTTEN, () => game.maybeSpawnVisitor());
+    is(game.visitor, null, 'nothing, and not a mouse in its place');
+  });
+
+  test('the cooldown is a minimum, so the usual odds still apply after it', () => {
+    freshGame({ egg: {x: 15, y: 15} });
+    game.sinceRotten = game.ROTTEN_COOLDOWN + 5;
+    withRandom(NOTHING, () => game.maybeSpawnVisitor());
+    is(game.visitor, null, 'a roll that brings nothing still brings nothing');
+  });
+
+  test('away from a belt, a rotten egg lands in the way', () => {
+    for (let i = 0; i < 100; i++) {
+      freshGame({ egg: {x: 15, y: 15}, score: 20 });
+      game.sinceRotten = game.ROTTEN_COOLDOWN;
+      game.maybeSpawnVisitor();
+      if (!game.visitor || game.visitor.kind !== 'rotten') continue;
+      const route = game.routeSquares(game.snake[0], game.egg);
+      is(route.some(s => same(s, game.visitor)), true, 'on the route');
+    }
+  });
+
+  test('closing in on a belt brings a rotten egg beside the egg, once', () => {
+    freshGame({ egg: {x: 15, y: 15}, score: 12 });
+    game.sinceRotten = game.ROTTEN_COOLDOWN;
+    withRandom(NOTHING, () => game.maybeSpawnVisitor());
+    is(game.visitor && game.visitor.kind, 'rotten', 'guaranteed, whatever the dice say');
+    const beside = game.besideSquares(game.snake[0], game.egg);
+    is(beside.some(s => same(s, game.visitor)), true, 'beside the egg, facing the head');
+
+    game.visitor = null;
+    game.sinceRotten = game.ROTTEN_COOLDOWN;
+    withRandom(NOTHING, () => game.maybeSpawnVisitor());
+    is(game.visitor, null, 'not guaranteed twice for the same belt');
+  });
+
+  test('with nowhere that matters to go, no rotten egg comes and the belt keeps its one', () => {
+    // The egg right in front of the head: no room beside it or in the way.
+    freshGame({ egg: {x: 6, y: 5}, score: 12 });
+    game.sinceRotten = game.ROTTEN_COOLDOWN;
+    is(game.rottenSquare(true), null, 'nowhere');
+    withRandom(ROTTEN, () => game.maybeSpawnVisitor());
+    is(game.visitor, null, 'not dropped on a random square instead');
+    is(game.guardedBelts, [], 'still owed');
+  });
+
+  test('the guaranteed one still waits for the cooldown', () => {
+    freshGame({ egg: {x: 15, y: 15}, score: 12 });
+    game.sinceRotten = game.ROTTEN_COOLDOWN - 1;
+    withRandom(NOTHING, () => game.maybeSpawnVisitor());
+    is(game.visitor, null, 'nothing yet');
+    is(game.guardedBelts, [], 'and the belt is still owed one');
+  });
+
+  test('never close to the head, and never boxing the egg in', () => {
+    for (let i = 0; i < 100; i++) {
+      // The egg in a corner, with one of its two sides under the snake.
+      freshGame({ snake: [{x: 6, y: 6}, {x: 0, y: 1}], egg: {x: 0, y: 0} });
+      const spot = game.rottenSquare(true);
+      is(same(spot, {x: 1, y: 0}), false, 'the egg keeps an open side');
+      const head = game.snake[0];
+      is(Math.abs(spot.x - head.x) + Math.abs(spot.y - head.y) >= game.ROTTEN_GAP, true, 'not on top of the head');
+    }
+  });
+
+  test('eating the egg takes its rotten egg with it and restarts the cooldown', () => {
+    freshGame({ egg: {x: 6, y: 5}, visitor: {kind: 'rotten', x: 12, y: 12, life: 30, facing: 1} });
+    game.sinceRotten = 7;
+    withRandom(NOTHING, () => game.update());
+    is(game.visitor, null, 'gone with its egg');
+    is(game.sinceRotten, 0, 'cooldown restarted');
+  });
+
+  test('eggs and mice count towards the cooldown', () => {
+    freshGame({ egg: {x: 6, y: 5} });
+    withRandom(NOTHING, () => game.update());
+    is(game.sinceRotten, 1, 'an egg');
+    freshGame({ visitor: {kind: 'mouse', x: 6, y: 5, life: 30, facing: 1} });
+    game.update();
+    is(game.sinceRotten, 1, 'a mouse');
+  });
+
+  test('a rotten egg eaten or expired restarts the cooldown', () => {
+    freshGame({ visitor: {kind: 'rotten', x: 6, y: 5, life: 30, facing: 1} });
+    game.sinceRotten = 9;
+    game.update();
+    is(game.sinceRotten, 0, 'eaten');
+    freshGame({ visitor: {kind: 'rotten', x: 18, y: 18, life: 1, facing: 1} });
+    game.sinceRotten = 9;
+    game.update();
+    is(game.sinceRotten, 0, 'expired');
+  });
+
+  test('a new run starts with the cooldown and every belt owed', () => {
+    game.sinceRotten = 9;
+    game.guardedBelts = [15, 35];
+    game.reset();
+    is(game.sinceRotten, 0, 'cooldown');
+    is(game.guardedBelts, [], 'belts');
   });
 });
 
@@ -1210,13 +1467,14 @@ describe('sprites', () => {
 
   // The rule the delivered mouse broke: at 20px a shape gets a silhouette
   // and about one internal detail. Ten paths read worse than five.
-  // The hazard must be the biggest thing on the board. The tilt
-  // foreshortens it, so at matching numbers it reads as the SMALLER of
-  // the two, which is backwards for the thing you are meant to avoid.
-  test('the rotten egg is drawn larger than the good one', () => {
+  // The hazard must not outgrow the egg. It was once the biggest thing on
+  // the board, to make up for its tilt, and in play that read as too big:
+  // the fumes already make it findable. The legibility test below keeps
+  // it from shrinking too far the other way. See UNR-155.
+  test('the rotten egg is drawn no larger than the good one', () => {
     const egg    = 12.8 * game.SPRITE_SIZE.egg.scale;
     const rotten = 13.6 * game.SPRITE_SIZE.rottenEgg.scale;
-    is(rotten > egg, true, 'rotten ' + rotten.toFixed(1) + ' vs egg ' + egg.toFixed(1));
+    is(rotten <= egg, true, 'rotten ' + rotten.toFixed(1) + ' vs egg ' + egg.toFixed(1));
   });
 
   // A reward you cannot read is not a reward. These should carry about
@@ -1258,6 +1516,56 @@ describe('sprites', () => {
 // The README line is the reason this group exists at all: it said v0.1.0
 // until 12 September, through two releases that changed it, while the
 // other three never drifted once.
+describe("the snake's own tongue", () => {
+  // UNR-160. It used to be on a wall-clock window, which the speed curve
+  // change on 8 September quietly halved the sampling rate of. Counted in
+  // moves, the rhythm is the same at every level.
+
+  test('the gap is always inside its range', () => {
+    for (let i = 0; i < 200; i++) {
+      const gap = game.nextFlickIn(Math.random());
+      is(gap >= game.TONGUE_GAP_MIN && gap <= game.TONGUE_GAP_MAX, true, 'in range');
+    }
+    is(game.nextFlickIn(0), game.TONGUE_GAP_MIN, 'the shortest wait');
+    is(game.nextFlickIn(0.9999), game.TONGUE_GAP_MAX, 'the longest');
+  });
+
+  test('it flicks on your moves, and for exactly one of them', () => {
+    freshGame({ egg: {x: 20, y: 20} });
+    game.flickAt = game.moves + 1;
+    game.update();
+    is(game.tongueOut, true, 'out on the booked move');
+    game.update();
+    is(game.tongueOut, false, 'and away again the next');
+  });
+
+  test('over a run it keeps a steady rhythm, never a metronome', () => {
+    freshGame({ snake: [{x: 10, y: 10}, {x: 9, y: 10}, {x: 8, y: 10}],
+                direction: {x: 1, y: 0}, egg: {x: 0, y: 0} });
+    const flicks = [];
+    // Round and round a small square in the middle of the board, so the run
+    // lasts long enough to watch the rhythm rather than dying at a wall.
+    for (let i = 0; i < 400 && game.phase === 'playing'; i++) {
+      if (i % 4 === 3) game.queueTurn({x: -game.direction.y, y: game.direction.x});
+      game.update();
+      if (game.tongueOut) flicks.push(game.moves);
+    }
+    is(game.phase, 'playing', 'still alive after 400 moves');
+    is(flicks.length > 5, true, 'it flicks more than a handful of times');
+    const gaps = flicks.slice(1).map((m, i) => m - flicks[i]);
+    is(gaps.every(g => g >= game.TONGUE_GAP_MIN && g <= game.TONGUE_GAP_MAX), true,
+       'every gap inside the range');
+    is(new Set(gaps).size > 1, true, 'not the same gap every time');
+  });
+
+  test('a fresh run starts with the tongue in', () => {
+    game.reset();
+    is(game.tongueOut, false, 'in');
+    is(game.flickAt >= game.TONGUE_GAP_MIN, true, 'with a flick booked');
+  });
+});
+
+
 describe('the crest tongue', () => {
   test('mostly flicks in pairs, sometimes once', () => {
     is(game.tongueFlickPlan(0, 0).flicks, 2, 'flicks');
@@ -1404,10 +1712,12 @@ describe('the opening bow', () => {
     is(game.snake[0], {x: head.x, y: head.y - 1}, 'head');
   });
 
-  test('space does not restart a bow in progress', () => {
+  test('space during a bow calls mercy, and never restarts it', () => {
     bowing();
+    const snake = JSON.stringify(game.snake);
     pressKey(' ');
-    is(game.phase, 'bowing', 'phase');
+    is(game.phase, 'paused', 'phase');
+    is(JSON.stringify(game.snake), snake, 'snake');
   });
 
   test('starts and ends standing, so neither end jumps', () => {
@@ -1521,9 +1831,59 @@ describe('scores - how a run is measured, UNR-106', () => {
     is(options.body, '{"score":1}', 'body');
   });
 
-  test('only a publishable key is ever in the page', () => {
+  test('only publishable keys are ever in the page', () => {
     is(game.SCORE_SERVICE.key.startsWith('sb_publishable_'), true, 'publishable');
+    for (const [name, service] of Object.entries(game.SCORE_SERVICES)) {
+      is(service.key.startsWith('sb_publishable_'), true, name + ' publishable');
+      is(service.url.startsWith('https://'), true, name + ' over https');
+    }
     is(/sb_secret_|service_role/.test(html), false, 'no secret key');
+  });
+
+  // UNR-162. The board people see must never be written to by someone
+  // testing, whichever machine or device they are testing from.
+  test('your own machine and your own network get the sandbox', () => {
+    for (const host of ['localhost', '127.0.0.1', '::1', '',
+                        'karins-mac.local', '192.168.1.23', '10.0.0.4',
+                        '172.16.5.9', '172.31.255.255']) {
+      is(game.serviceFor(host, false), 'sandbox', host || 'file://');
+    }
+  });
+
+  test('after launch, anywhere else is the real board', () => {
+    for (const host of ['karinnielsen.github.io', 'strike-first.example.com',
+                        '172.15.0.1', '172.32.0.1', '11.0.0.1', '193.168.1.1']) {
+      is(game.serviceFor(host, false), 'production', host);
+    }
+  });
+
+  // Karin's call, 18 September, with the real board wiped: nothing writes to
+  // it until v1.0.0, the published link included, so the first scores on it
+  // are made by players rather than by us.
+  test('before launch, everything is the sandbox, published link included', () => {
+    for (const host of ['karinnielsen.github.io', 'localhost', 'anything.example']) {
+      is(game.serviceFor(host, true), 'sandbox', host);
+    }
+  });
+
+  // This one is meant to be changed, on the day, by hand. It is the tripwire
+  // that stops the flag being forgotten: launch without flipping it and the
+  // suite still passes, which is the failure worth preventing.
+  test('the launch flag is still set - flip it when v1.0.0 ships', () => {
+    is(game.BEFORE_LAUNCH, true, 'before launch');
+    is(game.SCORE_TARGET, 'sandbox', 'so nothing writes to the real board yet');
+  });
+
+  test('the two databases are different places', () => {
+    is(game.SCORE_SERVICES.sandbox.url === game.SCORE_SERVICES.production.url,
+       false, 'different url');
+    is(game.SCORE_SERVICES.sandbox.key === game.SCORE_SERVICES.production.key,
+       false, 'different key');
+  });
+
+  test('the tests themselves run against the sandbox', () => {
+    is(game.SCORE_TARGET, 'sandbox', 'never the real board');
+    is(game.SCORE_SERVICE.url, game.SCORE_SERVICES.sandbox.url, 'the sandbox url');
   });
 
   const reply = (ok, body) => async () => ({
@@ -1686,8 +2046,8 @@ describe('scores you can trust', () => {
       game.reset();
       game.phase = 'playing';
       game.loop();                                  // the first move, on the beat
-      while (game.phase === 'playing' && game.moves < maxMoves) {
-        if (Math.random() < mercy) {
+      while ((game.phase === 'playing' || game.phase === 'bowing') && game.moves < maxMoves) {
+        if (game.phase === 'playing' && Math.random() < mercy) {
           clock += Math.random() * (timer.at - clock);
           game.toggleMercy();
           clock += Math.random() * 3000;
@@ -1701,11 +2061,12 @@ describe('scores you can trust', () => {
         timer = null;
         beat.fn();
         if (lucky && game.score === before + game.EGG_POINTS && !game.visitor) {
-          game.visitor = { kind: 'mouse', life: game.MOUSE_LIFE, facing: 1,
-                           ...game.reachableSquare(game.MOUSE_LIFE) };
+          const spot = game.mouseSquare();
+          game.visitor = { kind: 'mouse', life: game.mouseClock(spot), facing: 1,
+                           born: game.mouseClock(spot), beat: 0, ...spot };
         }
       }
-      if (game.phase === 'playing') {               // out of patience, not out of room
+      if (game.phase !== 'dying') {                 // out of patience, not out of room
         clock = timer.at;
         game.gameOver('wall', {x: -1, y: 0});
       }
@@ -1722,21 +2083,65 @@ describe('scores you can trust', () => {
     run.score <= game.POINTS_PER_SQUARE * (run.length - 3) &&
     run.durationMs >= game.fastestRun(run.moves, run.length);
 
-  test('continuing from mercy waits a full step before the next move', () => {
+  // Continue bows back in, UNR-149. A fake clock and heartbeat, so the
+  // moment of the next move can be read off rather than waited for.
+  function afterContinue(check, score = 0) {
     const saved = [sandbox.performance.now, sandbox.setTimeout, sandbox.clearTimeout];
+    let clock = 500;
     let timer = null;
-    sandbox.performance.now = () => 500;
+    sandbox.performance.now = () => clock;
     sandbox.setTimeout = (fn, ms) => { timer = { fn, ms }; return 1; };
     sandbox.clearTimeout = () => { timer = null; };
     try {
       freshGame();
+      game.score = score;
       game.toggleMercy();
-      timer = null;
       game.toggleMercy();
-      is(timer && timer.ms, game.stepDelay(), 'a whole step');
+      check({ at: (ms) => { clock = 500 + ms; }, beat: () => timer });
     } finally {
       [sandbox.performance.now, sandbox.setTimeout, sandbox.clearTimeout] = saved;
+      game.phase = 'ready';
     }
+  }
+
+  test('continuing from mercy bows before the next move', () => {
+    afterContinue(({ beat }) => {
+      is(game.phase, 'bowing', 'bowing');
+      is(beat() && beat().ms, game.BOW_MS, 'the whole bow');
+    });
+  });
+
+  test('the bow after mercy is as long at level 9 as at level 1', () => {
+    const top = game.LEVELS[game.LEVELS.length - 1].from;
+    afterContinue(({ beat }) => {
+      is(game.stepDelay(), game.LEVELS[game.LEVELS.length - 1].ms, 'at level 9');
+      is(beat() && beat().ms, game.BOW_MS, 'the whole bow');
+    }, top);
+  });
+
+  test('a direction straight after Continue still waits out one step', () => {
+    afterContinue(({ at, beat }) => {
+      const head = game.snake[0];
+      const step = game.stepDelay();
+      at(10);
+      pressKey('ArrowUp');
+      is(game.snake[0], head, 'not yet');
+      is(beat() && beat().ms, step - 10, 'moves on the step');
+      at(step);
+      beat().fn();
+      is(game.phase, 'playing', 'phase');
+      is(game.snake[0], {x: head.x, y: head.y - 1}, 'head');
+    });
+  });
+
+  test('a direction once a step has passed is the move, at once', () => {
+    afterContinue(({ at }) => {
+      const head = game.snake[0];
+      at(game.stepDelay() + 1);
+      pressKey('ArrowUp');
+      is(game.phase, 'playing', 'phase');
+      is(game.snake[0], {x: head.x, y: head.y - 1}, 'head');
+    });
   });
 
   test('every run the game plays is accepted, mercy or not', () => {
@@ -1877,7 +2282,7 @@ describe('repeat play, UNR-137', () => {
     is(game.phase, 'paused', 'called');
     is(game.mercyMenu.at, 0, 'Continue lit');
     pressKey('Escape');
-    is(game.phase, 'playing', 'answered');
+    is(game.phase, 'bowing', 'answered, and bowing back in');
   });
 
   test('in mercy, Space picks the lit row', () => {
@@ -1885,7 +2290,7 @@ describe('repeat play, UNR-137', () => {
     pressKey(' ');
     is(game.phase, 'paused', 'called');
     pressKey(' ');
-    is(game.phase, 'playing', 'Continue');
+    is(game.phase, 'bowing', 'Continue, bowing back in');
   });
 
   test('Quit with nothing scored goes to the title, on the mode you played', () => {
@@ -2242,6 +2647,39 @@ describe('All Valley Rankings, UNR-134', () => {
     game.phase = 'paused';
     game.openRankings();
     is(game.rankingsOpen, false, 'paused');
+  });
+
+  // Last, because it leaves the game on the title.
+  testAsyncInOrder('back: the verdict goes to the main menu; a run and signing have none', async () => {
+    freshGame();
+    is(game.goBack(), false, 'none in a run');
+    pressKey('Escape');
+    is(game.phase, 'paused', 'so Esc is still mercy');
+    game.phase = 'over';
+    game.entry = { value: 'KA', focus() {}, blur() {}, style: { setProperty() {} } };
+    is(game.goBack(), false, 'none while signing');
+    game.entry = null;
+    game.mode = 'arcade';
+    pressKey('Escape');
+    is(game.titling, true, 'the verdict goes to the title');
+    is(game.phase, 'ready', 'and the run is gone');
+    is(game.titleMenu.at, 0, 'Arcade lit, as Main menu does');
+  });
+});
+
+describe('back', () => {
+  const at = { titling: false, dojoPhase: 'closed', dojoShown: false, rankingsOpen: false, phase: 'ready', entry: null };
+  test('only on the screens you can leave', () => {
+    is(game.backFrom({ ...at, titling: true }), null, 'title');
+    is(game.backFrom({ ...at, dojoPhase: 'open', dojoShown: true }), 'dojo', 'dojo select');
+    is(game.backFrom({ ...at, dojoPhase: 'open', dojoShown: false }), null, 'dojo select still fading in');
+    is(game.backFrom({ ...at, dojoPhase: 'choosing', dojoShown: true }), null, 'a dojo already chosen');
+    is(game.backFrom({ ...at, rankingsOpen: true }), 'rankings', 'rankings');
+    is(game.backFrom({ ...at, rankingsOpen: true, phase: 'over' }), 'rankings', 'rankings over a verdict');
+    is(game.backFrom({ ...at, phase: 'over' }), 'verdict', 'verdict');
+    is(game.backFrom({ ...at, phase: 'over', entry: {} }), null, 'signing');
+    is(['playing', 'bowing', 'paused', 'dying'].map(phase => game.backFrom({ ...at, phase })),
+      [null, null, null, null], 'a run');
   });
 });
 

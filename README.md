@@ -10,24 +10,29 @@ One HTML file of code, no build step and nothing to install — open it and play
 Beside it sit a few images: the dojo crests and the sharing preview. Its one
 outside connection is a hosted database for scores. Made for desktop and tablet.
 
-Current version: **v0.5.5** — see [CHANGELOG.md](CHANGELOG.md).
+Current version: **v0.5.6** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Play
 
 - **Arrow keys** or **WASD** to move
-- **Space** or **Esc** to pause — the game calls it mercy. Continuing gives you
-  one full step before the snake moves again
+- **Space** or **Esc** to pause — the game calls it mercy. Continuing bows
+  you back in, so you have a moment to find the snake again
 - **R** for a rematch, once you have lost. There is no restart mid-run: the way
   out of a run is mercy, then **Quit**
 - **M** to turn sound off or on, on any screen — the title included, where it
   mutes without starting the game
 - **B** between runs for the All Valley Rankings
+- **Esc** to go back, on every screen you can leave: dojo select, the
+  rankings and the verdict, where it does what **Main menu** does
 
 Every menu works the same way: **↑ ↓**, **W S** or **Tab** to move, **Enter**
 or **Space** to choose, or point and click.
 
 In the top-right corner of every screen, for mouse or finger: the **speaker**
-turns sound off or on, and **❚❚** calls mercy during a run.
+turns sound off or on, and **❚❚** calls mercy during a run. Its mirror in the
+top-left, the **back arrow**, is there on every screen **Esc** leaves. There is
+none on the title, which has nowhere to go back to, and none in a run, whose
+way out is mercy.
 
 On a tablet or any touch screen:
 
@@ -58,19 +63,46 @@ at seventy milliseconds a move.
 | | Worth | Costs you | Sticks around |
 | --- | --- | --- | --- |
 | **Egg** | 1 | 1 length | always exactly one, never expires |
-| **Mouse** | 5 | **2 length** | 60 of your moves |
+| **Mouse** | 5 | **2 length** | a clock set by how far away it is |
 | **Rotten egg** | **−3** | leaves you queasy for 14 moves | 45 of your moves |
 
 Roughly two eggs in five bring a visitor along, and about two in five of those
 are rotten. Visitors flash when they are about to leave.
+
+A rotten egg lands **where dodging it costs you something**, and it gets harsher
+as a run goes on:
+
+- **Not straight away.** No rotten egg until you've eaten 3 eggs or mice since
+  the last one left, or since the run began. After that the usual odds apply,
+  so the gaps stay random.
+- **In the way.** Usually it sits on a shortest route between your head and the
+  egg.
+- **Beside the egg, near a belt.** In the last 5 points before a belt score it
+  sits right beside the egg, on your side, so taking the egg means going around
+  it. The first egg in that stretch always brings one, once per belt. That
+  counts the belt scores themselves, whatever your best is, so it happens in
+  Practice too.
+- **It goes with its egg.** Eat the egg a rotten egg was guarding and the rotten
+  egg leaves too.
+
+It never lands within 3 squares of your head, and never boxes the egg in.
 
 The mouse costing two squares rather than one is the point of it. A reward that
 is strictly better with no cost isn't a decision — you take it every time and
 nothing about how you play changes. Five points for two squares is a real
 question late in a run.
 
-A mouse is always **reachable when it spawns**, so missing one is a decision
-that went wrong rather than bad luck.
+A mouse lands **in a tight spot** — hard against a wall, in a corner, or fenced
+in by your own body — so going for one means committing to a square you may not
+get back out of. It never sits in a dead end with only one way in, and never
+within 8 squares of your head: one at your feet would be a gift rather than a
+choice.
+
+And it is a **race**. A mouse doesn't get a fixed lifetime; its clock is set
+from how far away it actually is, so every mouse asks the same question wherever
+it lands — can you find the direct route and commit to it now? You are always
+given enough moves to reach it, so missing one is a decision that went wrong
+rather than bad luck. What you can't afford is to dither on the way.
 
 A rotten egg deliberately costs you no length. Taking length *off* would be a
 relief late in a run, which is the opposite of a punishment.
@@ -130,6 +162,8 @@ random dojo, so no dojo is everyone's default; after that it starts on yours.
 - **↑ ↓** to flip a card. The back shows where the dojo stands, its team score,
   its students, its top student and its sensei. On a touch screen, tap a card
   to choose it and tap its turned-down corner to flip it
+- **Esc** or the back arrow to leave without choosing. The clock stops, and
+  the title comes back with Arcade lit
 
 Choosing lands like a kick, and the dojo's creed comes up with its name, and
 the fight begins. The select opens every time you choose Arcade — choosing your
@@ -141,7 +175,12 @@ Every run opens with a bow, the way every lost one closes with one. The snake
 dips its head, draws back, and its first step is a strike. Half a second, and
 the snake does not move until it is over, so it never eats into your reaction
 time. Press a direction during it and that is your first move, straight away.
-Reduced motion skips it.
+
+Continuing from mercy bows too, because the board has been covered and you
+need a moment to find the snake. The bow is the same length at every level,
+since the faster the game, the more you need it. A direction cuts it short
+here as well, but never to less than one step. With reduced motion the head
+holds still for the same half second instead of bowing.
 
 ### Defeat
 
@@ -203,7 +242,7 @@ no board, and nothing else waits for it.
 ### All Valley Rankings
 
 The whole board, on a screen of its own. Open it from the title's menu or the defeat
-screen's, or with **B** — never during a run, and not while you are signing. **Esc**, **B** or **back** returns you to where you were.
+screen's, or with **B** — never during a run, and not while you are signing. **Esc**, **B** or the back arrow returns you to where you were.
 
 It is the top ten, then a gap and your run with the ones either side of it if
 you are further down. The columns are named along the top — rank, name,
@@ -236,6 +275,12 @@ Between runs the cobra in the crest flicks its tongue, the way a real snake
 smells the air: in pairs, at uneven pauses. It holds still while you play, so
 the only thing moving above the board is something worth looking at. Reduced
 motion turns it off.
+
+The snake on the board does its own flicking, every 6 to 20 of **your moves**
+rather than on a clock, so the rhythm is the same whether you are thinking your
+way through level 1 or flat out at level 9. It also holds its tongue out
+whenever there is an egg or a mouse directly ahead — it can smell it — and the
+whole time you are queasy. Not for a rotten egg. It doesn't want that one.
 
 ## Next
 
@@ -275,6 +320,9 @@ those rather than scattering numbers through the code.
 | `EGG_GROWTH` / `MOUSE_GROWTH` | how much length each one costs you |
 | `VISITOR_CHANCE` | odds that an egg brings a visitor along |
 | `ROTTEN_SHARE` | how many of those visitors are rotten |
+| `ROTTEN_COOLDOWN` | eggs or mice eaten before another rotten egg may come |
+| `BELT_STRETCH` | points before a belt score where a rotten egg lands beside the egg |
+| `ROTTEN_GAP` | how close to your head a rotten egg may land |
 | `MOUSE_LIFE` / `ROTTEN_LIFE` | how many of *your moves* each one stays for |
 | `WARNING_MOVES` | moves left when a visitor starts flashing |
 | `REACH_BUDGET` | how far a visitor may spawn, as a fraction of its life |
@@ -313,6 +361,18 @@ Open `index.html` in a browser, or serve the folder:
 python3 -m http.server 8765
 ```
 
+**Scores go to a sandbox database, not the real board.** Until v1.0.0 that is
+true everywhere, the published link included — the real board is empty and is
+being kept that way, so the first thing anyone sees on it is scores players
+made rather than ours. The version line says **sandbox scores** whenever that
+is what you are looking at.
+
+After launch, the page chooses by where it is served from: localhost, a
+`file://` open, or a private network address — which is how a tablet on your
+own wi-fi arrives — keep using the sandbox, and only the published site keeps
+real scores. So you can always play, sign a run and watch the rankings fill
+without touching what everyone else sees.
+
 ### Versioning
 
 The version lives in four places and they move together:
@@ -328,13 +388,15 @@ A test fails if the first three disagree.
 Read the numbers in game terms:
 
 - **major** — the game plays differently enough to be a new thing
-- **minor** — a new mechanic or mode
-- **patch** — balance tuning, art, copy, bug fixes
+- **minor** — a new mechanic or mode, or a new step in the player's journey:
+  a screen they pass through, or a choice every player makes
+- **patch** — balance tuning, art, copy and bug fixes within the screens that
+  already exist
 
 **Artwork is a patch, however much of it there is.** v0.3.1 replaced the
 wordmark with a drawn crest, moved the whole palette and made the board
-artwork legible, and it was still a patch, because nothing played differently
-afterwards. The test is what the player has to do, not how much changed.
+artwork legible, and it was still a patch, because it added no step to the
+journey and nothing played differently afterwards.
 
 ### Files
 
