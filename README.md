@@ -165,8 +165,8 @@ random dojo, so no dojo is everyone's default; after that it starts on yours.
 - **Esc** or the back arrow to leave without choosing. The clock stops, and
   the title comes back with Arcade lit
 
-Choosing lands like a kick, and the dojo's creed comes up with its name, and
-the fight begins. The select opens every time you choose Arcade — choosing your
+Choosing lands like a kick on the card, and the fight begins straight away.
+If the clock runs out, Sensei chooses for you. The select opens every time you choose Arcade — choosing your
 side is part of the ritual — but a **Rematch** skips it.
 
 ### The bow

@@ -265,7 +265,8 @@ it has no voice yet.
 ### Welcome lines — parked
 
 Written for the banner that confirms a dojo pick, then set aside on 16
-September when that banner took the dojo's creed instead. Kept for another
+September when that banner took the dojo's creed instead. The banner itself
+went on 18 September (UNR-168), and the creed is not said anywhere for now. Kept for another
 moment that says hello, such as switching dojos:
 
 | Cobra Kai | Miyagi-Do | Eagle Fang |
@@ -339,8 +340,7 @@ The complete inventory, so nothing drifts unnoticed.
 | `← → or tab to choose · ↑ ↓ to flip · enter to bow in` — dojo select | Utility |
 | `tap a dojo to bow in · tap its corner to flip` — dojo select, touch screens | Utility |
 | `dojo rank` (`1st`) `team score` `students` `top` `Sensei` — a dojo card's back. Never `place`, and never `of 3`: the three cards are on screen together | Utility |
-| `<DOJO>` / the dojo's creed — the banner confirming a pick, in voice caps | Dojo |
-| `Too slow. Sensei chose for you.` — the banner, when the clock runs out | Dojo |
+| `Too slow. Sensei chose for you.` — dojo select's keys line, when the clock runs out | Dojo |
 | `Arcade` / `Practice` / `Rankings` — the title's menu | Utility |
 | `MERCY` / `Continue` / `Quit` — pause | Dojo |
 | `DEFEATED` / a defeat line / `Rematch` `Rankings` `Main menu` — defeat | Dojo |
