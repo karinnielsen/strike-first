@@ -5,8 +5,10 @@ direction is given separately, per asset. This document covers only what makes
 an asset *usable*: format, palette, geometry and delivery.
 
 Everything here is a hard requirement unless it says otherwise. The unusual one
-is the format: the game is a **single self-contained HTML file**, so an asset
-that cannot be inlined into it is unusable regardless of how it looks.
+is the format. The game is one HTML file with no build step. Small artwork is
+inlined into it as path data, and the only files beside it are the large
+pixel-art images in `assets/`, fetched in the background (§1a). An asset that
+fits neither route is unusable regardless of how it looks.
 
 ---
 
@@ -21,6 +23,10 @@ Repository: `karinnielsen/strike-first` on GitHub, default branch `main`.
 | Colour palette | `index.html`, the `:root` block at the top of `<style>` |
 | Wordmark — the cobra crest | `index.html`, the inline `<svg>` in `h1.crest` |
 | Board geometry — `CELL`, `COLS`, `ROWS` | `index.html`, top of the `<script>` |
+| Dojo crests as shipped (320px WebP) | `assets/crests/` |
+| Dojo crest sources, prompts and 18px badges | PR #6, branch `assets/dojo-crests`, `design/dojo-crests/` |
+| Dojo badges as shipped (18px path data) | `index.html`, `DOJO_BADGES` |
+| Belt colours | `index.html`, `BELTS` |
 | Balance constants | `index.html`, section 2 of the `<script>` |
 | How to work on the project | `CLAUDE.md` |
 | Version history | `CHANGELOG.md` |
@@ -36,11 +42,14 @@ dimension. This spec is a copy of those values and can go stale.
 
 ## 1. Output format
 
-**SVG, as editable source.** Not a PNG, not a rasterised trace, not a PNG
-wrapped in an SVG.
+There are two routes into the game. Each asset's section in §8 says which one
+it takes.
 
-Each asset is pasted directly into `index.html` as inline `<svg>` markup. There
-is no build step and no asset pipeline. Therefore:
+**Inline: SVG, as editable source.** For logos, marks and small sprites. Not a
+PNG, not a rasterised trace, not a PNG wrapped in an SVG.
+
+Each inline asset is pasted directly into `index.html` as `<svg>` markup or path
+data. There is no build step and no asset pipeline. Therefore:
 
 | Requirement | Why |
 | -- | -- |
@@ -55,11 +64,32 @@ is no build step and no asset pipeline. Therefore:
 Deliver the raw `.svg`. A PNG preview alongside is useful for checking but is
 not the deliverable.
 
+### 1a. Raster: pixel art in `assets/`
+
+For large, detailed pixel art that cannot be path data, such as the dojo crests
+since v0.5.0. The file sits beside the game and is fetched
+in the background before the screen that shows it.
+
+| Requirement | Why |
+| -- | -- |
+| **Pixel art,** in the same family as the dojo crests: fine square pixels, stair-stepped contours, restrained pixel shading | Every large image on screen at once has to look drawn by one hand |
+| Deliver a **lossless PNG master** at the size §8 gives | The shipped WebP is made from it at integration, so it has to be clean |
+| **Transparent background, alpha only 0 or 255** | The card's glow shows through; a part-transparent fringe turns to a halo on near-black |
+| No lettering, frame, banner, glow, blur, smooth gradient or drop shadow | The page draws the frame and the glow, in the dojo's light |
+| Square canvas, subject centred with the margins §8 gives | Cards are square, and the art is sized in CSS |
+
+Integration, not the artist, turns the master into the file that ships: WebP,
+quality 90, at the size in §8. The dojo crests went 3.8MB of PNG to 155KB this
+way.
+
 ## 2. Size budget
 
-**Under 20KB of SVG source per asset, target under 10KB.** The entire game is
-currently ~125KB, and the crest — the one asset allowed over budget, see
-`design/title-crest/README.md` — is a large share of it.
+**Inline: under 20KB of SVG source per asset, target under 10KB.** The whole
+game is about 275KB of HTML, and the title crest (the one inline asset allowed
+over budget, see `design/title-crest/README.md`) is a large share of it.
+
+**Raster: under 70KB per shipped WebP, target under 50KB.** The three dojo
+crests are 40–68KB each. The master PNG has no budget, since it doesn't ship.
 
 ## 3. Colour
 
@@ -70,16 +100,33 @@ Use the existing palette. Values are the CSS custom properties in `index.html`.
 | `--bg` | `#09090b` | Page background |
 | `--panel` | `#131316` | The board |
 | `--line` | `#2a2a30` | Grid lines, borders |
-| `--text` | `#ece6da` | Body text |
-| `--dim` | `#7b7480` | Secondary text |
+| `--text` | `#ece6da` | Body text, bone |
+| `--dim` | `#8a838f` | Only styling that carries no information: the version line, the title's credit |
+| `--value` | `#fff7b8` | Numbers beside their labels |
 | `--yellow` | `#ffff00` | Reward, and the one thing the screen is asking you to do. Never rank |
 | `--yellow-deep` | `#7a7a00` | The shadow side of yellow |
 | `--red` | `#d3262f` | Points lost |
 | `--brand` | `#ee3524` | The wordmark only |
 | `--bone` | `#e8e2d6` | The snake |
 
+Artwork palettes have used `#7b7480` as a mid grey since before `--dim` was
+lightened. It is still allowed inside artwork.
+
 Rank is carried by the belt colours, which live in `BELTS` in the script rather
-than in this table. Those seven hues are effectively the whole colour budget.
+than in this table. Those seven hues are effectively the whole colour budget:
+
+| Belt | Hex |
+| -- | -- |
+| White | `#e8e2d6` |
+| Orange | `#f4761c` |
+| Green | `#46a86c` |
+| Brown | `#9c6438` |
+| Red | `#d3262f` |
+| Cho Dan Bo (blue) | `#3f7fd0` |
+| Midnight blue | `#324791` |
+
+Each dojo has its own light, used for its card, the room and the banner:
+Cobra Kai `#ffff00`, Miyagi-Do `#d3262f`, Eagle Fang `#ece6da`.
 
 ### Adding a hue requires approval
 
@@ -116,6 +163,8 @@ outlined paths, per section 1.
 | One cell | 30 × 30 px, and never below 20 × 20 |
 | Authoring box for board art | 20 × 20, scaled up at draw time by `CELL_SCALE` |
 | Wordmark | The cobra crest, inline SVG, sized in CSS |
+| Art on a dojo select card | Square, 120–160 CSS px, fitted to the window |
+| Icon slot on a rankings row | 18 × 18 px, exactly |
 
 **Board assets must read at 20 × 20 px,** the smallest a cell is ever drawn. At
 that size only silhouette and one strong colour break survive. Verify at actual
@@ -270,14 +319,23 @@ Design direction is supplied separately. These are the functional targets.
 
 ### Dojo crests — UNR-114
 
-* A set of 2–4, constructed as a family: same weight, same treatment
-* Roughly 200 × 200px each
-* **Must be distinguishable in monochrome**, by silhouette and shape. Colour may
-  reinforce the difference but cannot be the only carrier of it — see §3
+**Delivered, shipped in v0.5.0.** Sources, the generation prompt and the 18px
+badges are in PR #6. This set is the reference for any large pixel art that
+follows.
+
+* Cobra Kai, Miyagi-Do and Eagle Fang, drawn as a family in higher-density pixel
+  art (about 160 logical pixels across)
+* Shipped as 320px WebP in `assets/crests/`, shown at 120–160 CSS px on the
+  dojo select cards
+* The rankings use a separate badge for each, **drawn natively at 18 × 18**,
+  because the large crests shrunk to 18px were illegible
+* **Distinguishable in monochrome**, by silhouette. Colour reinforces the
+  difference but never carries it alone (see §3)
 
 ### Character portraits — UNR-115
 
-* Undated and least defined; requirements above apply, specifics to follow
+**Dropped, 18 September,** before anything was drawn. Its spec is kept on the
+branch `mock/character-select`.
 
 ### Board sprites — egg, rotten egg, mouse, snake head, snake body
 
@@ -300,8 +358,14 @@ Same every time, so a request can be one line rather than a page.
 
 **Push a branch. Never main.**
 
-* Branch name `assets/<what-it-is>`, e.g. `assets/pixel-sprites`
-* **One commit.** No force-pushing, no rewriting history
+* **Name the branch after the Linear issue** given in the request,
+  `unr-N-short-slug`, and branch from the release branch it names, or
+  `main` if it names none. Linear closes the
+  issue when the PR from that branch merges, and a branch with any other
+  name closes nothing. (Earlier deliveries used `assets/<what-it-is>`; don't.)
+* **Open the draft PR against the branch you started from**
+* **One commit to start.** Review rounds add commits. No force-pushing, no
+  rewriting history
 * **Add files under `design/<what-it-is>/` only.** Do not modify `index.html`,
   `test.js`, `CHANGELOG.md`, `CLAUDE.md`, or anything else in the repo — the
   integration is done separately and by hand
@@ -320,6 +384,7 @@ and so was the fact that a blurred vapor cloud cannot be a filter-free path.
 
 ## 10. What to send back
 
-1. The optimised `.svg` — ids prefixed, text outlined, no external references
+1. Inline assets: the optimised `.svg` — ids prefixed, text outlined, no
+   external references. Raster assets: the lossless PNG master (§1a)
 2. A PNG preview at intended display size; for board assets, a second at 20 × 20px
 3. A note listing anything in this spec that was broken, and why
