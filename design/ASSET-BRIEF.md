@@ -5,8 +5,13 @@ direction is given separately, per asset. This document covers only what makes
 an asset *usable*: format, palette, geometry and delivery.
 
 Everything here is a hard requirement unless it says otherwise. The unusual one
-is the format: the game is a **single self-contained HTML file**, so an asset
-that cannot be inlined into it is unusable regardless of how it looks.
+is the format. The game is one HTML file with no build step. Small artwork is
+inlined into it as path data, and the only files beside it are the large
+pixel-art images in `assets/`, fetched in the background (§1a). An asset that
+fits neither route is unusable regardless of how it looks.
+
+**Working on a character?** Read §8, "Fighters", first. It is self-contained
+and says which of the general sections apply.
 
 ---
 
@@ -21,6 +26,11 @@ Repository: `karinnielsen/strike-first` on GitHub, default branch `main`.
 | Colour palette | `index.html`, the `:root` block at the top of `<style>` |
 | Wordmark — the cobra crest | `index.html`, the inline `<svg>` in `h1.crest` |
 | Board geometry — `CELL`, `COLS`, `ROWS` | `index.html`, top of the `<script>` |
+| Dojo crests as shipped (320px WebP) | `assets/crests/` |
+| Dojo crest sources, prompts and 18px badges | PR #6, branch `assets/dojo-crests`, `design/dojo-crests/` |
+| Dojo badges as shipped (18px path data) | `index.html`, `DOJO_BADGES` |
+| Belt colours | `index.html`, `BELTS` |
+| Fighter roster: who the nine are | `design/fighters/ROSTER.md`, written by Karin |
 | Balance constants | `index.html`, section 2 of the `<script>` |
 | How to work on the project | `CLAUDE.md` |
 | Version history | `CHANGELOG.md` |
@@ -36,11 +46,14 @@ dimension. This spec is a copy of those values and can go stale.
 
 ## 1. Output format
 
-**SVG, as editable source.** Not a PNG, not a rasterised trace, not a PNG
-wrapped in an SVG.
+There are two routes into the game. Each asset's section in §8 says which one
+it takes.
 
-Each asset is pasted directly into `index.html` as inline `<svg>` markup. There
-is no build step and no asset pipeline. Therefore:
+**Inline: SVG, as editable source.** For logos, marks and small sprites. Not a
+PNG, not a rasterised trace, not a PNG wrapped in an SVG.
+
+Each inline asset is pasted directly into `index.html` as `<svg>` markup or path
+data. There is no build step and no asset pipeline. Therefore:
 
 | Requirement | Why |
 | -- | -- |
@@ -55,11 +68,32 @@ is no build step and no asset pipeline. Therefore:
 Deliver the raw `.svg`. A PNG preview alongside is useful for checking but is
 not the deliverable.
 
+### 1a. Raster: pixel art in `assets/`
+
+For large, detailed pixel art that cannot be path data: the dojo crests since
+v0.5.0, and the fighter portraits. The file sits beside the game and is fetched
+in the background before the screen that shows it.
+
+| Requirement | Why |
+| -- | -- |
+| **Pixel art,** in the same family as the dojo crests: fine square pixels, stair-stepped contours, restrained pixel shading | Every large image on screen at once has to look drawn by one hand |
+| Deliver a **lossless PNG master** at the size §8 gives | The shipped WebP is made from it at integration, so it has to be clean |
+| **Transparent background, alpha only 0 or 255** | The card's glow shows through; a part-transparent fringe turns to a halo on near-black |
+| No lettering, frame, banner, glow, blur, smooth gradient or drop shadow | The page draws the frame and the glow, in the dojo's light |
+| Square canvas, subject centred with the margins §8 gives | Cards are square, and the art is sized in CSS |
+
+Integration, not the artist, turns the master into the file that ships: WebP,
+quality 90, at the size in §8. The dojo crests went 3.8MB of PNG to 155KB this
+way.
+
 ## 2. Size budget
 
-**Under 20KB of SVG source per asset, target under 10KB.** The entire game is
-currently ~125KB, and the crest — the one asset allowed over budget, see
-`design/title-crest/README.md` — is a large share of it.
+**Inline: under 20KB of SVG source per asset, target under 10KB.** The whole
+game is about 275KB of HTML, and the title crest (the one inline asset allowed
+over budget, see `design/title-crest/README.md`) is a large share of it.
+
+**Raster: under 70KB per shipped WebP, target under 50KB.** The three dojo
+crests are 40–68KB each. The master PNG has no budget, since it doesn't ship.
 
 ## 3. Colour
 
@@ -70,16 +104,33 @@ Use the existing palette. Values are the CSS custom properties in `index.html`.
 | `--bg` | `#09090b` | Page background |
 | `--panel` | `#131316` | The board |
 | `--line` | `#2a2a30` | Grid lines, borders |
-| `--text` | `#ece6da` | Body text |
-| `--dim` | `#7b7480` | Secondary text |
+| `--text` | `#ece6da` | Body text, bone |
+| `--dim` | `#8a838f` | Only styling that carries no information: the version line, the title's credit |
+| `--value` | `#fff7b8` | Numbers beside their labels |
 | `--yellow` | `#ffff00` | Reward, and the one thing the screen is asking you to do. Never rank |
 | `--yellow-deep` | `#7a7a00` | The shadow side of yellow |
 | `--red` | `#d3262f` | Points lost |
 | `--brand` | `#ee3524` | The wordmark only |
 | `--bone` | `#e8e2d6` | The snake |
 
+Artwork palettes have used `#7b7480` as a mid grey since before `--dim` was
+lightened. It is still allowed inside artwork.
+
 Rank is carried by the belt colours, which live in `BELTS` in the script rather
-than in this table. Those seven hues are effectively the whole colour budget.
+than in this table. Those seven hues are effectively the whole colour budget:
+
+| Belt | Hex |
+| -- | -- |
+| White | `#e8e2d6` |
+| Orange | `#f4761c` |
+| Green | `#46a86c` |
+| Brown | `#9c6438` |
+| Red | `#d3262f` |
+| Cho Dan Bo (blue) | `#3f7fd0` |
+| Midnight blue | `#324791` |
+
+Each dojo has its own light, used for its card, the room and the banner:
+Cobra Kai `#ffff00`, Miyagi-Do `#d3262f`, Eagle Fang `#ece6da`.
 
 ### Adding a hue requires approval
 
@@ -116,6 +167,8 @@ outlined paths, per section 1.
 | One cell | 30 × 30 px, and never below 20 × 20 |
 | Authoring box for board art | 20 × 20, scaled up at draw time by `CELL_SCALE` |
 | Wordmark | The cobra crest, inline SVG, sized in CSS |
+| Art on a select card (dojo or fighter) | Square, 120–160 CSS px, fitted to the window |
+| Icon slot on a rankings row | 18 × 18 px, exactly |
 
 **Board assets must read at 20 × 20 px,** the smallest a cell is ever drawn. At
 that size only silhouette and one strong colour break survive. Verify at actual
@@ -270,14 +323,117 @@ Design direction is supplied separately. These are the functional targets.
 
 ### Dojo crests — UNR-114
 
-* A set of 2–4, constructed as a family: same weight, same treatment
-* Roughly 200 × 200px each
-* **Must be distinguishable in monochrome**, by silhouette and shape. Colour may
-  reinforce the difference but cannot be the only carrier of it — see §3
+**Delivered, shipped in v0.5.0.** Sources, the generation prompt and the 18px
+badges are in PR #6. This set is the reference for the fighters below.
 
-### Character portraits — UNR-115
+* Cobra Kai, Miyagi-Do and Eagle Fang, drawn as a family in higher-density pixel
+  art (about 160 logical pixels across)
+* Shipped as 320px WebP in `assets/crests/`, shown at 120–160 CSS px on the
+  dojo select cards
+* The rankings use a separate badge for each, **drawn natively at 18 × 18**,
+  because the large crests shrunk to 18px were illegible
+* **Distinguishable in monochrome**, by silhouette. Colour reinforces the
+  difference but never carries it alone (see §3)
 
-* Undated and least defined; requirements above apply, specifics to follow
+### Fighters: portraits and icons — UNR-167
+
+Nine fighters, three for each dojo. Each needs **two drawings**: a portrait for
+the character select card, and an icon for the rankings. Karin writes who they
+are in `design/fighters/ROSTER.md`. This section covers only what makes the
+drawings usable, and the review checks them against it line by line.
+
+Sections 1a, 2, 3, 6 and 9 apply. Section 7 doesn't: nothing here is drawn on
+the board.
+
+#### Who they are
+
+* **Original characters** who plainly belong in the world of the series. No
+  actor's likeness, whoever the character is inspired by. A face someone would
+  recognise as a real actor is a reject, however good it is.
+* One fighter's look is set by the roster entry, not invented. Where the
+  roster is silent, ask; don't fill the gap.
+* **Nine different people.** Vary age, build, hair and skin tone across the
+  roster, and inside each dojo.
+
+#### The portrait: raster, via §1a
+
+| Requirement | Value |
+| -- | -- |
+| Framing | **Head and shoulders**, facing forward or a slight three-quarter turn. Same framing for all nine |
+| Master | **1024 × 1024 PNG**, drawn to about **160 × 160 logical pixels**, like the crests |
+| Shipped as | 320 × 320 WebP, made at integration and shown at 120–160 CSS px |
+| Line-up | All nine share **one eye line** and **one head height**, so three portraits side by side sit level. Eye line at 40% from the top. Top of the head, not the hair, at 12–15%. Shoulders run off the bottom edge |
+| Margins | At least 8% clear at the sides and top. Nothing may touch the edge except the shoulders |
+| Background | Transparent (see §1a). No scenery, and no dojo crest behind the head |
+| Dojo | The fighter wears their dojo's colour in their gi, headband or trim: Cobra Kai yellow, Miyagi-Do red, Eagle Fang bone. It shouldn't take over the face |
+| Expression | One per fighter, and it should look ready to fight. There are no alternate poses or animation frames |
+
+**The portrait has to survive being dimmed.** Cards that aren't highlighted are
+drawn at `brightness(0.4) grayscale(0.6)`. At that setting the three fighters of
+a dojo must still read as three different silhouettes. Check this before
+sending.
+
+#### The icon: inline, drawn at 18 × 18
+
+The icon replaces the dojo badge in the rankings' one icon slot, so it follows
+the badge contract from PR #6 exactly:
+
+| Requirement | Value |
+| -- | -- |
+| Grid | **18 × 18, one logical pixel per image pixel.** Authored pixel by pixel, never reduced from the portrait |
+| Subject | The head alone, or head and neck. Same fighter as the portrait |
+| Alpha | Transparent background, alpha only 0 or 255, no antialiasing |
+| Files | `-18.png`, an exact nearest-neighbour `-36.png`, and `-18.svg` built from integer pixel runs with flat fills and `shape-rendering="crispEdges"`. Under 3KB |
+| Dojo | Their dojo's colour appears in the icon, the way it does in the portrait (a headband is enough) |
+| Distinct | **The three fighters of a dojo are told apart in solid monochrome silhouette.** Hair, headgear, beard, build. At 18px in one dojo's colours, shape is all there is |
+
+Check the icons against 12px monospace text on `#09090b`, at actual size, the
+way the badge proof did.
+
+#### Colour: skin and hair need approving
+
+Faces need skin and hair colours, and nothing in §3 provides them. Under §3's
+approval rule that's a new hue, so **the palette for skin and hair is agreed
+with Karin before any drawing starts**. Propose it as a short, fixed ramp,
+three steps at most for each skin tone and each hair colour. Show it beside
+the belt colours, because brown (`#9c6438`) and orange (`#f4761c`) sit close to
+skin and hair. Everything else in a portrait and icon uses the §3 palette.
+
+#### Files and names
+
+Under `design/fighters/`, one set per fighter, named `<dojo>-<fighter>`. Both
+parts are slugs from `ROSTER.md`, e.g. `cobra-kai-example`:
+
+```
+design/fighters/cobra-kai-example-portrait.png   1024 x 1024 master
+design/fighters/cobra-kai-example-18.png
+design/fighters/cobra-kai-example-36.png
+design/fighters/cobra-kai-example-18.svg
+design/fighters/lineup.png                    see below
+design/fighters/README.md                     §9: what was broken, and why
+```
+
+**`lineup.png`** is the proof the review reads first. It has one row per dojo:
+the three portraits at 160px on `#09090b`, the same three dimmed, then the
+three icons at 18px beside a line of 12px monospace, then the icons as solid
+monochrome silhouettes.
+
+#### What the review checks
+
+The artwork PR is accepted when every line holds:
+
+1. Nine fighters, three per dojo, matching `ROSTER.md`
+2. Every file above is present and named as shown
+3. The portraits are 1024 × 1024, transparent, with alpha only 0 or 255, and
+   share one eye line and head height
+4. Each dojo's colour is visible in all three of its fighters
+5. No colour outside §3 and the approved skin and hair ramp
+6. The three portraits of a dojo are told apart when dimmed
+7. The icons are 18 × 18 native, the `-36.png` is an exact 2× copy, the SVG
+   is under 3KB, and alpha is only 0 or 255
+8. The three icons of a dojo are told apart in monochrome silhouette
+9. No lettering, no frame, no likeness of a real actor
+10. The README lists anything broken
 
 ### Board sprites — egg, rotten egg, mouse, snake head, snake body
 
@@ -300,8 +456,14 @@ Same every time, so a request can be one line rather than a page.
 
 **Push a branch. Never main.**
 
-* Branch name `assets/<what-it-is>`, e.g. `assets/pixel-sprites`
-* **One commit.** No force-pushing, no rewriting history
+* **Branch from the release branch named in the request, and name the branch
+  after the Linear issue**: `unr-N-short-slug`, e.g.
+  `unr-167-fighter-artwork`, off `choose-your-fighter`. Linear closes the
+  issue when the PR from that branch merges, and a branch with any other
+  name closes nothing. (Earlier deliveries used `assets/<what-it-is>`; don't.)
+* **Open the draft PR against that release branch**, not `main`
+* **One commit to start.** Review rounds add commits. No force-pushing, no
+  rewriting history
 * **Add files under `design/<what-it-is>/` only.** Do not modify `index.html`,
   `test.js`, `CHANGELOG.md`, `CLAUDE.md`, or anything else in the repo — the
   integration is done separately and by hand
@@ -320,6 +482,9 @@ and so was the fact that a blurred vapor cloud cannot be a filter-free path.
 
 ## 10. What to send back
 
-1. The optimised `.svg` — ids prefixed, text outlined, no external references
+1. Inline assets: the optimised `.svg` — ids prefixed, text outlined, no
+   external references. Raster assets: the lossless PNG master (§1a)
 2. A PNG preview at intended display size; for board assets, a second at 20 × 20px
 3. A note listing anything in this spec that was broken, and why
+
+Fighters have their own list of files and a proof sheet: see §8.
