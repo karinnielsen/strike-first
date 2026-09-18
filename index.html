@@ -909,28 +909,9 @@
   .dojo-select.chosen li:not(.picked) { opacity: 0; transition: opacity 0.25s ease-out; }
   .dojo-select.chosen .corner { display: none; }
 
-  /* The banner that confirms the pick. Pinned to the window, outside
-     .wrap, so nothing the page does can re-anchor it. */
-  .dojo-verdict {
-    position: fixed; inset: 0; z-index: 5; pointer-events: none;
-    display: grid; align-content: center;
-  }
-  .dojo-verdict[hidden] { display: none; }
-  .dojo-verdict .band {
-    display: grid; justify-items: center; gap: 10px;
-    padding: 28px 16px 32px; background: rgba(9, 9, 11, 0.9);
-    border-block: 2px solid rgba(var(--glow), 0.7);
-  }
-  .dojo-verdict b {
-    font-size: clamp(40px, 8vw, 96px); letter-spacing: 0.12em;
-    color: rgb(var(--glow)); text-transform: uppercase;
-    text-shadow: 0 0 30px rgba(var(--glow), 0.6), 0 6px 0 rgba(0, 0, 0, 0.8);
-  }
-  .dojo-verdict span { font-size: 16px; color: var(--text); }
-
   /* No turning and no fades: the back simply replaces the front. */
   @media (prefers-reduced-motion: reduce) {
-    .dojo-select *, .dojo-select.arrive, .dojo-verdict * { animation: none !important; transition: none !important; }
+    .dojo-select *, .dojo-select.arrive { animation: none !important; transition: none !important; }
   }
 
   /* ALL VALLEY RANKINGS. UNR-134. A screen of its own, like dojo select,
@@ -1153,7 +1134,6 @@
   <button id="sound-btn" type="button" aria-label="sound"><span class="key-tip" aria-hidden="true"><kbd>m</kbd> sound</span><svg class="on" viewBox="0 0 11 10" width="22" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="3" width="2" height="4"/><rect x="2" y="2" width="1" height="6"/><rect x="3" y="1" width="1" height="8"/><rect x="4" y="0" width="1" height="10"/><rect x="6" y="3" width="1" height="4"/><rect x="8" y="1" width="1" height="2"/><rect x="9" y="3" width="1" height="4"/><rect x="8" y="7" width="1" height="2"/></svg><svg class="off" viewBox="0 0 11 10" width="22" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="3" width="2" height="4"/><rect x="2" y="2" width="1" height="6"/><rect x="3" y="1" width="1" height="8"/><rect x="4" y="0" width="1" height="10"/><rect x="6" y="3" width="1" height="1"/><rect x="7" y="4" width="1" height="1"/><rect x="8" y="5" width="1" height="1"/><rect x="9" y="6" width="1" height="1"/><rect x="9" y="3" width="1" height="1"/><rect x="8" y="4" width="1" height="1"/><rect x="7" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/></svg></button>
   <button id="mercy-btn" type="button" aria-label="mercy" class="idle"><span class="key-tip" aria-hidden="true"><kbd>space</kbd> mercy</span><svg class="pause" viewBox="0 0 10 10" width="20" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="1" width="3" height="8"/><rect x="6" y="1" width="3" height="8"/></svg><svg class="play" viewBox="0 0 10 10" width="20" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="2" y="1" width="2" height="8"/><rect x="4" y="2" width="2" height="6"/><rect x="6" y="3" width="2" height="4"/><rect x="8" y="4" width="1" height="2"/></svg></button>
 </div>
-<div class="dojo-verdict" id="dojo-verdict" hidden><div class="band"><b></b><span></span></div></div>
 
 <script>
 // =====================================================================
@@ -4486,6 +4466,12 @@ function showBoard() {
 // picked more and dojos compete as teams.
 
 const DOJO_SECONDS = 30;
+// After a pick, how long the picked card holds before the game arrives; a
+// timeout holds longer, so its line can be read. UNR-168.
+const DOJO_PICK_HOLD = 220;
+const DOJO_TIMEOUT_HOLD = 1100;
+// Not said anywhere since UNR-168 took the banner away; kept until it's
+// decided where the creed lives.
 const DOJO_CREEDS = {
   'cobra-kai':  'Strike first. Strike hard. No mercy.',
   'miyagi-do':  'Karate is for defence only.',
@@ -4546,7 +4532,9 @@ function dojoBacks(players) {
 const dojoSelectEl = document.getElementById('dojo-select');
 const dojoCountEl  = document.getElementById('dojo-count');
 const dojoAuraEl   = document.getElementById('dojo-aura');
-const dojoVerdict  = document.getElementById('dojo-verdict');
+const dojoHowEl    = document.getElementById('dojo-how');
+// The keys line as set for this device, so a timeout's line can be undone.
+const DOJO_HOW = dojoHowEl.innerHTML;
 
 // The cards, built once from constants - never from data.
 document.getElementById('dojo-cards').innerHTML = DOJO_IDS.map(dojo => `
@@ -4671,6 +4659,7 @@ function openDojoSelect(fromTitle) {
     dojoLeft = DOJO_SECONDS;
     dojoCards.forEach(li => li.classList.remove('picked', 'on', 'flipped', 'tease'));
     dojoSelectEl.classList.remove('chosen');
+    dojoHowEl.innerHTML = DOJO_HOW;
     pageEl.classList.add('selecting');
     dojoSelectEl.hidden = false;
     showBack();
@@ -4735,83 +4724,45 @@ dojoCards.forEach((li, i) => {
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// The pick lands like a kick, in beats:
-//   chamber  the card draws back, the others step away    (anticipation)
-//   strike   the band snaps out of the card, accelerating  (fast, ease-in)
-//   impact   a held frame, a flash, the band gives         (hit-stop)
-//   settle   the name comes down to size, the creed follows
-//   hold     long enough to read the creed
-//   leave    the band closes to a line, the select fades, the game arrives
-// The impact lives on the band, never the page: a page shake caused
-// motion sickness.
+// The pick lands like a kick, on the card itself, in beats:
+//   chamber  the card draws back and brightens              (anticipation)
+//   impact   a flash and a held frame; the others step away   (hit-stop)
+//   leave    a breath, then the select fades and the game arrives
+// No banner since UNR-168: the pick stands between the player and the run,
+// so it is a beat rather than a ceremony. The impact lives on the card,
+// never the page: a page shake caused motion sickness.
 async function chooseDojo(i, timedOut) {
   if (dojoPhase !== 'open') return;
   highlightDojo(i);
   dojoPhase = 'choosing';
   clearInterval(dojoTimer);
   showBack();                     // chosen: there is no going back now
-  const dojo = DOJO_IDS[i];
-  commitDojo(dojo);
+  commitDojo(DOJO_IDS[i]);
 
   const li = dojoCards[i];
-  const glow = DOJO_GLOWS[dojo];
-  const band = dojoVerdict.querySelector('.band');
-  const name = dojoVerdict.querySelector('b');
-  const line = dojoVerdict.querySelector('span');
   li.classList.add('picked');
   dojoSelectEl.classList.add('chosen');
-  dojoVerdict.style.setProperty('--glow', glow);
-  name.textContent = DOJO_NAMES[dojo];     // never an exclamation mark
-  // The creed is said once, as you commit to it.
-  line.textContent = timedOut ? 'Too slow. Sensei chose for you.' : DOJO_CREEDS[dojo];
-  const hold = timedOut ? 1000 : 1800;
+  // Said where the keys were, and held long enough to read, so the clock
+  // running out is never silent.
+  if (timedOut) dojoHowEl.textContent = 'Too slow. Sensei chose for you.';
+  const hold = timedOut ? DOJO_TIMEOUT_HOLD : DOJO_PICK_HOLD;
 
-  if (REDUCED_MOTION.matches || !band.animate) {
-    dojoVerdict.hidden = false;
-    await wait(hold + 400);
+  if (REDUCED_MOTION.matches || !li.animate) {
+    await wait(hold);
     return closeDojoSelect();
   }
 
-  const settle = 'cubic-bezier(.2, .8, .2, 1)';
   const card = li.querySelector('.card');
   await card.animate([{ transform: 'none', filter: 'none' }, { transform: 'scale(.94)', filter: 'brightness(1.35)' }],
-    { duration: 150, easing: 'cubic-bezier(.3, 0, .2, 1)', fill: 'forwards' }).finished;
-
-  dojoVerdict.hidden = false;
-  name.style.opacity = 0;
-  line.style.opacity = 0;
-  const c = card.getBoundingClientRect();
-  const b = band.getBoundingClientRect();
-  const dy = (c.top + c.height / 2) - (b.top + b.height / 2);
-  li.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 90, easing: 'linear', fill: 'forwards' });
-  await band.animate([
-    { transform: `translateY(${dy}px) scaleY(${c.height / b.height})`,
-      clipPath: `inset(0px ${c.left}px 0px ${innerWidth - c.right}px round 12px)` },
-    { transform: 'none', clipPath: 'inset(0px 0px 0px 0px round 0px)' }
-  ], { duration: 120, easing: 'cubic-bezier(.6, 0, 1, .5)', fill: 'both' }).finished;
-
-  name.style.opacity = '';
-  line.style.opacity = '';
-  band.animate([{ transform: 'scaleY(1.1)' }, { transform: 'none' }], { duration: 220, easing: settle });
-  band.animate([{ backgroundColor: `rgba(${glow}, .55)`, borderColor: `rgb(${glow})` },
-                { backgroundColor: 'rgba(9, 9, 11, .9)', borderColor: `rgba(${glow}, .7)` }],
-    { duration: 320, easing: 'ease-out' });
-  await Promise.all([
-    name.animate([{ opacity: 1, transform: 'scale(1.14)' }, { opacity: 1, transform: 'scale(1.14)', offset: .22 },
-                  { opacity: 1, transform: 'none' }], { duration: 280, easing: settle, fill: 'both' }).finished,
-    line.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }],
-      { duration: 260, delay: 220, easing: settle, fill: 'both' }).finished
-  ]);
-
-  await wait(hold);
-
-  const out = { duration: 280, easing: 'ease-in', fill: 'forwards' };
-  await Promise.all([
-    band.animate([{ clipPath: 'inset(0% 0px 0% 0px)' }, { clipPath: 'inset(50% 0px 50% 0px)' }], out).finished,
-    name.animate([{ opacity: 1 }, { opacity: 0 }], { ...out, duration: 180 }).finished,
-    line.animate([{ opacity: 1 }, { opacity: 0 }], { ...out, duration: 180 }).finished,
-    dojoSelectEl.animate([{ opacity: 1 }, { opacity: 0 }], out).finished
-  ]);
+    { duration: 110, easing: 'cubic-bezier(.3, 0, .2, 1)', fill: 'forwards' }).finished;
+  card.animate([{ transform: 'scale(1.03)', filter: 'brightness(2.2)' }, { transform: 'none', filter: 'none' }],
+    { duration: 260, easing: 'ease-out', fill: 'forwards' });
+  for (const face of li.querySelectorAll('.face')) {
+    face.animate([{ boxShadow: `0 0 64px rgba(${DOJO_GLOWS[DOJO_IDS[i]]}, .9), inset 0 0 40px rgba(${DOJO_GLOWS[DOJO_IDS[i]]}, .5)` }, {}],
+      { duration: 300, easing: 'ease-out' });
+  }
+  await wait(90 + hold);
+  await dojoSelectEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, easing: 'ease-in', fill: 'forwards' }).finished;
   closeDojoSelect();
 }
 
@@ -4820,11 +4771,10 @@ function closeDojoSelect() {
   dojoPhase = 'closed';
   clearInterval(dojoTimer);
   dojoSelectEl.hidden = true;
-  dojoVerdict.hidden = true;
   dojoAuraEl.classList.remove('on');
   pageEl.classList.remove('selecting');
-  for (const el of [dojoSelectEl, dojoVerdict.querySelector('.band'), dojoVerdict.querySelector('b'),
-                    dojoVerdict.querySelector('span'), ...dojoCards, ...dojoCards.map(li => li.querySelector('.card'))]) {
+  for (const el of [dojoSelectEl, ...dojoCards, ...dojoCards.map(li => li.querySelector('.card')),
+                    ...dojoSelectEl.querySelectorAll('.face')]) {
     if (el.getAnimations) el.getAnimations().filter(a => !(a instanceof CSSAnimation) && !(a instanceof CSSTransition)).forEach(a => a.cancel());
   }
   showMenus();
