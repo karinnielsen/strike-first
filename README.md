@@ -22,12 +22,17 @@ Current version: **v0.5.6** — see [CHANGELOG.md](CHANGELOG.md).
 - **M** to turn sound off or on, on any screen — the title included, where it
   mutes without starting the game
 - **B** between runs for the All Valley Rankings
+- **Esc** to go back, on every screen you can leave: dojo select, the
+  rankings and the verdict, where it does what **Main menu** does
 
 Every menu works the same way: **↑ ↓**, **W S** or **Tab** to move, **Enter**
 or **Space** to choose, or point and click.
 
 In the top-right corner of every screen, for mouse or finger: the **speaker**
-turns sound off or on, and **❚❚** calls mercy during a run.
+turns sound off or on, and **❚❚** calls mercy during a run. Its mirror in the
+top-left, the **back arrow**, is there on every screen **Esc** leaves. There is
+none on the title, which has nowhere to go back to, and none in a run, whose
+way out is mercy.
 
 On a tablet or any touch screen:
 
@@ -157,6 +162,8 @@ random dojo, so no dojo is everyone's default; after that it starts on yours.
 - **↑ ↓** to flip a card. The back shows where the dojo stands, its team score,
   its students, its top student and its sensei. On a touch screen, tap a card
   to choose it and tap its turned-down corner to flip it
+- **Esc** or the back arrow to leave without choosing. The clock stops, and
+  the title comes back with Arcade lit
 
 Choosing lands like a kick, and the dojo's creed comes up with its name, and
 the fight begins. The select opens every time you choose Arcade — choosing your
@@ -235,7 +242,7 @@ no board, and nothing else waits for it.
 ### All Valley Rankings
 
 The whole board, on a screen of its own. Open it from the title's menu or the defeat
-screen's, or with **B** — never during a run, and not while you are signing. **Esc**, **B** or **back** returns you to where you were.
+screen's, or with **B** — never during a run, and not while you are signing. **Esc**, **B** or the back arrow returns you to where you were.
 
 It is the top ten, then a gap and your run with the ones either side of it if
 you are further down. The columns are named along the top — rank, name,

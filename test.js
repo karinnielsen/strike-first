@@ -96,7 +96,8 @@ const sandbox = {
   // Swallowing the timer stops it spinning forever inside the test run.
   setTimeout: () => 0,
   clearTimeout: () => {},
-  setInterval: () => 0,
+  // Kept, not run, so a test can tick dojo select's clock by hand.
+  setInterval: (fn) => { sandbox.lastInterval = fn; return 0; },
   clearInterval: () => {},
   requestAnimationFrame: () => 0,
   cancelAnimationFrame: () => {},
@@ -204,7 +205,8 @@ globalThis.game = {
   rankingRows, fetchRankings, openRankings, closeRankings, filterRankings, rankingsEmpty,
   get rankingsOpen() { return rankingsOpen }, get rankingsAt() { return rankingsAt },
   get board() { return board }, get boardDue() { return boardDue },
-  get boardShown() { return !boardEl.hidden }
+  get boardShown() { return !boardEl.hidden },
+  backFrom, goBack, get backShown() { return !backHud.hidden }
 };`;
 
 vm.createContext(sandbox);
@@ -372,6 +374,21 @@ describe('dojo select', () => {
     is(game.dojoAt, game.dojoStep(start, -1), 'left twice from one right');
     pressKey('r');
     is(game.phase, 'ready', 'r does not restart behind the select');
+  });
+
+  test('Esc leaves without choosing, and the clock cannot bow you in', () => {
+    is(game.backShown, true, 'the corner control is up');
+    const tick = sandbox.lastInterval;
+    pressKey('Escape');
+    is(game.dojoPhase, 'closed', 'closed');
+    is(game.titling, true, 'back on the title');
+    is(game.titleMenu.at, 0, 'Arcade lit');
+    is(game.currentDojo(), null, 'nothing committed');
+    for (let i = 0; i < game.DOJO_SECONDS + 1; i++) tick();
+    is(game.phase, 'ready', 'no run, however long the clock would have run');
+    is(game.backShown, false, 'nothing to go back to on the title');
+    pressKey('Enter');
+    is(game.dojoPhase, 'open', 'and Arcade opens it again');
   });
 
   test('closing it goes straight into the fight', () => {
@@ -2630,6 +2647,39 @@ describe('All Valley Rankings, UNR-134', () => {
     game.phase = 'paused';
     game.openRankings();
     is(game.rankingsOpen, false, 'paused');
+  });
+
+  // Last, because it leaves the game on the title.
+  testAsyncInOrder('back: the verdict goes to the main menu; a run and signing have none', async () => {
+    freshGame();
+    is(game.goBack(), false, 'none in a run');
+    pressKey('Escape');
+    is(game.phase, 'paused', 'so Esc is still mercy');
+    game.phase = 'over';
+    game.entry = { value: 'KA', focus() {}, blur() {}, style: { setProperty() {} } };
+    is(game.goBack(), false, 'none while signing');
+    game.entry = null;
+    game.mode = 'arcade';
+    pressKey('Escape');
+    is(game.titling, true, 'the verdict goes to the title');
+    is(game.phase, 'ready', 'and the run is gone');
+    is(game.titleMenu.at, 0, 'Arcade lit, as Main menu does');
+  });
+});
+
+describe('back', () => {
+  const at = { titling: false, dojoPhase: 'closed', dojoShown: false, rankingsOpen: false, phase: 'ready', entry: null };
+  test('only on the screens you can leave', () => {
+    is(game.backFrom({ ...at, titling: true }), null, 'title');
+    is(game.backFrom({ ...at, dojoPhase: 'open', dojoShown: true }), 'dojo', 'dojo select');
+    is(game.backFrom({ ...at, dojoPhase: 'open', dojoShown: false }), null, 'dojo select still fading in');
+    is(game.backFrom({ ...at, dojoPhase: 'choosing', dojoShown: true }), null, 'a dojo already chosen');
+    is(game.backFrom({ ...at, rankingsOpen: true }), 'rankings', 'rankings');
+    is(game.backFrom({ ...at, rankingsOpen: true, phase: 'over' }), 'rankings', 'rankings over a verdict');
+    is(game.backFrom({ ...at, phase: 'over' }), 'verdict', 'verdict');
+    is(game.backFrom({ ...at, phase: 'over', entry: {} }), null, 'signing');
+    is(['playing', 'bowing', 'paused', 'dying'].map(phase => game.backFrom({ ...at, phase })),
+      [null, null, null, null], 'a run');
   });
 });
 

@@ -74,6 +74,14 @@ be earned rather than collected. Nothing plays by a new rule, so it is a patch.
   like the header. The rankings podium's places stand out by weight.
 - **Menu rows are bone, not grey,** when they aren't lit. The grey was too
   muted and read as disabled. The lit row is still the only yellow one.
+- **One way back, on every screen you can leave** (UNR-163). A back arrow in
+  the top-left corner mirrors the speaker and ❚❚ in the top-right: the same
+  keycap, the same size, sized for a finger. **Esc** presses it. It is on
+  dojo select, which had no way out at all before, the rankings, where it
+  replaces the small `back` link, and the verdict, where it does what Main
+  menu does. Leaving dojo select stops its clock, so it can't bow you in on
+  the way out. There is none on the title, in a run, where mercy is the way
+  out and Quit counts, or while signing, which has no skip.
 
 ### Fixed
 
