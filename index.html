@@ -971,6 +971,18 @@
     background: var(--bg);
   }
   .rankings .rankings-bar ul { grid-column: 2; }
+  /* Pinned, the bar shares the top of the window with the corner keycaps,
+     and under 880px wide the filter reaches under them: on an iPad in
+     portrait, Eagle Fang sat beneath the speaker, and a tap there muted
+     instead of filtering. Measured: the filter clears the keycaps by 16px,
+     their own inset, from 880 up. Narrower, the bar is taller at the top
+     and 64px less far down the page, so it sits exactly where it did until
+     it pins - then the filter pins 16px under the keycaps, not beside
+     them. */
+  @media (max-width: 879px) {
+    .rankings { --bar: 132px; }
+    .rankings .rankings-bar { margin-top: 16px; padding-top: 76px; }
+  }
   .rankings .list { margin-top: 20px; }            /* 32px under the names, with the bar's padding */
   .rankings .keys { margin-top: 80px; }
   .rankings[hidden] { display: none; }

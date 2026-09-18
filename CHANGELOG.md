@@ -85,6 +85,11 @@ be earned rather than collected. Nothing plays by a new rule, so it is a patch.
 
 ### Fixed
 
+- **The rankings filter no longer slides under the corner buttons.**
+  Scrolled down on a screen under 880px wide — an iPad in portrait
+  included — the pinned filter reached under the speaker, so a tap on Eagle
+  Fang could land on it and mute the game instead. It now pins just below the corner buttons
+  there. Wider screens, and the page before it scrolls, are unchanged.
 - **The snake flicks its tongue again** (UNR-160). It had quietly stopped,
   and not because anything touched it: the flick was timed in milliseconds,
   the board is drawn once per move, and the gentler level curve from v0.2.0
