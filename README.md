@@ -19,8 +19,10 @@ Current version: **v0.5.8** — see [CHANGELOG.md](CHANGELOG.md).
   you back in, so you have a moment to find the snake again
 - **R** for a rematch, once you have lost. There is no restart mid-run: the way
   out of a run is mercy, then **Quit**
-- **M** to turn sound off or on, on any screen — the title included, where it
-  mutes without starting the game
+- **M** for sound, on any screen — the title included, where it works without
+  starting the game. It steps through three states: effects only, then effects
+  and music, then silence. Music is off until you ask for it, and never plays
+  during a run
 - **B** between runs for the All Valley Rankings
 - **Esc** to go back, on every screen you can leave: dojo select, the
   rankings and the verdict, where it does what **Main menu** does
@@ -29,7 +31,8 @@ Every menu works the same way: **↑ ↓**, **W S** or **Tab** to move, **Enter*
 or **Space** to choose, or point and click.
 
 In the top-right corner of every screen, for mouse or finger: the **speaker**
-turns sound off or on, and **❚❚** calls mercy during a run. Its mirror in the
+steps through the same three states as **M** — one wave for effects, two for
+effects and music, crossed out for silence — and **❚❚** calls mercy during a run. Its mirror in the
 top-left, the **back arrow**, is there on every screen **Esc** leaves. There is
 none on the title, which has nowhere to go back to, and none in a run, whose
 way out is mercy.
@@ -266,8 +269,15 @@ long fall for defeat, and a blip and a chord as you move through a menu and
 choose. A promotion replaces the sound of the food that earned
 it. Nothing plays until you press start.
 
-Turn it off with **M**, or with the speaker in the top-right corner of every
-screen. The game remembers the choice.
+Music is a separate thing, and it is **off until you ask for it** — a game
+that starts singing at someone on a train is the thing this avoids. It plays
+on the screens either side of a run: the start menu, dojo select, the
+rankings and the verdict. A run itself is silent, so the effects have it to
+themselves, and so is the moment you die.
+
+**M** and the speaker step through effects only, effects and music, then
+silence. The game remembers the choice, and a tab you are not looking at
+stops singing.
 
 ### The crest
 

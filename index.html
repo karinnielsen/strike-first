@@ -243,9 +243,12 @@
   .hud button:hover  { background: #34343b; color: var(--yellow); }
   .hud button:active { transform: translateY(4px); box-shadow: 0 0 0 #0e0e11; background: #34343b; }
   .hud svg { display: block; }
-  #sound-btn .off, #sound-btn.muted .on,
+  /* Three states on one button, read as a ladder: one wave for effects,
+     two for effects and music, a crossed speaker for silence. UNR-138. */
+  #sound-btn .one, #sound-btn .on, #sound-btn .off,
   #mercy-btn .play, #mercy-btn.paused .pause { display: none; }
-  #sound-btn.muted .off, #mercy-btn.paused .play { display: block; }
+  #sound-btn.effects .one, #sound-btn.all .on, #sound-btn.off .off,
+  #mercy-btn.paused .play { display: block; }
   #mercy-btn.idle { visibility: hidden; }
 
   /* BACK. The top-right cluster's mirror: one control, top-left, the same
@@ -1131,7 +1134,7 @@
   <button id="back-btn" type="button" aria-label="back"><span class="key-tip" aria-hidden="true"><kbd>esc</kbd> back</span><svg viewBox="0 0 10 10" width="20" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="4" width="8" height="2"/><rect x="2" y="3" width="1" height="4"/><rect x="3" y="2" width="1" height="6"/><rect x="4" y="1" width="1" height="8"/></svg></button>
 </div>
 <div class="hud" id="hud">
-  <button id="sound-btn" type="button" aria-label="sound"><span class="key-tip" aria-hidden="true"><kbd>m</kbd> sound</span><svg class="on" viewBox="0 0 11 10" width="22" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="3" width="2" height="4"/><rect x="2" y="2" width="1" height="6"/><rect x="3" y="1" width="1" height="8"/><rect x="4" y="0" width="1" height="10"/><rect x="6" y="3" width="1" height="4"/><rect x="8" y="1" width="1" height="2"/><rect x="9" y="3" width="1" height="4"/><rect x="8" y="7" width="1" height="2"/></svg><svg class="off" viewBox="0 0 11 10" width="22" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="3" width="2" height="4"/><rect x="2" y="2" width="1" height="6"/><rect x="3" y="1" width="1" height="8"/><rect x="4" y="0" width="1" height="10"/><rect x="6" y="3" width="1" height="1"/><rect x="7" y="4" width="1" height="1"/><rect x="8" y="5" width="1" height="1"/><rect x="9" y="6" width="1" height="1"/><rect x="9" y="3" width="1" height="1"/><rect x="8" y="4" width="1" height="1"/><rect x="7" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/></svg></button>
+  <button id="sound-btn" type="button" aria-label="sound"><span class="key-tip" aria-hidden="true"><kbd>m</kbd> sound</span><svg class="one" viewBox="0 0 11 10" width="22" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="3" width="2" height="4"/><rect x="2" y="2" width="1" height="6"/><rect x="3" y="1" width="1" height="8"/><rect x="4" y="0" width="1" height="10"/><rect x="6" y="3" width="1" height="4"/></svg><svg class="on" viewBox="0 0 11 10" width="22" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="3" width="2" height="4"/><rect x="2" y="2" width="1" height="6"/><rect x="3" y="1" width="1" height="8"/><rect x="4" y="0" width="1" height="10"/><rect x="6" y="3" width="1" height="4"/><rect x="8" y="1" width="1" height="2"/><rect x="9" y="3" width="1" height="4"/><rect x="8" y="7" width="1" height="2"/></svg><svg class="off" viewBox="0 0 11 10" width="22" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="3" width="2" height="4"/><rect x="2" y="2" width="1" height="6"/><rect x="3" y="1" width="1" height="8"/><rect x="4" y="0" width="1" height="10"/><rect x="6" y="3" width="1" height="1"/><rect x="7" y="4" width="1" height="1"/><rect x="8" y="5" width="1" height="1"/><rect x="9" y="6" width="1" height="1"/><rect x="9" y="3" width="1" height="1"/><rect x="8" y="4" width="1" height="1"/><rect x="7" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/></svg></button>
   <button id="mercy-btn" type="button" aria-label="mercy" class="idle"><span class="key-tip" aria-hidden="true"><kbd>space</kbd> mercy</span><svg class="pause" viewBox="0 0 10 10" width="20" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="1" width="3" height="8"/><rect x="6" y="1" width="3" height="8"/></svg><svg class="play" viewBox="0 0 10 10" width="20" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="2" y="1" width="2" height="8"/><rect x="4" y="2" width="2" height="6"/><rect x="6" y="3" width="2" height="4"/><rect x="8" y="4" width="1" height="2"/></svg></button>
 </div>
 
@@ -1908,14 +1911,53 @@ function disqualify() {
 // decides anything itself.
 
 const SOUND_VOLUME = 0.3;
+const MUSIC_VOLUME = 0.22;   // under the effects: a backing, not the point
 const FRAME = 1 / 60;
 
-// Muting is remembered, like the best score, and per-origin in the same
-// way: it won't follow the game to a different address.
-let muted = localStorage.getItem('strikeFirstMuted') === '1';
+// ONE control with three states, not two controls. UNR-138.
+//
+// Effects are short and tied to what you just did, so they rarely annoy and
+// they stay on by default, as they always have. Music is continuous, and it
+// is the thing people actually want off - a browser game that starts singing
+// at someone on a train is the complaint this issue exists to avoid. So
+// music is off until asked for.
+//
+// The cycle starts where a new player starts, so ONE press turns music on:
+//
+//   effects (default) -> all -> off -> effects
+//
+// A second button in the corner was the alternative and was not taken: the
+// cluster already carries sound and mercy, the back control took the other
+// corner in UNR-163, and less is more.
+const AUDIO_MODES = ['effects', 'all', 'off'];
+const AUDIO_KEY = 'strikeFirstAudio';
+
+// Said in words, never by icon alone, for the same reason rank is.
+const AUDIO_LABELS = {
+  effects: 'sound on, music off',
+  all:     'sound and music on',
+  off:     'sound off',
+};
+
+// Remembered like the best score, and per-origin in the same way: it won't
+// follow the game to a different address. Anyone who muted before v0.5.9
+// keeps their silence - the old flag is read once, then the new key owns it.
+function storedAudioMode() {
+  const saved = localStorage.getItem(AUDIO_KEY);
+  if (AUDIO_MODES.includes(saved)) return saved;
+  return localStorage.getItem('strikeFirstMuted') === '1' ? 'off' : 'effects';
+}
+
+let audioMode = storedAudioMode();
+
+// The two flags the rest of the game reads. `muted` still means exactly what
+// it meant before this issue - effects are silent - which is why playSound
+// and its tests are untouched by any of this.
+let muted   = audioMode === 'off';
+let musicOn = audioMode === 'all';
 
 let audioCtx = null;   // made on the first start, never before
-let audioOut, noiseBuffer;
+let audioOut, musicOut, noiseBuffer;
 const pulseWaves = {};
 
 // Browsers refuse to play audio until the player has interacted with the
@@ -1930,6 +1972,11 @@ function audio() {
     audioOut = audioCtx.createGain();
     audioOut.gain.value = muted ? 0 : SOUND_VOLUME;
     audioOut.connect(audioCtx.destination);
+    // Music has its own path to the output rather than hanging off audioOut,
+    // so silencing one can never silence the other.
+    musicOut = audioCtx.createGain();
+    musicOut.gain.value = musicOn ? MUSIC_VOLUME : 0;
+    musicOut.connect(audioCtx.destination);
     for (const duty of [0.125, 0.25]) pulseWaves[duty] = pulseWave(duty);
     noiseBuffer = makeNoise();
     keepAwake();
@@ -2125,20 +2172,115 @@ function playSound(name) {
   SOUNDS[name]();
 }
 
-// The M key and the overlay's sound button share this. Changing the output
-// volume as well as the flag means a sound already ringing stops at once
-// rather than finishing after you asked for quiet.
+// The M key and the corner button share this: one press moves to the next
+// state in the cycle.
 function toggleSound() {
-  muted = !muted;
-  localStorage.setItem('strikeFirstMuted', muted ? '1' : '0');
-  if (audioOut) audioOut.gain.value = muted ? 0 : SOUND_VOLUME;
+  const next = (AUDIO_MODES.indexOf(audioMode) + 1) % AUDIO_MODES.length;
+  setAudioMode(AUDIO_MODES[next]);
+}
+
+// Changing the output volumes as well as the flags means a sound already
+// ringing stops at once, rather than finishing after you asked for quiet.
+function setAudioMode(mode) {
+  audioMode = mode;
+  muted   = mode === 'off';
+  musicOn = mode === 'all';
+  localStorage.setItem(AUDIO_KEY, mode);
+  if (audioOut) audioOut.gain.value = muted   ? 0 : SOUND_VOLUME;
+  if (musicOut) musicOut.gain.value = musicOn ? MUSIC_VOLUME : 0;
+  updateMusic();
   showSound();
 }
 
 function showSound() {
+  for (const m of AUDIO_MODES) soundBtn.classList.toggle(m, audioMode === m);
   soundBtn.classList.toggle('muted', muted);
   soundBtn.setAttribute('aria-pressed', String(!muted));
+  soundBtn.setAttribute('aria-label', AUDIO_LABELS[audioMode]);
 }
+
+// ---- music -----------------------------------------------------------
+// A file beside the page, not oscillators. A theme that lands is written in
+// a music tool (design/MUSIC-BRIEF.md), and 45 seconds of it as a data URI
+// would sit inside index.html and be downloaded by everyone, including
+// everyone who never turns music on. So it is fetched the first time it is
+// wanted and never before - which is also what "off until asked" means when
+// you follow it all the way down. UNR-138.
+//
+// An <audio> element rather than a decoded buffer: it streams, it loops
+// natively, and a track that has not been made yet simply never plays.
+const MUSIC_TRACKS = {
+  arrival:  'assets/music-arrival.mp3',    // the start menu and dojo select
+  rankings: 'assets/music-rankings.mp3',   // the board, and the verdict
+};
+
+let musicEl  = null;   // the one element, reused for every track
+let musicNow = null;   // the track that should be playing, or null
+
+// Which track this screen wants. The screen decides that; the player only
+// decides whether music is allowed at all.
+//
+// Silence during a run is the point - the effects own it - and mercy is
+// still inside the fight, so it stays quiet too. Silence at the moment of
+// defeat lets that land before anything else arrives. UNR-111.
+function musicFor({ phase, dojoPhase, rankingsOpen, titling, startPressed }) {
+  if (phase === 'playing' || phase === 'bowing' ||
+      phase === 'paused'  || phase === 'dying') return null;
+  if (dojoPhase !== 'closed') return 'arrival';
+  if (rankingsOpen) return 'rankings';
+  if (phase === 'over') return 'rankings';
+  // The crest alone is silent: a browser blocks audio until the page has
+  // been interacted with, and pressing start IS that interaction.
+  if (titling) return startPressed ? 'arrival' : null;
+  return null;
+}
+
+function musicWanted() {
+  return musicFor({ phase, dojoPhase, rankingsOpen, titling, startPressed });
+}
+
+// Output only, like draw(): it plays what the screen and the setting have
+// already decided between them, and decides nothing itself.
+function updateMusic() {
+  const want = musicOn ? musicWanted() : null;
+  if (want === musicNow) return;
+  musicNow = want;
+  if (!want) {
+    if (musicEl) musicEl.pause();
+    return;
+  }
+  // No browser audio at all - the test harness, mainly - and music is
+  // simply something this page cannot do.
+  if (typeof Audio === 'undefined') return;
+  const ctx = audio();
+  if (!musicEl) {
+    musicEl = new Audio();
+    musicEl.loop = true;
+    musicEl.preload = 'none';
+    // Routed through the context so musicOut's gain governs it. Where there
+    // is no Web Audio at all, the element's own volume stands in.
+    if (ctx && musicOut && ctx.createMediaElementSource) {
+      try { ctx.createMediaElementSource(musicEl).connect(musicOut); }
+      catch (err) { musicEl.volume = MUSIC_VOLUME; }
+    } else {
+      musicEl.volume = MUSIC_VOLUME;
+    }
+  }
+  const src = MUSIC_TRACKS[want];
+  if (!musicEl.src.endsWith(src)) musicEl.src = src;
+  // A track that is not there yet, or a browser that refuses to start it,
+  // must never break the screen it was meant to sit under.
+  musicEl.play().catch(() => {});
+}
+
+// A tab nobody is looking at should not be singing. It resumes only if it
+// was already playing, so this can never start music behind the player's
+// back.
+document.addEventListener('visibilitychange', () => {
+  if (!musicEl) return;
+  if (document.hidden) musicEl.pause();
+  else if (musicNow) musicEl.play().catch(() => {});
+});
 
 // Mercy's button only means something during a run, and turns into play
 // while you are in mercy. It keeps its slot either way, so sound never
@@ -5100,9 +5242,11 @@ function backNow() {
   return backFrom({ titling, dojoPhase, rankingsOpen, phase, entry });
 }
 
-// Output only.
+// Output only. Every screen change already comes through here, so it is
+// also where music finds out which screen it is on. UNR-138.
 function showBack() {
   backHud.hidden = !backNow();
+  updateMusic();
 }
 
 // Returns whether there was anywhere to go.
