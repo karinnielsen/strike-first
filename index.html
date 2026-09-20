@@ -448,10 +448,26 @@
   .board { margin-top: 52px; font-size: 12px; }
   .board[hidden] { display: none; }
   .board table { border-collapse: collapse; margin: 0 auto; width: 280px; text-align: left; }
-  .board td { padding: 0 6px; height: 30px; color: var(--text); white-space: nowrap; }
+  /* 10px rather than 6: a right-aligned heading and the left-aligned one
+     beside it end up nose to nose, which the digits alone never did. */
+  .board td { padding: 0 10px; height: 30px; color: var(--text); white-space: nowrap; }
+  /* Column names, the way an arcade table printed RANK SCORE NAME: small,
+     in the key line's lowercase, and bone rather than grey because a
+     player has to read them. Both boards wear them. UNR-173. */
+  .board th {
+    padding: 0 10px; height: 26px; font-size: 11px; font-weight: normal;
+    color: var(--text); white-space: nowrap;
+  }
   .board .gap td { height: 22px; padding: 0; }
-  .board .place { color: var(--text); text-align: right; width: 2ch; }
+  /* Aligned by kind, header and cells alike: numbers right so their digits
+     line up, the name left, and the badge and belt centred under their
+     names. Chosen 17 September on a board of 1,500 invented runs, and it
+     governs both boards - the podium here and the full rankings. UNR-173.
+     No fixed width on the rank column any more: it was sized for one or
+     two digits, and the heading above them is wider than that. */
+  .board .place { color: var(--text); text-align: right; }
   .board .score { text-align: right; }
+  .board .dojo, .board .belt { text-align: center; }
   .board .belt-swatch { display: inline-block; vertical-align: middle; }
   .board .you td { color: var(--yellow); font-weight: bold; }
 
@@ -471,6 +487,7 @@
     .overlay.verdict .run-menu { margin-top: 20px; }
     .overlay.verdict .board { margin-top: 24px; }
     .board td { height: 26px; }
+    .board th { height: 22px; }
     .board .gap td { height: 14px; }
     .board .near { display: none; }
   }
@@ -1008,18 +1025,16 @@
      .name are both taken elsewhere and each broke this table once. */
   .rankings .board { font-size: 16px; }
   .rankings .board table { width: auto; }
-  .rankings .board td, .rankings .board th { height: 44px; padding: 0 24px; text-align: left; }
-  /* Column names, the way an arcade table printed RANK SCORE NAME: small,
-     in the key line's lowercase. */
+  /* No text-align here: .board table already defaults to left, and setting
+     it again would outrank the by-kind convention above. */
+  .rankings .board td, .rankings .board th { height: 44px; padding: 0 24px; }
+  /* The same column names, larger here, and pinned: only the rankings
+     scroll, so only they need the header to stay put. */
   .rankings .board th {
-    font-size: 14px; font-weight: normal; color: var(--text); white-space: nowrap;
+    font-size: 14px;
     position: sticky; top: var(--bar); z-index: 1; background: var(--bg);
   }
-  /* Aligned by kind, header and cells alike: numbers right so their digits
-     line up, the name left, and the badge and belt centred under their
-     names. Chosen 17 September on a board of 1,500 invented runs. */
-  .rankings .board .place, .rankings .board .score { text-align: right; }
-  .rankings .board .dojo, .rankings .board .belt { text-align: center; }
+  /* The alignment convention lives with .board now, and covers both. */
   /* Every place is bone now, so the podium's stand out by weight rather
      than a colour of their own. Medals wait for the tournament (UNR-143). */
   .rankings .board tr.podium:not(.you) td.place { font-weight: bold; }
@@ -4404,6 +4419,25 @@ function dropBoard() {
 }
 
 // Output only: shows what board and boardDue say, decides nothing.
+// The column names, for both tables that show places: the podium on the
+// verdict and the full rankings. Named once, in one place, so the two can
+// never drift apart and a heading can never disagree with its rows.
+// The dojo column goes when the rankings are already filtered to one.
+// UNR-173.
+function addBoardHead(table, { dojo = false } = {}) {
+  const head = table.createTHead().insertRow();
+  for (const [label, className] of [['rank', 'place'], ['name', 'player'],
+                                    ...(dojo ? [] : [['dojo', 'dojo']]),
+                                    ['belt', 'belt'], ['score', 'score']]) {
+    const th = document.createElement('th');
+    th.scope = 'col';
+    if (className) th.className = className;
+    th.textContent = label;
+    head.append(th);
+  }
+  return head;
+}
+
 function showBoard() {
   const shown = boardDue && board !== null && entry === null && signing === null;
   boardEl.hidden = !shown;
@@ -4427,8 +4461,10 @@ function showBoard() {
   };
 
   const table = document.createElement('table');
+  addBoardHead(table);
+  const body = table.createTBody();
   for (const r of board.rows) {
-    const tr = table.insertRow();
+    const tr = body.insertRow();
     if (r === null) {
       tr.className = 'gap';
       const td = cell(null);
@@ -4442,11 +4478,14 @@ function showBoard() {
     swatch.className = 'belt-swatch';
     swatch.style.setProperty('--belt', belt.colour);
     swatch.title = belt.name;
-    const dojo = cell(null);
+    // Every cell carries its column's name, so the by-kind alignment
+    // reaches the rows and not just the headings above them. UNR-173.
+    const dojo = cell(null, 'dojo');
     dojo.append(badge(r.dojo));
-    const beltCell = cell(null);
+    const beltCell = cell(null, 'belt');
     beltCell.append(swatch);
-    tr.append(cell(String(r.place), 'place'), cell(r.initials), dojo, beltCell, cell(String(r.score), 'score'));
+    tr.append(cell(String(r.place), 'place'), cell(r.initials, 'player'),
+              dojo, beltCell, cell(String(r.score), 'score'));
   }
 
   boardEl.replaceChildren(table);
@@ -5026,17 +5065,7 @@ function showRankings() {
   };
 
   const table = document.createElement('table');
-  // Named once here, so the header can never disagree with the rows.
-  // The dojo column becomes the fighter's when characters arrive.
-  const head = table.createTHead().insertRow();
-  for (const [label, className] of [['rank', 'place'], ['name', 'player'], ...(dojo ? [] : [['dojo', 'dojo']]),
-                                    ['belt', 'belt'], ['score', 'score']]) {
-    const th = document.createElement('th');
-    th.scope = 'col';
-    if (className) th.className = className;
-    th.textContent = label;
-    head.append(th);
-  }
+  addBoardHead(table, { dojo });
   const body = table.createTBody();
   for (const r of rankings.rows) {
     const tr = body.insertRow();
