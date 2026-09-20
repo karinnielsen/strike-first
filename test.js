@@ -67,6 +67,8 @@ function makeElement() {
     append() {},
     replaceChildren() {},
     insertRow: () => makeElement(),
+    createTHead: () => makeElement(),
+    createTBody: () => makeElement(),
     getContext: () => makeCanvasContext()
   };
   el.parentElement = el;   // addScore() reaches for scoreEl.parentElement

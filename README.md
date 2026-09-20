@@ -231,9 +231,10 @@ nothing and the hi-score it set is taken back.
 The defeat screen shows the leaderboard whenever there is nothing to sign, and
 once you have signed. It is a podium: the top three, then the run
 above yours, yours in yellow, and the run below. If you are fifth or higher it
-is just the top five. Each row is the place, the initials, the dojo's pixel
-badge, the belt and the score. Your run is the one you just signed, or your last signed run
-if this one wasn't a hi-score.
+is just the top five. The columns are named along the top — rank, name, dojo,
+belt, score — the same five as the full rankings, so the badge and the belt bar
+are never unexplained. Your run is the one you just signed, or your last signed
+run if this one wasn't a hi-score.
 
 Every score counts for you and for your dojo. A run counts for the dojo you
 were in when you signed it, even if you change later.
