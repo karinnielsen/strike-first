@@ -18,6 +18,43 @@ still a patch. The journey counts as well as the mechanics, settled 17
 September: earlier versions were numbered under a rule that asked only what the
 player has to *do*, and they aren't renumbered.
 
+## [0.5.9] — 2026-09-20
+
+The first of the sound work, and the rule that governs the rest of it:
+music is off until you ask for it.
+
+### Added
+
+- **Music, off until you ask for it** (UNR-138). **M** and the corner speaker
+  now step through three states rather than toggling everything at once:
+  effects only, then effects and music, then silence. The cycle starts where a
+  new player starts, so one press turns music on. The icon reads as a ladder —
+  one wave, two waves, crossed out.
+- Music plays on the screens either side of a run: the start menu, dojo select,
+  the rankings and the verdict. A run is silent so the effects have it to
+  themselves, mercy is still inside the fight, and the moment of defeat lands
+  before anything else arrives. A tab you are not looking at stops singing.
+- **Column names on the defeat board** (UNR-173). The podium showed five
+  columns with no headings, so the dojo badge and the belt bar sat there
+  unexplained — and that board is where most people meet the leaderboard for
+  the first time. It now carries the same rank, name, dojo, belt and score as
+  the full rankings, from one shared definition.
+
+### Fixed
+
+- The board's by-kind alignment — numbers right, name left, badge and belt
+  centred, header and cells alike — had only ever applied to the rankings
+  screen. It now governs the defeat board too, whose cells had been built
+  without their column names.
+
+### Notes
+
+- No music ships in this release. `design/MUSIC-BRIEF.md` briefs the two
+  tracks, and until they exist the page asks for one, does not find it, and
+  carries on in silence. Tracks will be files beside the page, fetched only
+  when music is turned on.
+- Anyone who had muted the game stays muted: the old flag is carried over.
+
 ## [0.5.8] — 2026-09-20
 
 ### Changed
