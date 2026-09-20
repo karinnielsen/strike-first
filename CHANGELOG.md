@@ -18,10 +18,16 @@ still a patch. The journey counts as well as the mechanics, settled 17
 September: earlier versions were numbered under a rule that asked only what the
 player has to *do*, and they aren't renumbered.
 
-## [0.5.8] — 2026-09-19
+## [0.5.8] — 2026-09-20
 
 ### Changed
 
+- **Picking a dojo is a beat on the card, not a banner** (UNR-168). The pick
+  used to play a full-width banner with the dojo's name and creed, about three
+  seconds between the player and every Arcade run. Now the card draws back,
+  flashes and holds a frame, the other two step away, and the run arrives:
+  711ms from Enter to the bow. Running out of clock says "Too slow. Sensei
+  chose for you." on the keys line instead.
 - **The page title and descriptions now lead with what people search for**
   (UNR-171). The title reads "Strike First — Browser Snake Game | Play Free
   Online" instead of just the name, and the search and share descriptions open
