@@ -18,6 +18,16 @@ still a patch. The journey counts as well as the mechanics, settled 17
 September: earlier versions were numbered under a rule that asked only what the
 player has to *do*, and they aren't renumbered.
 
+## [0.5.8] — 2026-09-19
+
+### Changed
+
+- **The page title and descriptions now lead with what people search for**
+  (UNR-171). The title reads "Strike First — Browser Snake Game | Play Free
+  Online" instead of just the name, and the search and share descriptions open
+  with playing snake in the browser, keeping the dojo twist second, so searches
+  like "browser snake game" can find it.
+
 ## [0.5.7] — 2026-09-18
 
 ### Fixed
