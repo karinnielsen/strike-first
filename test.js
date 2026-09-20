@@ -181,7 +181,10 @@ globalThis.game = {
   menuStep, showOverlay, titleMenu, mercyMenu, signMenu, verdictMenu, forfeit, toTitle, playPractice,
   get startPressed() { return startPressed },
   SPRITE, SPRITE_SIZE, drawSprite,
-  SOUNDS, startGame, toggleSound,
+  SOUNDS, startGame, toggleSound, setAudioMode, storedAudioMode, musicFor,
+  AUDIO_MODES, AUDIO_KEY, MUSIC_TRACKS,
+  get audioMode() { return audioMode }, set audioMode(v) { audioMode = v },
+  get musicOn() { return musicOn }, set musicOn(v) { musicOn = v },
   get muted() { return muted }, set muted(v) { muted = v },
   get audioCtx() { return audioCtx }, set audioCtx(v) { audioCtx = v },
   get bestAtStart() { return bestAtStart }, set bestAtStart(v) { bestAtStart = v },
@@ -311,15 +314,16 @@ describe('the title screen', () => {
   });
 
   // Someone playing in an office has to be able to silence the game
-  // before it makes a sound, without that also starting it.
-  test('M mutes and does not press start', () => {
-    game.muted = false;
+  // before it makes a sound, without that also starting it. Two presses
+  // now, not one, because M cycles through music on the way to silence.
+  test('M reaches silence and does not press start', () => {
+    game.setAudioMode('effects');
     pressKey('m');
-    is(game.muted, true, 'muted');
     is(game.titling, true, 'still on the title');
     pressKey('M');
-    is(game.muted, false, 'capital M too');
+    is(game.muted, true, 'silent after two, capital M too');
     is(game.titling, true, 'still on the title');
+    game.setAudioMode('effects');          // leave it as the next test expects
   });
 
   test('any key opens the menu in its place, and does nothing else', () => {
@@ -1669,14 +1673,74 @@ describe('sound', () => {
     game.audioCtx = null;
   });
 
-  test('M toggles sound, and the choice is saved for next time', () => {
-    game.muted = false;
+  // One control, three states, cycled so that ONE press turns music on -
+  // which is the press a new player is most likely to want. UNR-138.
+  test('M cycles effects, then music, then silence, and saves the choice', () => {
+    game.setAudioMode('effects');
+    is([game.muted, game.musicOn], [false, false], 'effects only to start');
+
     pressKey('m');
-    is(game.muted, true, 'muted');
-    is(sandbox.localStorage.getItem('strikeFirstMuted'), '1', 'saved');
-    pressKey('M');
-    is(game.muted, false, 'unmuted');
-    is(sandbox.localStorage.getItem('strikeFirstMuted'), '0', 'saved');
+    is(game.audioMode, 'all', 'one press turns music on');
+    is([game.muted, game.musicOn], [false, true], 'both playing');
+    is(sandbox.localStorage.getItem(game.AUDIO_KEY), 'all', 'saved');
+
+    pressKey('m');
+    is(game.audioMode, 'off', 'the next press is silence');
+    is([game.muted, game.musicOn], [true, false], 'nothing playing');
+
+    pressKey('m');
+    is(game.audioMode, 'effects', 'and round again');
+  });
+
+  // Where music plays is decided by the screen, never by the player: the
+  // player only decides whether it is allowed at all. UNR-138.
+  const screen = (over) => ({
+    phase: 'ready', dojoPhase: 'closed', rankingsOpen: false,
+    titling: false, startPressed: true, ...over,
+  });
+
+  test('music plays on every screen that is not a run', () => {
+    is(game.musicFor(screen({ titling: true })), 'arrival', 'the start menu');
+    is(game.musicFor(screen({ dojoPhase: 'open' })), 'arrival', 'dojo select');
+    is(game.musicFor(screen({ dojoPhase: 'opening' })), 'arrival', 'still fading in');
+    is(game.musicFor(screen({ rankingsOpen: true })), 'rankings', 'the board');
+    is(game.musicFor(screen({ phase: 'over' })), 'rankings', 'the verdict');
+  });
+
+  // The effects own a run, and the defeat needs to land before anything
+  // else arrives. Mercy is still inside the fight, so it stays quiet too.
+  test('a run, mercy and the moment of death are silent', () => {
+    for (const phase of ['playing', 'bowing', 'paused', 'dying']) {
+      is(game.musicFor(screen({ phase })), null, phase);
+    }
+  });
+
+  // The crest is the screen you are on before you have pressed anything,
+  // and a browser will not play audio there anyway.
+  test('the title is silent until start is pressed', () => {
+    is(game.musicFor(screen({ titling: true, startPressed: false })), null, 'before');
+    is(game.musicFor(screen({ titling: true, startPressed: true })), 'arrival', 'after');
+  });
+
+  test('every track a screen can ask for exists', () => {
+    for (const where of ['arrival', 'rankings']) {
+      is(typeof game.MUSIC_TRACKS[where], 'string', where);
+    }
+  });
+
+  // Anyone who muted the game before v0.5.9 stays muted. The old flag is
+  // read once and the new key owns it from then on.
+  test('the old mute flag is carried over, once', () => {
+    sandbox.localStorage.setItem(game.AUDIO_KEY, '');   // as good as absent
+    sandbox.localStorage.setItem('strikeFirstMuted', '1');
+    is(game.storedAudioMode(), 'off', 'a muted player stays muted');
+
+    sandbox.localStorage.setItem('strikeFirstMuted', '0');
+    is(game.storedAudioMode(), 'effects', 'everyone else gets effects');
+
+    sandbox.localStorage.setItem(game.AUDIO_KEY, 'all');
+    sandbox.localStorage.setItem('strikeFirstMuted', '1');
+    is(game.storedAudioMode(), 'all', 'the new key wins once it exists');
   });
 
   test('toggling sound mid-run does not disturb play', () => {
