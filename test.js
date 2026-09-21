@@ -184,7 +184,7 @@ globalThis.game = {
   get startPressed() { return startPressed },
   SPRITE, SPRITE_SIZE, drawSprite,
   SOUNDS, startGame, toggleSound, setAudioMode, storedAudioMode, musicFor,
-  AUDIO_MODES, AUDIO_KEY, MUSIC_TRACKS,
+  AUDIO_MODES, AUDIO_KEY, MUSIC_TRACKS, soundBtn, soundTipEl,
   get audioMode() { return audioMode }, set audioMode(v) { audioMode = v },
   get musicOn() { return musicOn }, set musicOn(v) { musicOn = v },
   get muted() { return muted }, set muted(v) { muted = v },
@@ -1692,6 +1692,19 @@ describe('sound', () => {
 
     pressKey('m');
     is(game.audioMode, 'effects', 'and round again');
+  });
+
+  // Nothing on the speaker itself says whether music is on, so every press
+  // says it in words, on every device. Found in play, 21 September.
+  test('a press says the new state under the speaker', () => {
+    game.setAudioMode('effects');
+    const added = [], list = game.soundBtn.classList, add = list.add;
+    list.add = (c) => added.push(c);
+    try { pressKey('m'); } finally { list.add = add; }
+    is(added, ['tell'], 'flashed');
+    is(game.soundTipEl.textContent, 'music on', 'in words');
+    pressKey('m');
+    pressKey('m');
   });
 
   // Where music plays is decided by the screen, never by the player: the

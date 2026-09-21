@@ -264,37 +264,45 @@
   /* Each button teaches its key, the way dojo select writes its keys: on
      hover, or when a keyboard tabs to it. Only where there is a real
      pointer - a finger has no hover, and a tip left behind by a tap would
-     name a key the tablet does not have. Hung from the right-hand edge so
+     name a key the tablet does not have. The one exception is the
+     speaker's, flashed on every device when the sound changes, without its
+     key where there is no keyboard. Hung from the right-hand edge so
      it can never run off the window, and below, because above is off the
      top. Hidden from screen readers: the button's label already says it.
      Not the browser's own tooltip, which waits a second and wears the
      system font. */
   .hud button { position: relative; }
-  .key-tip { display: none; }
+  .key-tip {
+    display: none;
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: normal;
+    white-space: nowrap;
+    color: var(--text);
+    background: var(--bg);
+    border-radius: 4px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.12s;
+  }
+  .key-tip kbd { font: inherit; font-weight: bold; color: var(--text); }
+  #back-hud .key-tip { right: auto; left: 0; }     /* the left edge, mirrored */
+  /* Centred under the speaker, which has mercy's slot between it and the
+     window edge, so the tip has room either side. */
+  #sound-btn .key-tip { right: auto; left: 50%; transform: translateX(-50%); }
+  /* Just changed: said on every device, not only where there is hover. */
+  #sound-btn.tell .key-tip { display: block; opacity: 1; }
   @media (hover: hover) and (pointer: fine) {
-    .key-tip {
-      display: block;
-      position: absolute;
-      top: calc(100% + 12px);
-      right: 0;
-      padding: 4px 8px;
-      font-size: 12px;
-      font-weight: normal;
-      white-space: nowrap;
-      color: var(--text);
-      background: var(--bg);
-      border-radius: 4px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.12s;
-    }
-    .key-tip kbd { font: inherit; font-weight: bold; color: var(--text); }
+    .key-tip { display: block; }
     .hud button:hover .key-tip,
     .hud button:focus-visible .key-tip { opacity: 1; }
-    #back-hud .key-tip { right: auto; left: 0; }     /* the left edge, mirrored */
-    /* Centred under the speaker, which has mercy's slot between it and the
-       window edge, so the tip has room either side. */
-    #sound-btn .key-tip { right: auto; left: 50%; transform: translateX(-50%); }
+  }
+  /* A finger has no M key to be taught, so the state is said on its own. */
+  @media (hover: none), (pointer: coarse) {
+    .key-tip kbd { display: none; }
   }
 
   /* THE CANVAS BLEEDS PAST THE BOARD. The hood is wider than a cell, so on
@@ -2216,6 +2224,19 @@ function setAudioMode(mode) {
   if (musicOut) musicOut.gain.value = musicOn ? MUSIC_VOLUME : 0;
   updateMusic();
   showSound();
+  tellSound();
+}
+
+// A press says what it did, for a second and a half, so nobody has to point
+// at the speaker to find out - and on a tablet, where nothing can point, it
+// is the only way to. Only on a change: the tip never appears unasked.
+const SOUND_TELL_MS = 1500;
+let soundTellTimer = 0;
+
+function tellSound() {
+  soundBtn.classList.add('tell');
+  clearTimeout(soundTellTimer);
+  soundTellTimer = setTimeout(() => soundBtn.classList.remove('tell'), SOUND_TELL_MS);
 }
 
 function showSound() {
@@ -2237,17 +2258,18 @@ function showSound() {
 // An <audio> element rather than a decoded buffer: it streams, it loops
 // natively, and a track that has not been made yet simply never plays.
 //
-// Both are Iron Resolve, one 48-second loop made in Astra, mixed here from
-// its stems. The rankings take the same piece without drums or lead - same
-// world, lower heat, for a screen people sit and read. AAC rather than MP3:
-// every browser plays it, and MP3's encoder padding leaves a gap at the
-// loop point that AAC's container trims. Mono, 80kbps, under 500KB. UNR-135.
+// Iron Resolve, a 48-second loop made in Astra, mixed here from its stems
+// without the drums or lead. The full mix was made too, for the start menu
+// and dojo select, and Karin preferred the calmer one everywhere. The two
+// screen names stay, so a second track can come back as a one-line change.
+// AAC rather than MP3: every browser plays it, and MP3's encoder padding
+// leaves a gap at the loop point that AAC's container trims. Mono, 80kbps,
+// under 500KB. UNR-135.
 const MUSIC_TRACKS = {
-  arrival:  'assets/music-arrival.m4a',    // the start menu and dojo select
-  rankings: 'assets/music-rankings.m4a',   // the board, and the verdict
+  arrival:  'assets/music.m4a',   // the start menu and dojo select
+  rankings: 'assets/music.m4a',   // the board, and the verdict
 };
 
-let musicEl  = null;   // the one element, reused for every track
 let musicNow = null;   // the track that should be playing, or null
 
 // Which track this screen wants. The screen decides that; the player only
@@ -2272,47 +2294,96 @@ function musicWanted() {
   return musicFor({ phase, dojoPhase, rankingsOpen, titling, startPressed });
 }
 
+// Music never cuts: every change of screen fades, whether into the other
+// track or out to silence. A hard stop going into a run, or a hard switch
+// to the rankings, felt janky in play (21 September). Seconds.
+const MUSIC_FADE = 0.8;
+
+// One element per file, each behind its own fader, so one can fade out
+// while another fades in, and the incoming one starts where the outgoing
+// one is. Screens that share a file share its element, so moving between
+// them changes nothing at all.
+const musicPlayers = {};
+
+function musicPlayer(track, ctx) {
+  const src = MUSIC_TRACKS[track];
+  if (musicPlayers[src]) return musicPlayers[src];
+  const el = new Audio();
+  el.loop = true;
+  el.preload = 'none';
+  el.src = src;
+  let fader = null;
+  // Routed through the context so musicOut's gain governs it. Where there
+  // is no Web Audio at all, the element's own volume stands in, unfaded.
+  if (ctx && musicOut && ctx.createMediaElementSource) {
+    try {
+      fader = ctx.createGain();
+      fader.gain.value = 0;
+      ctx.createMediaElementSource(el).connect(fader).connect(musicOut);
+    } catch (err) { fader = null; }
+  }
+  if (!fader) el.volume = MUSIC_VOLUME;
+  return (musicPlayers[src] = { el, fader, stopTimer: 0 });
+}
+
+// A track not fetched yet ignores a position, so it is set once the file
+// says how long it is, moved on by however long the fetch took.
+function keepInStep(el, at) {
+  if (el.readyState > 0) { el.currentTime = at; return; }
+  const asked = performance.now();
+  el.addEventListener('loadedmetadata', () => {
+    el.currentTime = (at + (performance.now() - asked) / 1000) % el.duration;
+  }, { once: true });
+}
+
+function fadeMusic(player, to) {
+  const { fader } = player;
+  clearTimeout(player.stopTimer);
+  if (fader) {
+    const now = audioCtx.currentTime;
+    fader.gain.cancelScheduledValues(now);
+    fader.gain.setValueAtTime(fader.gain.value, now);
+    fader.gain.setTargetAtTime(to, now, MUSIC_FADE / 4);
+  }
+  if (to > 0) {
+    // A track that is not there yet, or a browser that refuses to start
+    // it, must never break the screen it was meant to sit under.
+    player.el.play().catch(() => {});
+  } else {
+    player.stopTimer = setTimeout(() => player.el.pause(), fader ? MUSIC_FADE * 1000 + 100 : 0);
+  }
+}
+
 // Output only, like draw(): it plays what the screen and the setting have
 // already decided between them, and decides nothing itself.
 function updateMusic() {
   const want = musicOn ? musicWanted() : null;
   if (want === musicNow) return;
   musicNow = want;
-  if (!want) {
-    if (musicEl) musicEl.pause();
-    return;
-  }
   // No browser audio at all - the test harness, mainly - and music is
   // simply something this page cannot do.
   if (typeof Audio === 'undefined') return;
-  const ctx = audio();
-  if (!musicEl) {
-    musicEl = new Audio();
-    musicEl.loop = true;
-    musicEl.preload = 'none';
-    // Routed through the context so musicOut's gain governs it. Where there
-    // is no Web Audio at all, the element's own volume stands in.
-    if (ctx && musicOut && ctx.createMediaElementSource) {
-      try { ctx.createMediaElementSource(musicEl).connect(musicOut); }
-      catch (err) { musicEl.volume = MUSIC_VOLUME; }
-    } else {
-      musicEl.volume = MUSIC_VOLUME;
-    }
+  const to = want ? musicPlayer(want, audio()) : null;
+  // Whatever is still sounding, even mid-fade. Not just the last track
+  // wanted: some screen changes pass through a moment that wants none.
+  const sounding = Object.values(musicPlayers).filter(p => p !== to && !p.el.paused);
+  if (to) {
+    // Already sounding means already in step.
+    if (sounding.length && to.el.paused) keepInStep(to.el, sounding[0].el.currentTime);
+    fadeMusic(to, 1);
   }
-  const src = MUSIC_TRACKS[want];
-  if (!musicEl.src.endsWith(src)) musicEl.src = src;
-  // A track that is not there yet, or a browser that refuses to start it,
-  // must never break the screen it was meant to sit under.
-  musicEl.play().catch(() => {});
+  for (const p of sounding) fadeMusic(p, 0);
 }
 
 // A tab nobody is looking at should not be singing. It resumes only if it
 // was already playing, so this can never start music behind the player's
 // back.
 document.addEventListener('visibilitychange', () => {
-  if (!musicEl) return;
-  if (document.hidden) musicEl.pause();
-  else if (musicNow) musicEl.play().catch(() => {});
+  if (document.hidden) {
+    for (const p of Object.values(musicPlayers)) p.el.pause();
+  } else if (musicNow && musicPlayers[MUSIC_TRACKS[musicNow]]) {
+    musicPlayers[MUSIC_TRACKS[musicNow]].el.play().catch(() => {});
+  }
 });
 
 // Mercy's button only means something during a run, and turns into play
@@ -3899,6 +3970,9 @@ function pressStart() {
   if (!titling || startPressed) return;
   audio();
   openTitleMenu(0);
+  // The one screen change that does not pass through showBack(), so music
+  // already switched on would otherwise wait for the next screen to start.
+  updateMusic();
 }
 
 function openTitleMenu(at) {
