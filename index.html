@@ -2224,9 +2224,15 @@ function showSound() {
 //
 // An <audio> element rather than a decoded buffer: it streams, it loops
 // natively, and a track that has not been made yet simply never plays.
+//
+// Both are Iron Resolve, one 48-second loop made in Astra, mixed here from
+// its stems. The rankings take the same piece without drums or lead - same
+// world, lower heat, for a screen people sit and read. AAC rather than MP3:
+// every browser plays it, and MP3's encoder padding leaves a gap at the
+// loop point that AAC's container trims. Mono, 80kbps, under 500KB. UNR-135.
 const MUSIC_TRACKS = {
-  arrival:  'assets/music-arrival.mp3',    // the start menu and dojo select
-  rankings: 'assets/music-rankings.mp3',   // the board, and the verdict
+  arrival:  'assets/music-arrival.m4a',    // the start menu and dojo select
+  rankings: 'assets/music-rankings.m4a',   // the board, and the verdict
 };
 
 let musicEl  = null;   // the one element, reused for every track

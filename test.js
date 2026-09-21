@@ -1724,9 +1724,14 @@ describe('sound', () => {
     is(game.musicFor(screen({ titling: true, startPressed: true })), 'arrival', 'after');
   });
 
-  test('every track a screen can ask for exists', () => {
+  // On disk, not just named: a missing file fails silently in the page by
+  // design, so this is the only place it would ever show. And small, since
+  // everyone who turns music on downloads it. UNR-135.
+  test('every track a screen can ask for exists, under 500KB', () => {
     for (const where of ['arrival', 'rankings']) {
-      is(typeof game.MUSIC_TRACKS[where], 'string', where);
+      const file = path.join(__dirname, game.MUSIC_TRACKS[where]);
+      is(fs.existsSync(file), true, where);
+      is(fs.existsSync(file) && fs.statSync(file).size < 500 * 1024, true, `${where} size`);
     }
   });
 
