@@ -37,10 +37,11 @@ The version line says `sandbox scores` when that's the case.
 ## Pull requests
 
 - One change per PR, against `main`.
-- `node test.js` passes.
+- `node test.js` passes. CI runs it on every PR.
 - The commit message says *why*, not only what.
 - A change players can see updates `README.md` in the same commit. The
-  commit hook enforces this. If the README really doesn't need to change,
-  add a line such as `README: unchanged - a refactor, nothing a player sees`.
+  commit hook and CI both check this. If the README really doesn't need to
+  change, add a line such as
+  `README: unchanged - a refactor, nothing a player sees`.
   Don't use `--no-verify`.
 - Don't bump the version. That happens at release.
