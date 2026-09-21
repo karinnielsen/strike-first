@@ -169,7 +169,9 @@ release,** not a footnote after it.
   `BEFORE_LAUNCH = true` keeps everything on the sandbox until v1.0.0.
   `db/scores.sql` is the schema: change it there first, then the maintainer
   runs it in the SQL Editor. Only a publishable key may appear in the page,
-  and a test enforces that.
+  and a test enforces that. Both are free projects, which pause after a
+  quiet week, so `keep-scores-awake.yml` reads production daily. Run by
+  hand, it defaults to the sandbox.
 - **Checking permissions without writing a row:** send an insert that breaks
   a `check` constraint. An allowed insert fails with `23514`, a forbidden
   one with `42501`. Updates and deletes should always return `42501`.
