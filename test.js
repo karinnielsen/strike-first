@@ -214,7 +214,8 @@ globalThis.game = {
   backFrom, goBack, get backShown() { return !backHud.hidden }, crestEl, titleScreenEl,
   verdictItems, challengeUrl, challengeIdFrom, rivalRequest, rivalFrom, rivalLine, loadRival,
   isPhone, PHONE_MAX, ON_PHONE, rivalEl, MENU_LABELS,
-  get rival() { return rival }, set rival(v) { rival = v }
+  get rival() { return rival }, set rival(v) { rival = v },
+  STARS_SHOWN_FROM, starCountText, starsFrom, fetchStars, loadStars
 };`;
 
 vm.createContext(sandbox);
@@ -2953,6 +2954,42 @@ describe('challenge a friend, UNR-116', () => {
     is(game.isPhone(744, 1133), false, 'iPad mini');
     is(game.isPhone(1440, 900), false, 'laptop');
     is(game.ON_PHONE, false, 'the harness is not a phone');
+  });
+});
+
+describe('the star count', () => {
+  test('hidden below ten, then written as GitHub writes it', () => {
+    is(game.starCountText(0), null, 'none');
+    is(game.starCountText(9), null, 'nine');
+    is(game.starCountText(10), '10', 'ten');
+    is(game.starCountText(999), '999', '999');
+    is(game.starCountText(1299), '1.2k', 'thousands');
+    is(game.starCountText(null), null, 'unknown');
+  });
+
+  test('?stars= fakes the count', () => {
+    is(game.starsFrom('?stars=42'), 42, 'alone');
+    is(game.starsFrom('?vs=7&stars=3'), 3, 'with a challenge');
+    is(game.starsFrom('?vs=7'), null, 'absent');
+    is(game.starsFrom(undefined), null, 'no search at all');
+  });
+
+  const github = (body, ok = true) => async () => ({ ok, json: async () => body });
+
+  testAsync('reads the count from GitHub', async () => {
+    is(await game.fetchStars(github({ stargazers_count: 12 })), 12, 'count');
+  });
+
+  testAsync('offline, refused or odd is no count, not an error', async () => {
+    is(await game.fetchStars(async () => { throw new Error('offline'); }), null, 'offline');
+    is(await game.fetchStars(github({ message: 'rate limit' }, false)), null, 'rate limited');
+    is(await game.fetchStars(github({})), null, 'no count in it');
+  });
+
+  testAsync('a faked count never calls GitHub', async () => {
+    let asked = false;
+    await game.loadStars('?stars=42', async () => { asked = true; });
+    is(asked, false, 'asked');
   });
 });
 
