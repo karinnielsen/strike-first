@@ -397,6 +397,25 @@ describe('dojo select', () => {
     is(game.dojoPhase, 'open', 'and Arcade opens it again');
   });
 
+  // Which sound fires when, as in the sound tests; how they sound is judged
+  // by ear. Only the last five seconds tick, climbing. The harness has no
+  // cards, so the whoosh and the thwack are checked in the browser, and the
+  // clock stops one short of zero, where sensei would pick. UNR-136.
+  test('the cards blip like a menu, and the last five seconds tick', () => {
+    const heard = [], real = Object.assign({}, game.SOUNDS);
+    for (const name in game.SOUNDS) game.SOUNDS[name] = (...a) => heard.push([name, ...a].join(' '));
+    game.audioCtx = {};
+    try {
+      pressKey('ArrowRight');
+      const tick = sandbox.lastInterval;
+      for (let i = 0; i < game.DOJO_SECONDS - 1; i++) tick();
+    } finally {
+      Object.assign(game.SOUNDS, real);
+      game.audioCtx = null;
+    }
+    is(heard, ['cursor', 'tick 5', 'tick 4', 'tick 3', 'tick 2', 'tick 1'], 'heard');
+  });
+
   test('closing it goes straight into the fight', () => {
     game.commitDojo('eagle-fang');
     game.closeDojoSelect();
