@@ -1334,6 +1334,7 @@ let lastDefeatLine; // so the same line never lands twice in a row
 let moves;          // steps actually taken. The one that killed you isn't one.
 let tongueOut;      // is the tongue out THIS step? update() decides, draw() shows
 let flickAt;        // the move it next flicks on
+let flickedAt = -Infinity;   // when the last flick began, so draw() can play it out
 let runStartedAt;   // performance.now() of the first move, or null
 let pausedAt;       // when mercy was asked for, or null
 let pausedMs;       // total time spent in mercy this run
@@ -1457,11 +1458,27 @@ const QUEASY_MOVES  = 14;
 // which reads as a blink. Karin noticed it was gone and was right. UNR-160.
 //
 // Counted in moves, the rhythm is the same at 260ms a move and at 70ms,
-// like MOUSE_LIFE and QUEASY_MOVES before it. It still can't whip: an
-// out-and-in inside a single drawn frame needs a render loop separate from
-// the game loop, which is UNR-161's half of the job.
+// like MOUSE_LIFE and QUEASY_MOVES before it. The whip itself - an
+// out-and-in faster than a step - needed the board drawn every frame, which
+// it now is (UNR-161), so a flick plays out below.
 const TONGUE_GAP_MIN = 6;
 const TONGUE_GAP_MAX = 20;
+
+// The whip itself, now the board is drawn every frame (UNR-161). WHEN it
+// flicks is still booked in moves, above; how a flick moves is timed in
+// milliseconds, because an out-and-in is motion, not a mechanic. Two
+// quick flicks, the way a snake tastes the air, and it outlasts a step at
+// speed on purpose - the head moves on and the tongue keeps whipping.
+const TONGUE_WHIP_MS  = 170;   // one out-and-in
+const TONGUE_WHIPS    = 2;
+
+// How far out the tongue is, 0 to 1, this far into a flick. Out fast, in
+// a little slower, like the lash of a whip. Pure.
+function tongueReach(ms, whips = TONGUE_WHIPS) {
+  if (ms < 0 || ms >= TONGUE_WHIP_MS * whips) return 0;
+  const t = (ms % TONGUE_WHIP_MS) / TONGUE_WHIP_MS;
+  return t < 0.35 ? t / 0.35 : 1 - (t - 0.35) / 0.65;
+}
 
 // Difficulty within a run, as tiers rather than a smooth slope.
 //
@@ -1537,6 +1554,7 @@ function reset() {
   moves         = 0;
   tongueOut     = false;
   flickAt       = nextFlickIn(Math.random());
+  flickedAt     = -Infinity;
   runStartedAt  = null;
   pausedAt      = null;
   pausedMs      = 0;
@@ -1781,7 +1799,10 @@ function update() {
   // out is a fact about this step, and draw() only shows what update() has
   // settled. Out for exactly one step, then the next flick is booked.
   tongueOut = moves >= flickAt;
-  if (tongueOut) flickAt = moves + nextFlickIn(Math.random());
+  if (tongueOut) {
+    flickAt = moves + nextFlickIn(Math.random());
+    flickedAt = performance.now();
+  }
 
   // Did we land on anything? Only one of these can be true, since nothing
   // is ever placed on a square something else already occupies.
@@ -2984,9 +3005,15 @@ function drawHead() {
        (egg.x === ahead.x && egg.y === ahead.y)
     || (visitor && visitor.kind === 'mouse'
         && visitor.x === ahead.x && visitor.y === ahead.y);
-  if (phase === 'playing' && (treatAhead || queasy > 0 || tongueOut)) {
-    drawTongue(cx, cy, fwd, side);
-  }
+  if (phase !== 'playing') return;
+  // Something to eat ahead, or feeling ill: it keeps tasting, one flick
+  // after another. Otherwise the booked flick, played out in full.
+  const now = performance.now();
+  const still = REDUCED_MOTION.matches;
+  const reach = (treatAhead || queasy > 0)
+    ? (still ? 1 : tongueReach(now % (TONGUE_WHIP_MS * TONGUE_WHIPS)))
+    : (still ? (tongueOut ? 1 : 0) : tongueReach(now - flickedAt));
+  if (reach > 0) drawTongue(cx, cy, fwd, side, reach);
 }
 
 // The crossed-out eyes, drawn smaller than the artwork delivered them. At
@@ -3028,11 +3055,13 @@ function hexToRgb(hex) {
   return [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
 }
 
-function drawTongue(cx, cy, fwd, side) {
+// `reach` is how far out it is, 0 to 1. The fork opens as it extends.
+function drawTongue(cx, cy, fwd, side, reach = 1) {
   const baseX = cx + fwd.x * (CELL / 2 - 2);
   const baseY = cy + fwd.y * (CELL / 2 - 2);
-  const tipX  = baseX + fwd.x * 6;
-  const tipY  = baseY + fwd.y * 6;
+  const tipX  = baseX + fwd.x * 6 * reach;
+  const tipY  = baseY + fwd.y * 6 * reach;
+  const fork  = 3 * reach, spread = 2.5 * reach;
 
   ctx.strokeStyle = '#d3262f';
   ctx.lineWidth   = 2;
@@ -3042,9 +3071,9 @@ function drawTongue(cx, cy, fwd, side) {
   ctx.lineTo(tipX, tipY);
   // the two prongs of the fork
   ctx.moveTo(tipX, tipY);
-  ctx.lineTo(tipX + fwd.x * 3 + side.x * 2.5, tipY + fwd.y * 3 + side.y * 2.5);
+  ctx.lineTo(tipX + fwd.x * fork + side.x * spread, tipY + fwd.y * fork + side.y * spread);
   ctx.moveTo(tipX, tipY);
-  ctx.lineTo(tipX + fwd.x * 3 - side.x * 2.5, tipY + fwd.y * 3 - side.y * 2.5);
+  ctx.lineTo(tipX + fwd.x * fork - side.x * spread, tipY + fwd.y * fork - side.y * spread);
   ctx.stroke();
 }
 
@@ -3288,7 +3317,31 @@ function loop() {
   draw();
   watchCrest();
   showMercy();
+  if (phase === 'playing') startFrames();
   loopTimer = setTimeout(loop, stepDelay());
+}
+
+// THE RENDER LOOP. UNR-161. loop() above is the game's heartbeat: it
+// steps the world at stepDelay() and nothing else may. The board used to
+// be drawn only on that beat, so anything drawn on a clock - the egg's
+// pulse, a visitor's flashing, the tongue - was sampled four to fourteen
+// times a second and stuttered or vanished. While a run is live the board
+// is now also drawn every animation frame. draw() only shows what update()
+// decided, so drawing it more often changes nothing about the game. The
+// bow and the defeat already drive their own frames; this covers the run
+// between them, and stops the moment the phase changes.
+let framing = false;
+
+function startFrames() {
+  if (framing) return;
+  framing = true;
+  requestAnimationFrame(playingFrame);
+}
+
+function playingFrame() {
+  if (phase !== 'playing') { framing = false; return; }
+  draw();
+  requestAnimationFrame(playingFrame);
 }
 
 // The tiers themselves are LEVELS, with the rest of the balance in section 2.
