@@ -2182,24 +2182,28 @@ const SOUNDS = {
     noise(crackle);
   },
 
-  // Fast arpeggiated chords, I-IV-V-I, landing on a high C over a
-  // triangle bass. About a second: a moment, not a fanfare.
+  // Fast arpeggiated chords over a triangle bass, about a second: a moment,
+  // not a fanfare. In the theme's key, E minor: i-iv-V-i, where the B chord
+  // borrows D# to pull home and the landing turns major (G#), so the road
+  // is minor and the arrival bright. It was C major I-IV-V-I until UNR-153,
+  // the one effect outside the music's key. Karin chose this from three
+  // retunings by ear (21 September).
   promotion() {
     const chords = [
-      [note('C5'), note('E5'), note('G5')],
-      [note('F5'), note('A5'), note('C6')],
-      [note('G5'), note('B5'), note('D6')],
+      [note('E5'), note('G5'), note('B5')],
+      [note('A5'), note('C6'), note('E6')],
+      [note('B5'), note('D#6'), note('F#6')],
     ];
     const steps = [];
     for (const chord of chords) {
       for (let r = 0; r < 2; r++) chord.forEach(f => steps.push([f, 0.34, 2]));
     }
-    [note('C6'), note('E6'), note('G6')].forEach(f => steps.push([f, 0.36, 2]));
-    steps.push([note('C7'), 0.38, 6], [note('C7'), 0.22, 6], [note('C7'), 0.1, 6]);
+    [note('E6'), note('G#6'), note('B6')].forEach(f => steps.push([f, 0.36, 2]));
+    steps.push([note('E7'), 0.38, 6], [note('E7'), 0.22, 6], [note('E7'), 0.1, 6]);
     tone('p25', steps);
     tone('triangle', [
-      [note('C3'), 0.9, 12], [note('F2'), 0.9, 12],
-      [note('G2'), 0.9, 12], [note('C3'), 0.9, 18],
+      [note('E3'), 0.9, 12], [note('A2'), 0.9, 12],
+      [note('B2'), 0.9, 12], [note('E3'), 0.9, 18],
     ]);
   },
 
