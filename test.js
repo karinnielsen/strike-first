@@ -1864,6 +1864,22 @@ describe('scores - how a run is measured, UNR-106', () => {
     sandbox.performance.now = realNow;
   });
 
+  // Found walking v0.5.10: mercy in the first bow was subtracted from a run
+  // that had not started, and the honest run came out disqualified.
+  test('mercy before the first move takes nothing off the run', () => {
+    sandbox.performance.now = () => clock;
+    freshGame({ phase: 'bowing' });
+    at(0);     game.toggleMercy();
+    at(5000);  game.toggleMercy();
+    is(game.pausedMs, 0, 'nothing to take out');
+    game.phase = 'playing';
+    at(6000);  game.update();
+    at(6260);  game.update();
+    at(6520);  game.gameOver('wall', {x: 21, y: 5});
+    is(game.runMs, 520, 'the run as played');
+    sandbox.performance.now = realNow;
+  });
+
   test('dying before moving lasts nothing', () => {
     is(game.runDuration(null, 5000, 0), 0, 'no first move');
     is(game.runDuration(1000, 900, 0), 0, 'never negative');
