@@ -18,6 +18,22 @@ still a patch. The journey counts as well as the mechanics, settled 17
 September: earlier versions were numbered under a rule that asked only what the
 player has to *do*, and they aren't renumbered.
 
+## [0.5.11] — 2026-09-21
+
+Dojo select joins the sound.
+
+### Added
+
+- **Sounds for dojo select** (UNR-136), from the same chip as the rest of the
+  game and in the theme's key, E minor: the menus' blip as the lit card moves,
+  a soft whoosh as a card turns over, and a thwack as your pick lands, falling
+  onto the music's home note.
+
+### Notes
+
+- The clock's last five seconds were given a tick and it was cut by ear. The
+  red and the beat carry the countdown without sound.
+
 ## [0.5.10] — 2026-09-21
 
 The music arrives.
