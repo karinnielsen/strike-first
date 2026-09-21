@@ -1,7 +1,7 @@
 # Contributing
 
-Thanks for helping. Start with a
-[good first issue](https://github.com/karinnielsen/strike-first/labels/good%20first%20issue).
+Thanks for helping. Start with an
+[open starter issue](https://github.com/karinnielsen/strike-first/labels/good%20first%20issue).
 
 ## Setup
 
