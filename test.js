@@ -398,10 +398,10 @@ describe('dojo select', () => {
   });
 
   // Which sound fires when, as in the sound tests; how they sound is judged
-  // by ear. Only the last five seconds tick, climbing. The harness has no
+  // by ear. The clock is silent: a tick was cut by ear. The harness has no
   // cards, so the whoosh and the thwack are checked in the browser, and the
   // clock stops one short of zero, where sensei would pick. UNR-136.
-  test('the cards blip like a menu, and the last five seconds tick', () => {
+  test('the cards blip like a menu, and the clock runs silent', () => {
     const heard = [], real = Object.assign({}, game.SOUNDS);
     for (const name in game.SOUNDS) game.SOUNDS[name] = (...a) => heard.push([name, ...a].join(' '));
     game.audioCtx = {};
@@ -413,7 +413,7 @@ describe('dojo select', () => {
       Object.assign(game.SOUNDS, real);
       game.audioCtx = null;
     }
-    is(heard, ['cursor', 'tick 5', 'tick 4', 'tick 3', 'tick 2', 'tick 1'], 'heard');
+    is(heard, ['cursor'], 'heard');
   });
 
   test('closing it goes straight into the fight', () => {

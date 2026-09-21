@@ -2202,20 +2202,17 @@ const SOUNDS = {
   // Dojo select, UNR-136. The same chip as everything above, and in the
   // theme's key, E minor, so they sit inside the music rather than on it.
 
-  // The last five seconds climb the scale, one step a second, as the number
-  // turns red: the cursor's blip, counting up to the kick.
-  tick(secondsLeft) {
-    const steps = ['B5', 'A5', 'G5', 'F#5', 'E5'];   // 1s left ... 5s left
-    const f = note(steps[Math.min(4, Math.max(0, secondsLeft - 1))]);
-    tone('square', [[f, 0.18, 2], [f, 0.07, 2]]);
-  },
+  // No tick for the clock's last seconds. One was made - a blip climbing
+  // the scale as the number turned red - and Karin cut it on hearing it
+  // (21 September). The red and the beat say it without sound.
 
   // A card turning over, 400ms: noise swept up to the edge-on moment, then
-  // down as the other face comes round. Quiet - it is only a card.
+  // down as the other face comes round. Half as loud and a narrower sweep
+  // than first written, which Karin found too present: it is only a card.
   whoosh() {
     const steps = [];
-    for (let k = 0; k < 10; k++) steps.push([0.5 + k * 0.12, 0.04 + k * 0.012, 1]);
-    for (let k = 0; k < 14; k++) steps.push([1.6 - k * 0.08, 0.16 - k * 0.011, 1]);
+    for (let k = 0; k < 10; k++) steps.push([0.6 + k * 0.07, 0.02 + k * 0.006, 1]);
+    for (let k = 0; k < 14; k++) steps.push([1.2 - k * 0.04, 0.08 - k * 0.0055, 1]);
     noise(steps);
   },
 
@@ -2232,10 +2229,10 @@ const SOUNDS = {
   },
 };
 
-function playSound(name, ...args) {
+function playSound(name) {
   if (!audioCtx) return;    // nobody has pressed anything yet
   if (muted) return;
-  SOUNDS[name](...args);
+  SOUNDS[name]();
 }
 
 // The M key and the corner button share this: one press moves to the next
@@ -5002,9 +4999,6 @@ function openDojoSelect(fromTitle) {
       if (document.hidden) return;              // stopped while the tab is hidden
       dojoLeft -= 1;
       tickDojoClock();
-      // A tick for each second that turns red. Zero has no tick: it is
-      // the thwack, as sensei picks for you.
-      if (dojoLeft >= 1 && dojoLeft <= 5) playSound('tick', dojoLeft);
       if (dojoLeft <= 0) chooseDojo(dojoAt, true);
     }, 1000);
     // What each dojo's back says. The select never waits for it.
