@@ -272,10 +272,8 @@ it. Nothing plays until you press start.
 
 Music is a separate thing, and it is **off until you ask for it** — a game
 that starts singing at someone on a train is the thing this avoids. It plays
-on the screens either side of a run: the start menu, dojo select, the
-rankings and the verdict. A run itself is silent, so the effects have it to
-themselves, and so is the moment you die. It is one quiet theme throughout,
-and it never cuts: it fades out as a run begins and back in after.
+on the start menu, dojo select and the rankings, and nowhere else: not in a
+run, not at defeat. One quiet theme, and it fades rather than cuts.
 
 **M** and the speaker step through effects only, effects and music, then
 silence. Point at the speaker and it says which, in words: music off, music

@@ -2267,7 +2267,7 @@ function showSound() {
 // under 500KB. UNR-135.
 const MUSIC_TRACKS = {
   arrival:  'assets/music.m4a',   // the start menu and dojo select
-  rankings: 'assets/music.m4a',   // the board, and the verdict
+  rankings: 'assets/music.m4a',   // the board
 };
 
 let musicNow = null;   // the track that should be playing, or null
@@ -2283,7 +2283,10 @@ function musicFor({ phase, dojoPhase, rankingsOpen, titling, startPressed }) {
       phase === 'paused'  || phase === 'dying') return null;
   if (dojoPhase !== 'closed') return 'arrival';
   if (rankingsOpen) return 'rankings';
-  if (phase === 'over') return 'rankings';
+  // The verdict stays silent too: you see it after every single run, so
+  // music there would grate fast (Karin, 21 September). It comes back with
+  // the next screen.
+  if (phase === 'over') return null;
   // The crest alone is silent: a browser blocks audio until the page has
   // been interacted with, and pressing start IS that interaction.
   if (titling) return startPressed ? 'arrival' : null;

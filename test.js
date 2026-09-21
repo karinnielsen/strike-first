@@ -1719,7 +1719,12 @@ describe('sound', () => {
     is(game.musicFor(screen({ dojoPhase: 'open' })), 'arrival', 'dojo select');
     is(game.musicFor(screen({ dojoPhase: 'opening' })), 'arrival', 'still fading in');
     is(game.musicFor(screen({ rankingsOpen: true })), 'rankings', 'the board');
-    is(game.musicFor(screen({ phase: 'over' })), 'rankings', 'the verdict');
+    is(game.musicFor(screen({ phase: 'over', rankingsOpen: true })), 'rankings', 'the board, after a defeat');
+  });
+
+  // Seen after every run, so music there would grate. 21 September.
+  test('the verdict is silent', () => {
+    is(game.musicFor(screen({ phase: 'over' })), null, 'the verdict');
   });
 
   // The effects own a run, and the defeat needs to land before anything
