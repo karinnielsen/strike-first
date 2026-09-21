@@ -358,7 +358,7 @@
      marker has its own column, so labels never shift as it moves. No
      helper text under any row: a row that needs a caption has the wrong
      name. */
-  .menu[hidden] { display: none; }
+  .menu[hidden], .menu button[hidden] { display: none; }
   .menu { display: grid; justify-items: start; justify-self: center; }
   .menu button {
     all: unset; cursor: pointer; box-sizing: border-box;
@@ -398,6 +398,9 @@
   .overlay.verdict, .overlay.verdict.with-board { align-content: start; gap: 0; }
   .overlay.verdict h2, .overlay.verdict.with-board h2 { margin-top: 64px; margin-bottom: 10px; }
   .overlay.verdict #overlay-text { display: block; min-height: 1lh; }
+  /* Only on a visit that came from a challenge link. UNR-116. */
+  .overlay #overlay-rival { margin-top: 6px; color: var(--value); }
+  .overlay #overlay-rival:empty { display: none; }
   .overlay.verdict .run-menu { margin-top: 32px; }
   .overlay.verdict .board { margin-top: 44px; }
 
@@ -805,6 +808,31 @@
   @media (prefers-reduced-motion: reduce) {
     .title-screen #start-btn { animation: none; }
   }
+
+  /* A CHALLENGE, opened from a link. UNR-116. Written for someone who has
+     never seen the game: who, what game, what number. No belt - it is
+     jargon until you have played. */
+  .title-screen .challenge { margin: 0 0 28px; text-align: center; line-height: 1.6; }
+  .title-screen .challenge[hidden] { display: none; }
+  .title-screen .challenge p { font-size: 15px; letter-spacing: 0.04em; }
+  .challenge b { color: var(--value); }
+  .challenge .to-beat b { color: var(--yellow); }
+  .challenge-badge { display: inline-block; width: 18px; height: 18px; vertical-align: -3px; margin-right: 8px; }
+
+  /* A PHONE gets a landing, not the game. The board can't be drawn
+     legibly that small, and it plays as a different game under a thumb
+     (the platform decision of 9 September). The crest and the challenge
+     stay; what the phone can't do is swapped for a way to take it to a
+     screen that can. */
+  .title-screen .phone-note { margin: 8px 0 0; max-width: 32ch; font-size: 14px; line-height: 1.6; text-align: center; }
+  .title-screen .phone-note[hidden] { display: none; }
+  body.phone .title-screen #start-btn,
+  body.phone .title-screen #start-how,
+  body.phone .title-screen .title-menu,
+  body.phone .title-screen .title-foot,
+  body.phone .hud { display: none; }
+  /* 88vw plus the page's padding is wider than a phone. */
+  body.phone .wrap.titling h1.crest svg { width: calc(100vw - 48px); }
   /* DOJO SELECT. UNR-114. A screen of its own after the title, like an
      arcade select: the crest, board, stats and hints all step aside and
      the select has the page. Settled across 15 and 16 September from a
@@ -1118,12 +1146,17 @@
   </header>
 
   <div class="title-screen" id="title-screen">
+    <div class="challenge" id="challenge" hidden></div>
     <button id="start-btn" type="button">Press start</button>
     <p id="start-how">any key</p>
     <nav class="menu title-menu" id="title-menu" aria-label="main menu" hidden>
       <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Arcade</span></button>
       <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Practice</span></button>
       <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Rankings</span></button>
+    </nav>
+    <p class="phone-note" id="phone-note" hidden></p>
+    <nav class="menu run-menu" id="phone-menu" aria-label="send" hidden>
+      <button type="button" class="on"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Send it to myself</span></button>
     </nav>
     <p class="title-foot"><span>@pushinpixls 2026</span><span>free play</span></p>
   </div>
@@ -1159,6 +1192,7 @@
     <div class="overlay hidden" id="overlay">
       <h2 id="overlay-title"></h2>
       <p  id="overlay-text"></p>
+      <p  id="overlay-rival"></p>
       <div class="initials" id="initials" hidden></div>
       <nav class="menu run-menu" id="mercy-menu" aria-label="mercy" hidden>
         <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Continue</span></button>
@@ -1167,10 +1201,13 @@
       <nav class="menu run-menu" id="sign-menu" aria-label="sign" hidden>
         <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Sign</span></button>
       </nav>
-      <!-- The middle row is Rankings after an Arcade run and Arcade after a
-           Practice one, set by showMenus(). -->
+      <!-- The rows are named by verdictItems(): Rematch, Challenge a friend
+           once you have a signed run, Rankings, Main menu after Arcade;
+           Practice, Arcade, Main menu after Practice. A row with no item
+           is hidden. -->
       <nav class="menu run-menu" id="verdict-menu" aria-label="next" hidden>
         <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Rematch</span></button>
+        <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Challenge a friend</span></button>
         <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Rankings</span></button>
         <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Main menu</span></button>
       </nav>
@@ -1239,6 +1276,7 @@ const bestEl    = document.getElementById('best');
 const overlay   = document.getElementById('overlay');
 const titleEl   = document.getElementById('overlay-title');
 const textEl    = document.getElementById('overlay-text');
+const rivalEl   = document.getElementById('overlay-rival');
 const bestBeltEl = document.getElementById('best-belt');
 const bestNameEl = document.getElementById('best-belt-name');
 const stageEl   = document.getElementById('stage');
@@ -1905,6 +1943,7 @@ function showVerdict() {
   }
   showOverlay(forfeited ? 'FORFEIT' : 'DEFEATED', forfeited ? '' : lastDefeatLine);
   if (mode === 'practice') return;
+  rivalEl.textContent = rivalLine(rival, score);
   if (wantsInitials(score, bestAtStart)) openInitials();
   else dueBoard();
 }
@@ -3586,8 +3625,9 @@ for (const type of ['pointerup', 'pointercancel']) {
 function showOverlay(title, text) {
   titleEl.textContent = title;
   textEl.textContent  = text;
+  rivalEl.textContent = '';
   for (const menu of [mercyMenu, signMenu, verdictMenu]) menu.at = 0;
-  verdictMenu.items = mode === 'practice' ? ['practice', 'arcade', 'menu'] : ['rematch', 'rankings', 'menu'];
+  verdictMenu.items = verdictItems(mode, lastRunId);
   overlay.classList.remove('hidden');
   showMenus();
 }
@@ -3928,8 +3968,19 @@ const FIRST_FLICK_MS = 700;
 const MENU_LABELS = {
   arcade: 'Arcade', practice: 'Practice', rankings: 'Rankings',
   continue: 'Continue', quit: 'Quit', sign: 'Sign',
-  rematch: 'Rematch', menu: 'Main menu'
+  rematch: 'Rematch', menu: 'Main menu', challenge: 'Challenge a friend'
 };
+
+// The verdict's rows. Challenge a friend needs a signed run to point at,
+// so it only appears once you have one - your latest signed run, which is
+// always your hi-score, since only a hi-score asks to be signed. Pure.
+function verdictItems(mode, runId) {
+  if (mode === 'practice') return ['practice', 'arcade', 'menu'];
+  return runId ? ['rematch', 'challenge', 'rankings', 'menu'] : ['rematch', 'rankings', 'menu'];
+}
+
+// For a moment after the link is copied, its row says so. UNR-116.
+let linkCopied = false;
 
 // Which row a step lands on, wrapping at either end. Pure.
 function menuStep(at, delta, length) {
@@ -3958,8 +4009,11 @@ const verdictMenu = makeMenu('verdict-menu', ['rematch', 'rankings', 'menu']);
 // Output only: names the rows and lights the one at `at`.
 function showMenu(menu) {
   menu.rows.forEach((row, i) => {
+    row.hidden = i >= menu.items.length;
     row.classList.toggle('on', i === menu.at);
-    row.querySelector('.label').textContent = MENU_LABELS[menu.items[i]];
+    const item = menu.items[i];
+    row.querySelector('.label').textContent =
+      item === 'challenge' && linkCopied ? 'Link copied' : MENU_LABELS[item] || '';
   });
 }
 
@@ -3996,6 +4050,7 @@ function pickMenu(menu) {
   else if (item === 'continue') toggleMercy();
   else if (item === 'quit') forfeit();
   else if (item === 'rematch') startGame();
+  else if (item === 'challenge') sendChallenge();
   else if (item === 'menu') toTitle();
 }
 
@@ -4035,7 +4090,7 @@ let startPressed = false;       // the menu has replaced PRESS START
 
 // The press also counts as the interaction browsers want before sound.
 function pressStart() {
-  if (!titling || startPressed) return;
+  if (!titling || startPressed || ON_PHONE) return;
   audio();
   openTitleMenu(0);
 }
@@ -4517,6 +4572,9 @@ async function signInitials(send = globalThis.fetch) {
   }
   if (signing !== record) return;            // the verdict has gone
   signing = null;
+  // A run to point at now exists, so Challenge a friend can join the menu.
+  verdictMenu.items = verdictItems(mode, lastRunId);
+  showMenus();
   boardDue = true;
   if (!saved) return showBoard();
   // The places have moved now your run is on it, so load it again.
@@ -4794,6 +4852,158 @@ function showBoard() {
 
   boardEl.replaceChildren(table);
 }
+
+// ---- challenge a friend -----------------------------------------------
+// UNR-116. The link points at a run on the board - ?vs=<id> - rather than
+// carrying a score, so editing the link can't forge one: the number the
+// friend sees is read back from the board. Their run lands on the same
+// board, which is how the sender finds out.
+//
+// The link is built from wherever the page is served, so a link made on a
+// local copy opens the local copy, and its sandbox board. An id the board
+// doesn't have - it was wiped - just means no challenge.
+
+// The link for a run. Pure.
+function challengeUrl(where, runId) {
+  return `${where.origin}${where.pathname}?vs=${runId}`;
+}
+
+// The run a link points at, or null. Pure.
+function challengeIdFrom(search) {
+  const match = /[?&]vs=(\d{1,12})(?:&|$)/.exec(search || '');
+  const id = match ? Number(match[1]) : 0;
+  return id > 0 ? id : null;
+}
+
+function rivalRequest(service, runId) {
+  return `${service.url}/rest/v1/scores?select=initials,dojo,score&id=eq.${runId}`;
+}
+
+// A row fit to show, or null. It came from the database, which already
+// refuses anything else, but it is about to be put in front of a stranger.
+function rivalFrom(rows) {
+  const r = rows && rows[0];
+  return r && /^[A-Z]{3}$/.test(r.initials) && DOJO_IDS.includes(r.dojo) &&
+         Number.isInteger(r.score) && r.score >= 0 ? r : null;
+}
+
+// The line under the friend's verdict, or none. Dojo voice. Pure.
+function rivalLine(rival, points) {
+  if (!rival) return '';
+  return points > rival.score ? `You beat ${rival.initials}'s ${rival.score}.`
+                              : `${rival.initials}'s ${rival.score} still stands.`;
+}
+
+// The run this visit was challenged with, once it has loaded. Kept for
+// the whole visit, so every run is measured against it.
+let rival = null;
+
+async function loadRival(runId, send = globalThis.fetch) {
+  if (!runId) return;
+  rival = rivalFrom(await readRows(rivalRequest(SCORE_SERVICE, runId), send));
+  showChallenge();
+}
+
+// Output only: the challenge under the crest.
+function showChallenge() {
+  const el = document.getElementById('challenge');
+  el.hidden = !rival;
+  if (!rival) return;
+  const bold = (text) => {
+    const b = document.createElement('b');
+    b.textContent = text;
+    return b;
+  };
+  const badge = document.createElement('span');
+  badge.className = 'challenge-badge';
+  badge.innerHTML = badgeSvg(rival.dojo);          // constants, never data
+  const who = document.createElement('p');
+  who.append(badge, bold(rival.initials), ` of ${DOJO_NAMES[rival.dojo]} challenges you to Snake.`);
+  const target = document.createElement('p');
+  target.className = 'to-beat';
+  target.append('Score to beat: ', bold(String(rival.score)));
+  el.replaceChildren(who, target);
+  showPhone();
+}
+
+const SHARE_TEXT = 'Beat my score in Strike First, a karate Snake game.';
+
+// Hand a link on. A touch screen gets the share sheet, which is where
+// messages are sent from; anything else gets the link copied, since a
+// desktop share sheet is a detour. Resolves to 'shared', 'copied' or
+// 'failed'. A share sheet closed without sending counts as shared: the
+// player chose not to, and nothing needs saying.
+async function shareLink(url, text) {
+  const touch = matchMedia('(pointer: coarse)').matches;
+  if (touch && navigator.share) {
+    try { await navigator.share({ title: 'Strike First', text, url }); } catch (e) {}
+    return 'shared';
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    return 'copied';
+  } catch (e) {
+    // No clipboard API off a secure origin, such as a LAN address. The old
+    // way still works there.
+    const area = document.createElement('textarea');
+    area.value = url;
+    document.body.append(area);
+    area.select();
+    const ok = document.execCommand('copy');
+    area.remove();
+    return ok ? 'copied' : 'failed';
+  }
+}
+
+const LINK_COPIED_MS = 2000;
+
+async function sendChallenge() {
+  if (!lastRunId) return;
+  const url = challengeUrl(location, lastRunId);
+  const result = await shareLink(url, SHARE_TEXT);
+  if (result === 'failed') return window.prompt('Copy this link:', url);
+  if (result !== 'copied') return;
+  linkCopied = true;
+  showMenus();
+  setTimeout(() => { linkCopied = false; showMenus(); }, LINK_COPIED_MS);
+}
+
+// ---- a phone ------------------------------------------------------------
+// Not a phone version: a landing. The crest, the challenge if there is one,
+// and a way to send the link to a screen the game is made for. The test is
+// the screen's short side, so a phone on its side is still a phone and the
+// smallest iPad (744) is not.
+const PHONE_MAX = 600;
+
+function isPhone(width, height) {
+  return Math.min(width, height) < PHONE_MAX;
+}
+
+const ON_PHONE = typeof screen !== 'undefined' && isPhone(screen.width, screen.height);
+
+// Output only.
+function showPhone() {
+  if (!ON_PHONE) return;
+  document.body.classList.add('phone');
+  const note = document.getElementById('phone-note');
+  note.textContent = 'A karate Snake game, made for a keyboard or a tablet. ' +
+    (rival ? 'Accept the challenge on a bigger screen.' : 'Play it on a bigger screen.');
+  note.hidden = false;
+  document.getElementById('phone-menu').hidden = false;
+}
+
+document.querySelector('#phone-menu button').addEventListener('click', async () => {
+  const button = document.querySelector('#phone-menu .label');
+  // Sent to yourself, so it carries the link as it came - challenge and all.
+  const result = await shareLink(location.href, 'Strike First, a karate Snake game.');
+  if (result === 'failed') return window.prompt('Copy this link:', location.href);
+  if (result !== 'copied') return;
+  button.textContent = 'Link copied';
+  setTimeout(() => { button.textContent = 'Send it to myself'; }, LINK_COPIED_MS);
+});
+
+showPhone();
+loadRival(challengeIdFrom(location.search));
 
 // =====================================================================
 //  11. DOJO SELECT - choose a side. UNR-114
