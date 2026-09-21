@@ -88,7 +88,7 @@ as a run goes on:
   counts the belt scores themselves, whatever your best is, so it happens in
   Practice too.
 - **It goes with its egg.** Eat the egg a rotten egg was guarding and the rotten
-  egg leaves too.
+  egg blinks out over the next 6 moves. It can still be eaten while it goes.
 
 It never lands within 3 squares of your head, and never boxes the egg in.
 

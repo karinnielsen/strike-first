@@ -1375,6 +1375,11 @@ const ROTTEN_SHARE   = 0.4;  // ...and this fraction of those are rotten
 // is what lets it be tight without being unfair.
 const ROTTEN_LIFE   = 45;
 const WARNING_MOVES = 15;   // moves left when a rotten egg starts flashing
+// Once the egg it guards is eaten, a rotten egg has nothing left to do, but
+// vanishing in the same step read as a glitch. It blinks out over this many
+// moves instead - on one, off the next, counted in moves so it reads the
+// same at any speed - and can still be eaten while it goes. UNR-180.
+const ROTTEN_EXIT_MOVES = 6;
 
 // Where a rotten egg lands, and when it is allowed to. UNR-155.
 //
@@ -1784,9 +1789,14 @@ function update() {
     addScore(EGG_POINTS, 'egg');
     grow += EGG_GROWTH;
     // A rotten egg was placed around THIS egg, in its way or beside it.
-    // Left behind, it would guard nothing and hold the only slot.
-    if (visitor && visitor.kind === 'rotten') rottenGone();
-    else sinceRotten += 1;
+    // Left behind, it would guard nothing and hold the only slot, so it
+    // leaves - blinking, over a few moves, rather than all at once.
+    if (visitor && visitor.kind === 'rotten') {
+      if (!visitor.leaving) {
+        visitor.leaving = true;
+        visitor.life = Math.min(visitor.life, ROTTEN_EXIT_MOVES);
+      }
+    } else sinceRotten += 1;
     placeEgg();
     maybeSpawnVisitor();        // an egg sometimes brings something with it
   } else if (visitor && head.x === visitor.x && head.y === visitor.y) {
@@ -2555,7 +2565,9 @@ function draw() {
       ? Math.max(4, Math.round(visitor.born / 3))
       : WARNING_MOVES;
     const panicking = visitor.life < warn;
-    if (!(panicking && Math.floor(Date.now() / 140) % 2 === 0)) {
+    const off = visitor.leaving ? visitor.life % 2 === 1
+                                : panicking && Math.floor(Date.now() / 140) % 2 === 0;
+    if (!off) {
       if (visitor.kind === 'mouse') drawMouse();
       else                          drawRottenEgg();
     }
