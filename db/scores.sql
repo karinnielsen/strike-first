@@ -1,7 +1,8 @@
 -- Strike First - the scores table. UNR-106.
 --
--- Run once in the Supabase SQL Editor. This file is the record of what
--- the database looks like; change it here first, then run the change.
+-- Run in the Supabase SQL Editor of both projects, production and sandbox.
+-- This file is the record of what the database looks like; change it here
+-- first, then run the change in each.
 --
 -- The page holds only the publishable key, and everything below is what
 -- stops that key doing more than submitting and reading scores. Whether a

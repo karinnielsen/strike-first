@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Challenge link mock</title>
+<!-- Mock for UNR-116. Loads the real game in three frames and adds the new
+     pieces on top, so everything else on screen is the game as it is.
+     Frames are at actual size: judge them there, don't zoom. -->
+<style>
+  body { margin: 0; padding: 32px; background: #1c1c21; color: #ece6da;
+         font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  h2 { font-size: 15px; margin: 48px 0 6px; color: #ffff00; }
+  h2:first-child { margin-top: 0; }
+  p.note { margin: 0 0 14px; max-width: 70ch; line-height: 1.5; font-size: 13px; }
+  iframe { border: 1px solid #3a3a42; display: block; background: #09090b; }
+</style>
+</head>
+<body>
+
+<h2>1 · Sender: the verdict after an Arcade run</h2>
+<p class="note">A new <b>Challenge</b> row, second, lit here. It appears only once you've signed a run. On a tablet or phone
+it opens the share sheet; on a computer it copies the link and the row reads <b>Link copied</b> for two seconds.</p>
+<iframe id="sender" src="../../index.html" width="1000" height="1000"></iframe>
+
+<h2>2 · Friend on a computer or tablet: the title screen, opened from the link</h2>
+<p class="note">One line under the crest, read from the board, so it can't be forged. It stays for the visit. At the
+end of their run the verdict says <i>You beat KAR's 47</i> or <i>KAR's 47 still stands</i>.</p>
+<iframe id="friend" src="../../index.html" width="1000" height="1000"></iframe>
+
+<h2>3 · Friend on a phone: the landing, instead of the game</h2>
+<p class="note">Same challenge line, the demo clip (from UNR-177) where the box is, and a way to get it to a bigger
+screen. Shown when the screen is narrower than the board can be drawn legibly.</p>
+<iframe id="phone" src="../../index.html" width="390" height="844"></iframe>
+
+<script>
+const wait = (ms) => new Promise(r => setTimeout(r, ms));
+
+// The challenger, as the board would return it.
+const RIVAL = { initials: 'KAR', dojo: 'cobra-kai', belt: 'brown', score: 47 };
+
+// Written for someone who has never seen the game: who, what game, what
+// number. No belt - it's jargon until you've played.
+function challengeLine(win) {
+  const dojoName = win.eval('DOJO_NAMES')[RIVAL.dojo];
+  return `
+    <div class="challenge" style="text-align:center;margin:0 0 28px;line-height:1.6">
+      <p style="margin:0;font-size:15px;color:var(--text);letter-spacing:.04em">
+        <span style="display:inline-block;width:18px;height:18px;vertical-align:-3px;margin-right:8px">${win.eval(`badgeSvg('${RIVAL.dojo}')`)}</span><b style="color:var(--value)">${RIVAL.initials}</b>
+        of ${dojoName} challenges you to Snake.
+      </p>
+      <p style="margin:4px 0 0;font-size:15px;color:var(--text);letter-spacing:.04em">Score to beat: <b style="color:var(--yellow)">${RIVAL.score}</b></p>
+    </div>`;
+}
+
+async function sender(frame) {
+  const win = frame.contentWindow, doc = frame.contentDocument;
+  win.eval(`mode = 'arcade'; commitDojo('cobra-kai'); leaveTitle(); startGame();`);
+  while (win.eval('phase') !== 'over') await wait(200);
+  await wait(300);
+  win.eval(`
+    MENU_LABELS.challenge = 'Challenge a friend';
+    const nav = document.getElementById('verdict-menu');
+    nav.insertBefore(nav.children[0].cloneNode(true), nav.children[1]);
+    verdictMenu.rows = [...nav.querySelectorAll('button')];
+    verdictMenu.items = ['rematch', 'challenge', 'rankings', 'menu'];
+    verdictMenu.at = 1;
+    showMenu(verdictMenu);
+  `);
+}
+
+function friend(frame) {
+  const win = frame.contentWindow, doc = frame.contentDocument;
+  doc.getElementById('start-btn').insertAdjacentHTML('beforebegin', challengeLine(win));
+}
+
+function phone(frame) {
+  const win = frame.contentWindow, doc = frame.contentDocument;
+  const crest = doc.getElementById('crest').cloneNode(true);
+  crest.style.cssText = 'width:100%;margin:0 0 20px';
+  doc.body.innerHTML = `
+    <main style="box-sizing:border-box;min-height:100vh;padding:28px 20px 24px;display:flex;flex-direction:column;align-items:center;text-align:center">
+      <div id="slot-crest" style="width:100%"></div>
+      ${challengeLine(win)}
+      <div style="width:100%;aspect-ratio:1;border:1px dashed var(--line);display:grid;place-items:center;color:var(--dim);font-size:13px;margin:0 0 24px">demo clip, playing on a loop</div>
+      <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:var(--text)">Strike First is made for a keyboard or a tablet.<br>Take the challenge on a bigger screen.</p>
+      <nav class="menu run-menu" style="display:block"><button type="button" class="on"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Send it to myself</span></button></nav>
+    </main>`;
+  doc.getElementById('slot-crest').append(crest);
+}
+
+const setups = { sender, friend, phone };
+for (const frame of document.querySelectorAll('iframe')) {
+  frame.addEventListener('load', () => Promise.resolve().then(() => setups[frame.id](frame)).catch(console.error));
+}
+</script>
+</body>
+</html>
