@@ -174,7 +174,7 @@ globalThis.game = {
   BONE_BODY, DUSTY_TAIL, SICK_GREEN, blend, bodyColour, BELT_SEGMENT,
   QUEASY_SHAKE, queasyShake,
   TONGUE_DOUBLE, TONGUE_PAUSE_MIN, TONGUE_PAUSE_MAX, tongueFlickPlan,
-  TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt, tongueReach, TONGUE_WHIP_MS, TONGUE_WHIPS,
+  TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt, tonguePose,
   DEFEAT_LINES, defeatLine, defeatPool, fillLine, showVerdict,
   BOW_MS, bowPose, bowElapsed,
   DEFEAT_MS, DEFEAT_HOLD_MS, defeatRecoil, defeatDrain, defeatJolt, defeatBow, canRestart,
@@ -1605,22 +1605,21 @@ describe("the snake's own tongue", () => {
 });
 
 
-describe('the board tongue whips, UNR-160', () => {
-  test('a flick starts and ends in the mouth', () => {
-    is(game.tongueReach(-1), 0, 'before');
-    is(game.tongueReach(0), 0, 'at the start');
-    is(game.tongueReach(game.TONGUE_WHIP_MS * game.TONGUE_WHIPS), 0, 'after both');
+describe('the board tongue lashes, in steps, UNR-160', () => {
+  test('a flick is two poses that swing opposite ways', () => {
+    const first = game.tonguePose(0), second = game.tonguePose(1);
+    is(first.reach, 1, 'all the way out');
+    is(second.reach < first.reach, true, 'then half back');
+    is(first.lash === -second.lash && first.lash !== 0, true, 'thrown one way, then the other');
   });
 
-  test('out fast, in slower, twice', () => {
-    const peak = game.TONGUE_WHIP_MS * 0.35;
-    is(Math.round(game.tongueReach(peak) * 100), 100, 'full length early');
-    is(game.tongueReach(peak / 2) > 0.4, true, 'on the way out');
-    is(game.tongueReach(game.TONGUE_WHIP_MS + peak) > 0.9, true, 'the second flick');
+  test('and is back in after two moves', () => {
+    is(game.tonguePose(2), null, 'in');
+    is(game.tonguePose(-1), null, 'not before');
   });
 
-  test('outlasts a step at top speed, so it reads as a whip', () => {
-    is(game.TONGUE_WHIP_MS * game.TONGUE_WHIPS > game.LEVELS[game.LEVELS.length - 1].ms, true, 'longer than a step');
+  test('the board is drawn on the step and nowhere else', () => {
+    is(/requestAnimationFrame\(playingFrame\)/.test(html), false, 'no per-frame drawing during a run');
   });
 });
 
