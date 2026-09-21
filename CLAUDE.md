@@ -21,6 +21,15 @@ comment under Linear below don't need asking.
 **When genuinely unsure whether she wants discussion or action, ask.** She has
 said explicitly that she prefers being asked.
 
+**Shell commands must match the allowlist, or every one of them prompts her.**
+`.claude/settings.json` allows `git`, `gh`, `node`, `grep` and the rest by
+their first word. A command that starts differently doesn't match, and she
+gets asked. That includes `cd x; …`, `a; b` or `a && b`, and `git -C <path> …`.
+So: one plain command per call, run from the repo root (the working directory
+already is), with no `cd` and no `-C`. Use Read and Grep rather than
+`cat`/`grep` chains. Settled 21 September, after a session prompted on nearly
+every step. The allowlist was fine; the commands were the problem.
+
 **Anything added to the stack has to be safe to test from the outset.** When
 the game starts talking to something new — a database, a hosted service, an
 API, an integration — the way to exercise it *without touching anything real,
