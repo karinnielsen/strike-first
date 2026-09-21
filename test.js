@@ -2884,7 +2884,9 @@ describe('challenge a friend, UNR-116', () => {
     is(game.rivalLine(rival, 47), "KAR's 47 still stands.", 'a tie does not beat it');
     is(game.rivalLine(rival, 3), "KAR's 47 still stands.", 'short');
     is(game.rivalLine(null, 48), '', 'no challenge, no line');
-    for (const line of [game.rivalLine(rival, 48), game.rivalLine(rival, 3)]) {
+    is(game.rivalLine(rival, 48, 'practice'), 'Beaten in practice. It does not count.', 'Practice never settles it');
+    is(game.rivalLine(rival, 3, 'practice'), '', 'short in Practice: nothing to correct');
+    for (const line of [game.rivalLine(rival, 48), game.rivalLine(rival, 3), game.rivalLine(rival, 48, 'practice')]) {
       if (line.split(' ').length > 9 || !line.endsWith('.') || /n't|!/.test(line)) {
         throw new Error(`breaks the dojo voice: ${line}`);
       }
@@ -2902,6 +2904,17 @@ describe('challenge a friend, UNR-116', () => {
     game.rival = { initials: 'KAR', dojo: 'cobra-kai', score: 47 };
     game.showOverlay('MERCY', '');
     is(game.rivalEl.textContent, '', 'cleared by any other overlay');
+    game.rival = null;
+  });
+
+  test('the challenge outlives a Practice session', () => {
+    freshGame();
+    const rival = { initials: 'KAR', dojo: 'cobra-kai', score: 47 };
+    game.rival = rival;
+    game.playPractice();
+    game.toTitle();
+    game.mode = 'arcade';
+    is(game.rival, rival, 'still there for Arcade');
     game.rival = null;
   });
 

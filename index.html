@@ -1942,8 +1942,8 @@ function showVerdict() {
     lastDefeatLine = defeatLine(defeat.cause, score, bestBefore, Math.random(), lastDefeatLine);
   }
   showOverlay(forfeited ? 'FORFEIT' : 'DEFEATED', forfeited ? '' : lastDefeatLine);
+  rivalEl.textContent = rivalLine(rival, score, mode);
   if (mode === 'practice') return;
-  rivalEl.textContent = rivalLine(rival, score);
   if (wantsInitials(score, bestAtStart)) openInitials();
   else dueBoard();
 }
@@ -4888,8 +4888,12 @@ function rivalFrom(rows) {
 }
 
 // The line under the friend's verdict, or none. Dojo voice. Pure.
-function rivalLine(rival, points) {
+// Practice is never posted, so the challenge can't be settled there - but
+// a friend who beats it in Practice must not think they won. A Practice
+// run that falls short says nothing: there is nothing to correct.
+function rivalLine(rival, points, mode = 'arcade') {
   if (!rival) return '';
+  if (mode === 'practice') return points > rival.score ? 'Beaten in practice. It does not count.' : '';
   return points > rival.score ? `You beat ${rival.initials}'s ${rival.score}.`
                               : `${rival.initials}'s ${rival.score} still stands.`;
 }

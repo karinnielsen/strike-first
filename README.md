@@ -257,7 +257,10 @@ Whoever opens it sees, under the crest: *KAR of Cobra Kai challenges you to
 Snake. Score to beat: 47.* The number is read from the board, not the link,
 so a link can't be edited into a better score. After each of their Arcade runs
 the verdict says whether they beat it, and their run lands on the same board,
-which is how you find out. A link to a run the board no longer has simply
+which is how you find out. Practice can't settle it, since Practice keeps
+nothing: beat the score there and the verdict says so, and that it does not
+count. The challenge stays for the whole visit, so Arcade after Practice is
+still measured against it. A link to a run the board no longer has simply
 opens the game.
 
 On a phone, the link opens a landing page instead: the crest, the challenge,
