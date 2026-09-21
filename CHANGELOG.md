@@ -18,6 +18,15 @@ still a patch. The journey counts as well as the mechanics, settled 17
 September: earlier versions were numbered under a rule that asked only what the
 player has to *do*, and they aren't renumbered.
 
+## [0.5.13] — 2026-09-21
+
+### Changed
+
+- **Promotion plays in the theme's key** (UNR-153). Every sound effect was
+  heard together for the first time and nine were kept. Promotion was the one
+  outside the music's E minor, a C major run of chords. It now climbs through
+  E minor and lands on E major: minor on the way, bright on arrival.
+
 ## [0.5.12] — 2026-09-21
 
 ### Changed

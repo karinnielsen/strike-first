@@ -10,7 +10,7 @@ One HTML file of code, no build step and nothing to install — open it and play
 Beside it sit a few images: the dojo crests and the sharing preview. Its one
 outside connection is a hosted database for scores. Made for desktop and tablet.
 
-Current version: **v0.5.12** — see [CHANGELOG.md](CHANGELOG.md).
+Current version: **v0.5.13** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Play
 
