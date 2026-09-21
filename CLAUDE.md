@@ -21,6 +21,17 @@ comment under Linear below don't need asking.
 **When genuinely unsure whether she wants discussion or action, ask.** She has
 said explicitly that she prefers being asked.
 
+**Shell commands must match the allowlist, or they prompt her.**
+`.claude/settings.json` allows `git`, `gh pr`, `node` and the rest by their
+first words. Read-only commands (`ls`, `cat`, `grep`, `find`, `head`, `wc`…)
+need no rule, and their writing forms (`find -delete`, `sed -i`) prompt on
+purpose. Each part of `a && b` or `a; b` is checked on its own, so a chain
+prompts if any one part isn't allowed. `git -C <path> …` never matches a rule:
+don't use it, since the working directory is already the repo root. Answering
+"always allow" to a one-off saves it in `settings.local.json` forever, so a
+command that keeps prompting belongs in the shared file instead. Settled 21
+September, after a session prompted on nearly every step.
+
 **Anything added to the stack has to be safe to test from the outset.** When
 the game starts talking to something new — a database, a hosted service, an
 API, an integration — the way to exercise it *without touching anything real,
