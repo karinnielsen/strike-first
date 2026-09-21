@@ -318,14 +318,12 @@ motion turns it off.
 
 The snake on the board does its own flicking, every 6 to 20 of **your moves**
 rather than on a clock, so the rhythm is the same whether you are thinking your
-way through level 1 or flat out at level 9. Each flick is a whip: out fast,
-back slower, twice. It keeps flicking whenever there is an egg or a mouse
-directly ahead — it can smell it — and the whole time you are queasy. Not for
-a rotten egg. It doesn't want that one. With reduced motion the tongue just
-shows, without the whip.
-
-During a run the board is drawn every frame, not only when the snake moves, so
-the egg's pulse and a visitor's warning flash are smooth at every level.
+way through level 1 or flat out at level 9. Each flick is a lash over two
+moves: all the way out and thrown to one side, then half back and thrown to
+the other. It keeps lashing whenever there is an egg or a mouse directly
+ahead — it can smell it — and the whole time you are queasy. Not for a rotten
+egg. It doesn't want that one. With reduced motion the tongue just shows,
+without the lash.
 
 ## Next
 
