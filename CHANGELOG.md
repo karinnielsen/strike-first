@@ -18,6 +18,33 @@ still a patch. The journey counts as well as the mechanics, settled 17
 September: earlier versions were numbered under a rule that asked only what the
 player has to *do*, and they aren't renumbered.
 
+## [0.5.10] — 2026-09-21
+
+The music arrives.
+
+### Added
+
+- **A theme** (UNR-135). One quiet loop, made in Astra and mixed without its
+  drums or lead, on the start menu, dojo select and the rankings. Still off
+  until you ask for it.
+- The speaker says its state in words — music off, music on, sound off — and
+  flashes it for a moment on every change, on touch screens too. The icon
+  alone never said whether music was on.
+
+### Changed
+
+- Music fades rather than cuts: out as a run begins, back in on the next
+  screen.
+- The verdict is silent. You see it after every run, so music there would
+  grate.
+
+### Fixed
+
+- Music already switched on stayed silent on the main menu, on arriving and
+  on every return to it.
+- Mercy pressed during the first bow, before the snake had moved,
+  disqualified an honest run (UNR-174). Present since v0.5.0.
+
 ## [0.5.9] — 2026-09-20
 
 The first of the sound work, and the rule that governs the rest of it:
