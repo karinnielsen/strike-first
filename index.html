@@ -38,6 +38,8 @@
     --brand:  #ee3524;   /* the wordmark, hotter than the gameplay red */
     --bone:   #e8e2d6;   /* the cobra                  */
     --yellow-deep: #7a7a00; /* the shadow side of it    */
+    --burnt:  #7a3000;   /* the shadow side of a heading, where the
+                            yellow has burnt down to orange. UNR-176 */
     --value:  #fff7b8;   /* the header's numbers: pale, so they stand
                             apart from their bone labels without
                             claiming the call-to-action yellow */
@@ -343,7 +345,7 @@
      read as its equal. */
   .overlay h2 {
     margin: 0; font-size: 34px; letter-spacing: 0.16em; color: var(--yellow);
-    text-shadow: 0 4px 0 var(--yellow-deep);
+    text-shadow: 0 4px 0 var(--yellow-deep);   /* burnt instead: HEADINGS BURN */
   }
   .overlay p  { margin: 0; font-size: 13px; color: var(--text); }
   .overlay #overlay-text:empty { display: none; }
@@ -843,6 +845,33 @@
     margin: 0; font-size: clamp(30px, 4.6vw, 52px); font-weight: bold; letter-spacing: 0.16em;
     color: var(--yellow); text-transform: uppercase;
     text-shadow: 0 5px 0 var(--yellow-deep), 0 0 28px rgba(255, 255, 0, 0.3);
+  }
+
+  /* HEADINGS BURN. A screen's heading - DEFEATED, MERCY, CHOOSE YOUR DOJO,
+     the rankings - runs from the yellow down into orange, with a burnt hard
+     offset. Flat yellow is the lit menu row's, and a heading that wore it
+     too could not lead the menu under it. Still the yellow family, so it is
+     not a second wordmark: the red-to-yellow fire of the v1 crest was tried
+     and read as an error. UNR-176.
+
+     The gradient is the element's background clipped to the letters, so
+     the shadow has to be a filter: a text-shadow paints over the clip and
+     blots it out. Behind @supports, so a browser that can't clip keeps the
+     flat yellow above rather than invisible letters. */
+  @supports (-webkit-background-clip: text) or (background-clip: text) {
+    .overlay h2, .dojo-select h2, .rankings h2 {
+      background: linear-gradient(180deg, var(--yellow) 25%, #ff9a1a 70%, #ff6a00 90%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      text-shadow: none;
+      filter: drop-shadow(0 4px 0 var(--burnt));
+    }
+    /* The big ones keep their deeper offset and their bloom. */
+    .dojo-select h2, .rankings h2 {
+      filter: drop-shadow(0 5px 0 var(--burnt)) drop-shadow(0 0 14px rgba(255, 154, 26, 0.3));
+    }
   }
   /* The clock with no label: a big number counting down says what it is. */
   .dojo-select .count {
