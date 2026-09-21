@@ -279,8 +279,9 @@ share one theme; the rankings get a quieter version of it, without drums
 or lead.
 
 **M** and the speaker step through effects only, effects and music, then
-silence. The game remembers the choice, and a tab you are not looking at
-stops singing.
+silence. Point at the speaker and it says which, in words: music off, music
+on, or sound off. The game remembers the choice, and a tab you are not
+looking at stops singing.
 
 ### The crest
 
