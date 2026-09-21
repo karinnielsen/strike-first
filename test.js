@@ -156,7 +156,7 @@ globalThis.game = {
   get phase()         { return phase },         set phase(v)         { phase = v },
   COLS, ROWS, CELL, VERSION,
   EGG_POINTS, MOUSE_POINTS, ROTTEN_POINTS, EGG_GROWTH, MOUSE_GROWTH,
-  ROTTEN_LIFE, WARNING_MOVES, QUEASY_MOVES,
+  ROTTEN_LIFE, WARNING_MOVES, QUEASY_MOVES, ROTTEN_EXIT_MOVES,
   LEVELS, TURN_QUEUE_MAX, SWIPE_MIN, swipeDirection, queueTurn,
   update, reset, isOccupied, stepDelay, mixColour, KEYS, addScore, queasiness,
   levelFor,
@@ -858,12 +858,23 @@ describe('rotten egg placement', () => {
     }
   });
 
-  test('eating the egg takes its rotten egg with it and restarts the cooldown', () => {
+  test('eating the egg sends its rotten egg away, blinking, UNR-180', () => {
     freshGame({ egg: {x: 6, y: 5}, visitor: {kind: 'rotten', x: 12, y: 12, life: 30, facing: 1} });
     game.sinceRotten = 7;
     withRandom(NOTHING, () => game.update());
-    is(game.visitor, null, 'gone with its egg');
+    is(game.visitor && game.visitor.leaving, true, 'leaving, not gone at once');
+    is(game.visitor.life, game.ROTTEN_EXIT_MOVES, 'for a few moves');
+    for (let i = 0; i < game.ROTTEN_EXIT_MOVES; i++) withRandom(NOTHING, () => game.update());
+    is(game.visitor, null, 'gone once they are up');
     is(game.sinceRotten, 0, 'cooldown restarted');
+  });
+
+  test('a leaving rotten egg can still be eaten', () => {
+    freshGame({ score: 10, visitor: {kind: 'rotten', x: 6, y: 5, life: 3, facing: 1, leaving: true} });
+    const before = game.score;
+    game.update();
+    is(game.score, before + game.ROTTEN_POINTS, 'it still costs you');
+    is(game.visitor, null, 'eaten');
   });
 
   test('eggs and mice count towards the cooldown', () => {
