@@ -1,0 +1,31 @@
+# Supabase pauses a free project after about a week with little activity.
+# A daily read of the live scores keeps it awake. A failed run means the
+# database didn't answer, and GitHub emails about it.
+#
+# Run it by hand from the Actions tab to test: it defaults to the sandbox.
+
+name: keep scores awake
+
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Which database to read
+        type: choice
+        options: [sandbox, production]
+        default: sandbox
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+      - run: node .github/ping-scores.js "${{ inputs.target || 'production' }}"
