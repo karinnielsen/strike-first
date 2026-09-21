@@ -184,7 +184,7 @@ globalThis.game = {
   get startPressed() { return startPressed },
   SPRITE, SPRITE_SIZE, drawSprite,
   SOUNDS, startGame, toggleSound, setAudioMode, storedAudioMode, musicFor,
-  AUDIO_MODES, AUDIO_KEY, MUSIC_TRACKS,
+  AUDIO_MODES, AUDIO_KEY, MUSIC_TRACKS, soundBtn, soundTipEl,
   get audioMode() { return audioMode }, set audioMode(v) { audioMode = v },
   get musicOn() { return musicOn }, set musicOn(v) { musicOn = v },
   get muted() { return muted }, set muted(v) { muted = v },
@@ -1694,6 +1694,19 @@ describe('sound', () => {
     is(game.audioMode, 'effects', 'and round again');
   });
 
+  // Nothing on the speaker itself says whether music is on, so every press
+  // says it in words, on every device. Found in play, 21 September.
+  test('a press says the new state under the speaker', () => {
+    game.setAudioMode('effects');
+    const added = [], list = game.soundBtn.classList, add = list.add;
+    list.add = (c) => added.push(c);
+    try { pressKey('m'); } finally { list.add = add; }
+    is(added, ['tell'], 'flashed');
+    is(game.soundTipEl.textContent, 'music on', 'in words');
+    pressKey('m');
+    pressKey('m');
+  });
+
   // Where music plays is decided by the screen, never by the player: the
   // player only decides whether it is allowed at all. UNR-138.
   const screen = (over) => ({
@@ -1706,7 +1719,12 @@ describe('sound', () => {
     is(game.musicFor(screen({ dojoPhase: 'open' })), 'arrival', 'dojo select');
     is(game.musicFor(screen({ dojoPhase: 'opening' })), 'arrival', 'still fading in');
     is(game.musicFor(screen({ rankingsOpen: true })), 'rankings', 'the board');
-    is(game.musicFor(screen({ phase: 'over' })), 'rankings', 'the verdict');
+    is(game.musicFor(screen({ phase: 'over', rankingsOpen: true })), 'rankings', 'the board, after a defeat');
+  });
+
+  // Seen after every run, so music there would grate. 21 September.
+  test('the verdict is silent', () => {
+    is(game.musicFor(screen({ phase: 'over' })), null, 'the verdict');
   });
 
   // The effects own a run, and the defeat needs to land before anything
@@ -1724,9 +1742,14 @@ describe('sound', () => {
     is(game.musicFor(screen({ titling: true, startPressed: true })), 'arrival', 'after');
   });
 
-  test('every track a screen can ask for exists', () => {
+  // On disk, not just named: a missing file fails silently in the page by
+  // design, so this is the only place it would ever show. And small, since
+  // everyone who turns music on downloads it. UNR-135.
+  test('every track a screen can ask for exists, under 500KB', () => {
     for (const where of ['arrival', 'rankings']) {
-      is(typeof game.MUSIC_TRACKS[where], 'string', where);
+      const file = path.join(__dirname, game.MUSIC_TRACKS[where]);
+      is(fs.existsSync(file), true, where);
+      is(fs.existsSync(file) && fs.statSync(file).size < 500 * 1024, true, `${where} size`);
     }
   });
 
