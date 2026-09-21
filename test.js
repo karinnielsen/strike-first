@@ -174,7 +174,7 @@ globalThis.game = {
   BONE_BODY, DUSTY_TAIL, SICK_GREEN, blend, bodyColour, BELT_SEGMENT,
   QUEASY_SHAKE, queasyShake,
   TONGUE_DOUBLE, TONGUE_PAUSE_MIN, TONGUE_PAUSE_MAX, tongueFlickPlan,
-  TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt,
+  TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt, tongueReach, TONGUE_WHIP_MS, TONGUE_WHIPS,
   DEFEAT_LINES, defeatLine, defeatPool, fillLine, showVerdict,
   BOW_MS, bowPose, bowElapsed,
   DEFEAT_MS, DEFEAT_HOLD_MS, defeatRecoil, defeatDrain, defeatJolt, defeatBow, canRestart,
@@ -1593,6 +1593,25 @@ describe("the snake's own tongue", () => {
   });
 });
 
+
+describe('the board tongue whips, UNR-160', () => {
+  test('a flick starts and ends in the mouth', () => {
+    is(game.tongueReach(-1), 0, 'before');
+    is(game.tongueReach(0), 0, 'at the start');
+    is(game.tongueReach(game.TONGUE_WHIP_MS * game.TONGUE_WHIPS), 0, 'after both');
+  });
+
+  test('out fast, in slower, twice', () => {
+    const peak = game.TONGUE_WHIP_MS * 0.35;
+    is(Math.round(game.tongueReach(peak) * 100), 100, 'full length early');
+    is(game.tongueReach(peak / 2) > 0.4, true, 'on the way out');
+    is(game.tongueReach(game.TONGUE_WHIP_MS + peak) > 0.9, true, 'the second flick');
+  });
+
+  test('outlasts a step at top speed, so it reads as a whip', () => {
+    is(game.TONGUE_WHIP_MS * game.TONGUE_WHIPS > game.LEVELS[game.LEVELS.length - 1].ms, true, 'longer than a step');
+  });
+});
 
 describe('the crest tongue', () => {
   test('mostly flicks in pairs, sometimes once', () => {
