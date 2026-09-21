@@ -2198,6 +2198,35 @@ const SOUNDS = {
   refuse() {
     tone('square', [[note('E3'), 0.2, 4], [note('C3'), 0.2, 8]]);
   },
+
+  // Dojo select, UNR-136. The same chip as everything above, and in the
+  // theme's key, E minor, so they sit inside the music rather than on it.
+
+  // No tick for the clock's last seconds. One was made - a blip climbing
+  // the scale as the number turned red - and Karin cut it on hearing it
+  // (21 September). The red and the beat say it without sound.
+
+  // A card turning over, 400ms: noise swept up to the edge-on moment, then
+  // down as the other face comes round. Half as loud and a narrower sweep
+  // than first written, which Karin found too present: it is only a card.
+  whoosh() {
+    const steps = [];
+    for (let k = 0; k < 10; k++) steps.push([0.6 + k * 0.07, 0.02 + k * 0.006, 1]);
+    for (let k = 0; k < 14; k++) steps.push([1.2 - k * 0.04, 0.08 - k * 0.0055, 1]);
+    noise(steps);
+  },
+
+  // The pick landing. A crack of noise for the contact, and under it a
+  // triangle that falls onto E, the theme's home note, so the kick lands on
+  // the music's own ground.
+  thwack() {
+    noise([[1.4, 0.55, 1], [0.3, 0.5, 2], [0.2, 0.28, 3], [0.15, 0.1, 4]]);
+    tone('triangle', [
+      [note('E3'), 0.95, 1], [note('B2'), 0.95, 1], [note('G2'), 0.9, 2],
+      [note('E2'), 0.8, 5], [note('E2'), 0.4, 5], [note('E2'), 0.15, 5],
+    ]);
+    tone('square', [[note('E5'), 0.2, 2], [note('B5'), 0.16, 3], [note('E6'), 0.1, 5]], 1);
+  },
 };
 
 function playSound(name) {
@@ -4885,6 +4914,9 @@ function showDojoHighlight() {
 
 function highlightDojo(i) {
   if (dojoPhase !== 'open' || i === dojoAt) return;
+  // The menus' blip, so the cards move the way every menu does. Not for the
+  // light the select opens with: nothing was moved.
+  if (dojoAt >= 0) playSound('cursor');
   dojoAt = i;
   showDojoHighlight();
 }
@@ -4899,9 +4931,12 @@ function flipDojo(i) {
 // Half a turn away, swap the face while it is edge-on, half a turn back.
 // 3D only for those 400ms, so nothing at rest sits in a blurred 3D layer.
 function turnDojoCard(li) {
-  if (REDUCED_MOTION.matches || !li.animate) { li.classList.toggle('flipped'); return; }
+  // Reduced motion does not silence sound: the card still turns, just
+  // without moving to get there. The mute is what silences.
+  if (REDUCED_MOTION.matches || !li.animate) { playSound('whoosh'); li.classList.toggle('flipped'); return; }
   if (li.turning) return;
   li.turning = true;
+  playSound('whoosh');
   const card = li.querySelector('.card');
   const edge = (deg) => ({ transform: `perspective(900px) rotateY(${deg}deg)` });
   card.animate([edge(0), edge(90)], { duration: 170, easing: 'ease-in' }).finished
@@ -5029,6 +5064,7 @@ async function chooseDojo(i, timedOut) {
   const hold = timedOut ? DOJO_TIMEOUT_HOLD : DOJO_PICK_HOLD;
 
   if (REDUCED_MOTION.matches || !li.animate) {
+    playSound('thwack');
     await wait(hold);
     return closeDojoSelect();
   }
@@ -5036,6 +5072,7 @@ async function chooseDojo(i, timedOut) {
   const card = li.querySelector('.card');
   await card.animate([{ transform: 'none', filter: 'none' }, { transform: 'scale(.94)', filter: 'brightness(1.35)' }],
     { duration: 110, easing: 'cubic-bezier(.3, 0, .2, 1)', fill: 'forwards' }).finished;
+  playSound('thwack');            // on the flash, where the kick lands
   card.animate([{ transform: 'scale(1.03)', filter: 'brightness(2.2)' }, { transform: 'none', filter: 'none' }],
     { duration: 260, easing: 'ease-out', fill: 'forwards' });
   for (const face of li.querySelectorAll('.face')) {

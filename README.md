@@ -267,7 +267,9 @@ steers a snake behind them.
 than shipped as audio files. A blip for an egg, a squeak and a ding for a
 mouse, a burp for a rotten egg, a quick run of chords for a promotion, a
 long fall for defeat, and a blip and a chord as you move through a menu and
-choose. A promotion replaces the sound of the food that earned
+choose. Dojo select has its own: the same blip as you move between cards, a
+soft whoosh as one turns over, and a thwack as your pick lands. All of it is in the key of
+the music. A promotion replaces the sound of the food that earned
 it. Nothing plays until you press start.
 
 Music is a separate thing, and it is **off until you ask for it** — a game
