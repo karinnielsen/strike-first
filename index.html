@@ -3378,7 +3378,10 @@ document.addEventListener('keydown', (event) => {
 function toggleMercy() {
   if (phase === 'playing' || phase === 'bowing') {
     phase = 'paused';
-    pausedAt = performance.now();
+    // Timed only once the run has started. Mercy in the first bow, before
+    // the snake has moved, was subtracted from a run that had not begun,
+    // and made an honest run look impossibly fast: disqualified.
+    pausedAt = runStartedAt === null ? null : performance.now();
     showOverlay('MERCY', '');
   } else if (phase === 'paused') {
     if (pausedAt !== null) pausedMs += performance.now() - pausedAt;
@@ -3973,9 +3976,6 @@ function pressStart() {
   if (!titling || startPressed) return;
   audio();
   openTitleMenu(0);
-  // The one screen change that does not pass through showBack(), so music
-  // already switched on would otherwise wait for the next screen to start.
-  updateMusic();
 }
 
 function openTitleMenu(at) {
@@ -3985,6 +3985,11 @@ function openTitleMenu(at) {
   titleMenu.at = at;
   titleMenu.nav.hidden = false;
   showMenu(titleMenu);
+  // The main menu is the one screen that does not pass through showBack(),
+  // or passes through it before titling is set again. Either way music
+  // would ask the old screen what to play: silent on arrival with music on,
+  // and silent on every return from a run or dojo select.
+  updateMusic();
 }
 
 function leaveTitle() {
