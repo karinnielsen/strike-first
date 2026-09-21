@@ -9,6 +9,8 @@ Snake, as a dojo. Eat eggs, chase mice, dodge rotten ones and earn your belt.
 One HTML file of code, no build step and nothing to install — open it and play.
 Beside it sit a few images: the dojo crests and the sharing preview. Its one
 outside connection is a hosted database for scores. Made for desktop and tablet.
+A phone gets a landing page instead of the game, with a way to send the link to
+a bigger screen.
 
 Current version: **v0.5.13** — see [CHANGELOG.md](CHANGELOG.md).
 
@@ -199,7 +201,8 @@ were hammering when you died does not restart the game by accident. Reduced
 motion keeps the flash and the drain, and nothing moves.
 
 Under the verdict is a menu that sits in the same place on every defeat:
-**Rematch**, **Rankings** and **Main menu**. After a Practice run it is
+**Rematch**, **Rankings** and **Main menu**, with **Challenge a friend** second
+once you have signed a run. After a Practice run it is
 **Practice**, **Arcade** and **Main menu** instead — the title's own menu — with no signing and no board.
 
 **Quit** from mercy is a forfeit, and it counts. The heading reads
@@ -242,6 +245,30 @@ were in when you signed it, even if you change later.
 When the board is drawn small, the runs either side of yours are left out
 rather than squeezing the rest. If the leaderboard can't be reached, there is
 no board, and nothing else waits for it.
+
+### Challenge a friend
+
+Once you have signed the board, the defeat screen offers **Challenge a
+friend**. On a tablet it opens the share sheet; on a computer it copies a link
+and the row reads **Link copied** for a moment. The link points at your last
+signed run, which is always your hi-score.
+
+Whoever opens it sees, under the crest: *KAR of Cobra Kai challenges you to
+Snake. Score to beat: 47.* The number is read from the board, not the link,
+so a link can't be edited into a better score. After each of their Arcade runs
+the verdict says whether they beat it, and their run lands on the same board,
+which is how you find out. Practice can't settle it, since Practice keeps
+nothing: beat the score there and the verdict says so, and that it does not
+count. The challenge stays for the whole visit, so Arcade after Practice is
+still measured against it. A link to a run the board no longer has simply
+opens the game.
+
+On a phone, the link opens a landing page instead: the crest, the challenge,
+and **Send it to myself**, which opens the share sheet so it can be played on
+a computer or tablet.
+
+A link made from a copy running on your own machine points at that copy, and
+its sandbox board.
 
 ### All Valley Rankings
 

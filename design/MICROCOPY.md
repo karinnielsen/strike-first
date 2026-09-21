@@ -344,6 +344,12 @@ The complete inventory, so nothing drifts unnoticed.
 | `Arcade` / `Practice` / `Rankings` — the title's menu | Utility |
 | `MERCY` / `Continue` / `Quit` — pause | Dojo |
 | `DEFEATED` / a defeat line / `Rematch` `Rankings` `Main menu` — defeat | Dojo |
+| `Challenge a friend` / `Link copied` — defeat, once you have signed a run | Utility |
+| `KAR of Cobra Kai challenges you to Snake.` / `Score to beat: 47` — title, opened from a challenge link. Written for someone who has never played, so no belt | Utility |
+| `You beat KAR's 47.` / `KAR's 47 still stands.` — defeat, on a challenged visit | Dojo |
+| `Beaten in practice. It does not count.` — a Practice defeat that beat the challenge | Dojo |
+| `Beat my score in Strike First, a karate Snake game.` — the shared message | Utility |
+| `A karate Snake game, made for a keyboard or a tablet.` + `Accept the challenge on a bigger screen.` or `Play it on a bigger screen.` / `Send it to myself` — the phone landing | Utility |
 | `Practice` `Arcade` `Main menu` — defeat, after Practice | Utility |
 | `FORFEIT` / the same menu — quitting from mercy | Dojo |
 | `Sign` / `The dojo will not print that.` — initials | Dojo |

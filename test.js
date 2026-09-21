@@ -211,7 +211,10 @@ globalThis.game = {
   get rankingsOpen() { return rankingsOpen }, get rankingsAt() { return rankingsAt },
   get board() { return board }, get boardDue() { return boardDue },
   get boardShown() { return !boardEl.hidden },
-  backFrom, goBack, get backShown() { return !backHud.hidden }, crestEl, titleScreenEl
+  backFrom, goBack, get backShown() { return !backHud.hidden }, crestEl, titleScreenEl,
+  verdictItems, challengeUrl, challengeIdFrom, rivalRequest, rivalFrom, rivalLine, loadRival,
+  isPhone, PHONE_MAX, ON_PHONE, rivalEl, MENU_LABELS,
+  get rival() { return rival }, set rival(v) { rival = v }
 };`;
 
 vm.createContext(sandbox);
@@ -2837,6 +2840,92 @@ describe('back', () => {
   });
 });
 
+
+describe('challenge a friend, UNR-116', () => {
+  test('the verdict offers a challenge only once there is a signed run', () => {
+    is(game.verdictItems('arcade', null), ['rematch', 'rankings', 'menu'], 'no run yet');
+    is(game.verdictItems('arcade', 42), ['rematch', 'challenge', 'rankings', 'menu'], 'a signed run');
+    is(game.verdictItems('practice', 42), ['practice', 'arcade', 'menu'], 'never from Practice');
+    is(game.MENU_LABELS.challenge, 'Challenge a friend', 'says what it does');
+  });
+
+  test('the link points at the run, from wherever the page is served', () => {
+    is(game.challengeUrl({ origin: 'https://karinnielsen.github.io', pathname: '/strike-first/' }, 42),
+       'https://karinnielsen.github.io/strike-first/?vs=42', 'published');
+    is(game.challengeUrl({ origin: 'http://localhost:8765', pathname: '/' }, 7),
+       'http://localhost:8765/?vs=7', 'local, so the sandbox board');
+  });
+
+  test('a link is read back to a run id, or to nothing', () => {
+    is(game.challengeIdFrom('?vs=42'), 42, 'plain');
+    is(game.challengeIdFrom('?utm_source=x&vs=42'), 42, 'among other parameters');
+    is(game.challengeIdFrom('?vs=42&fbclid=abc'), 42, 'before other parameters');
+    is(game.challengeIdFrom(''), null, 'no link');
+    is(game.challengeIdFrom(undefined), null, 'no search at all');
+    for (const bad of ['?vs=0', '?vs=-3', '?vs=abc', '?vs=4.2', '?vs=42x', '?vs=', '?versus=42']) {
+      is(game.challengeIdFrom(bad), null, bad);
+    }
+  });
+
+  test('the score comes from the board, never the link', () => {
+    is(game.rivalRequest({ url: 'https://db' }, 42),
+       'https://db/rest/v1/scores?select=initials,dojo,score&id=eq.42', 'request');
+    const row = { initials: 'KAR', dojo: 'cobra-kai', score: 47 };
+    is(game.rivalFrom([row]), row, 'a good row');
+    is(game.rivalFrom([]), null, 'a wiped board');
+    is(game.rivalFrom(null), null, 'offline');
+    is(game.rivalFrom([{ ...row, dojo: 'nowhere' }]), null, 'unknown dojo');
+    is(game.rivalFrom([{ ...row, initials: '<b>' }]), null, 'odd initials');
+  });
+
+  test('the friend is told how they did, in the dojo voice', () => {
+    const rival = { initials: 'KAR', dojo: 'cobra-kai', score: 47 };
+    is(game.rivalLine(rival, 48), "You beat KAR's 47.", 'beaten');
+    is(game.rivalLine(rival, 47), "KAR's 47 still stands.", 'a tie does not beat it');
+    is(game.rivalLine(rival, 3), "KAR's 47 still stands.", 'short');
+    is(game.rivalLine(null, 48), '', 'no challenge, no line');
+    is(game.rivalLine(rival, 48, 'practice'), 'Beaten in practice. It does not count.', 'Practice never settles it');
+    is(game.rivalLine(rival, 3, 'practice'), '', 'short in Practice: nothing to correct');
+    for (const line of [game.rivalLine(rival, 48), game.rivalLine(rival, 3), game.rivalLine(rival, 48, 'practice')]) {
+      if (line.split(' ').length > 9 || !line.endsWith('.') || /n't|!/.test(line)) {
+        throw new Error(`breaks the dojo voice: ${line}`);
+      }
+    }
+  });
+
+  testAsync('an unknown run on the board is no challenge, not an error', async () => {
+    const send = async () => ({ ok: true, json: async () => [] });
+    await game.loadRival(999, send);
+    is(game.rival, null, 'rival');
+  });
+
+  test('any other overlay clears the challenge line', () => {
+    freshGame();
+    game.rival = { initials: 'KAR', dojo: 'cobra-kai', score: 47 };
+    game.showOverlay('MERCY', '');
+    is(game.rivalEl.textContent, '', 'cleared by any other overlay');
+    game.rival = null;
+  });
+
+  test('the challenge outlives a Practice session', () => {
+    freshGame();
+    const rival = { initials: 'KAR', dojo: 'cobra-kai', score: 47 };
+    game.rival = rival;
+    game.playPractice();
+    game.toTitle();
+    game.mode = 'arcade';
+    is(game.rival, rival, 'still there for Arcade');
+    game.rival = null;
+  });
+
+  test('a phone is judged by the short side of its screen', () => {
+    is(game.isPhone(390, 844), true, 'iPhone upright');
+    is(game.isPhone(844, 390), true, 'iPhone on its side');
+    is(game.isPhone(744, 1133), false, 'iPad mini');
+    is(game.isPhone(1440, 900), false, 'laptop');
+    is(game.ON_PHONE, false, 'the harness is not a phone');
+  });
+});
 
 describe('version', () => {
   test('matches the changelog', () => {
