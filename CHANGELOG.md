@@ -18,6 +18,15 @@ still a patch. The journey counts as well as the mechanics, settled 17
 September: earlier versions were numbered under a rule that asked only what the
 player has to *do*, and they aren't renumbered.
 
+## [0.5.12] — 2026-09-21
+
+### Changed
+
+- **Headings burn from yellow to orange** (UNR-176). DEFEATED, MERCY, CHOOSE
+  YOUR DOJO and the rankings heading shared the lit menu row's flat yellow,
+  so they couldn't lead the menu under them. They now run from the yellow
+  down into orange over a burnt shadow. Menus keep the flat yellow.
+
 ## [0.5.11] — 2026-09-21
 
 Dojo select joins the sound.
