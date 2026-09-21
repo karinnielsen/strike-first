@@ -69,8 +69,8 @@ learning never stops.
 
 ## Contribute
 
-PRs welcome — start with a
-[good first issue](https://github.com/karinnielsen/strike-first/labels/good%20first%20issue).
+PRs welcome — start with an
+[open starter issue](https://github.com/karinnielsen/strike-first/labels/good%20first%20issue).
 Local copies write to a sandbox, not the live board.
 
 Current version: **v0.5.13** — see [CHANGELOG.md](CHANGELOG.md).
