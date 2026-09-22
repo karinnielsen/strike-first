@@ -2,6 +2,13 @@
 
 What changed in each release of Strike First.
 
+## [1.0.5] — 2026-09-22
+
+### Changed
+- Side by side, the crest is half again as large, the score list sits
+  level with the board rather than stranded at the top, and the two
+  columns stand further apart.
+
 ## [1.0.4] — 2026-09-22
 
 ### Fixed
