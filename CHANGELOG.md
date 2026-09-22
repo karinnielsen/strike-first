@@ -1,732 +1,286 @@
 # Changelog
 
-All notable changes to Strike First are recorded here.
-Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+What changed in each release of Strike First.
 
-For a game, read the version parts as:
+## [Unreleased]
 
-- **major** — the game plays differently enough to be a new thing
-- **minor** — a new mechanic or mode, or a new step in the player's journey:
-  a screen they pass through, or a choice every player makes
-- **patch** — balance tuning, art, copy and bug fixes within the screens that
-  already exist
+### Added
+- **Challenge a friend.** Send a link to your best run. Your friend sees the
+  score to beat, and their run lands on the same board. On a desktop it copies
+  *"I scored N… Beat it."* with the link; on a tablet it opens the share sheet.
+- **A landing page for phones:** the crest, the challenge, and a way to send
+  the link to a bigger screen.
+- **A Star button** for the GitHub repo on the title screen.
 
-Artwork is a patch, however much of it there is. Settled 12 September, when
-v0.3.1 shipped a new wordmark, a new palette and legible board artwork and was
-still a patch. The journey counts as well as the mechanics, settled 17
-September: earlier versions were numbered under a rule that asked only what the
-player has to *do*, and they aren't renumbered.
+### Changed
+- **The verdict shows the podium first,** then the menu. The menu stays put
+  while the podium loads.
+- **Every menu is centred,** with the ▶ beside the lit row.
+- **The crest flicks its tongue during a run,** not only between them.
+- **A rotten egg blinks out** over a few moves instead of vanishing.
+- **The snake's tongue lashes,** and is drawn to the board's scale.
+- **Beating a challenge in Practice** says it doesn't count.
+
+### Fixed
+- The rankings filter showed no selection on All or Eagle Fang.
+- The snake's tongue was mostly hidden by its head.
 
 ## [0.5.13] — 2026-09-21
 
 ### Changed
-
-- **Promotion plays in the theme's key** (UNR-153). Every sound effect was
-  heard together for the first time and nine were kept. Promotion was the one
-  outside the music's E minor, a C major run of chords. It now climbs through
-  E minor and lands on E major: minor on the way, bright on arrival.
+- **Promotion plays in the theme's key,** climbing through E minor to land on
+  E major.
 
 ## [0.5.12] — 2026-09-21
 
 ### Changed
-
-- **Headings burn from yellow to orange** (UNR-176). DEFEATED, MERCY, CHOOSE
-  YOUR DOJO and the rankings heading shared the lit menu row's flat yellow,
-  so they couldn't lead the menu under them. They now run from the yellow
-  down into orange over a burnt shadow. Menus keep the flat yellow.
+- **Headings burn from yellow to orange,** so they lead the menus under them.
 
 ## [0.5.11] — 2026-09-21
 
-Dojo select joins the sound.
-
 ### Added
-
-- **Sounds for dojo select** (UNR-136), from the same chip as the rest of the
-  game and in the theme's key, E minor: the menus' blip as the lit card moves,
-  a soft whoosh as a card turns over, and a thwack as your pick lands, falling
-  onto the music's home note.
-
-### Notes
-
-- The clock's last five seconds were given a tick and it was cut by ear. The
-  red and the beat carry the countdown without sound.
+- **Dojo select has sound:** a blip as the lit card moves, a whoosh as a card
+  turns, a thwack as your pick lands.
 
 ## [0.5.10] — 2026-09-21
 
 The music arrives.
 
 ### Added
-
-- **A theme** (UNR-135). One quiet loop, made in Astra and mixed without its
-  drums or lead, on the start menu, dojo select and the rankings. Still off
-  until you ask for it.
-- The speaker says its state in words — music off, music on, sound off — and
-  flashes it for a moment on every change, on touch screens too. The icon
-  alone never said whether music was on.
+- **A theme,** looping quietly on the menus, dojo select and the rankings.
+  Off until you turn it on.
+- **The speaker says its state** — music off, music on, sound off — on every
+  change.
 
 ### Changed
-
-- Music fades rather than cuts: out as a run begins, back in on the next
-  screen.
-- The verdict is silent. You see it after every run, so music there would
-  grate.
+- Music fades in and out instead of cutting. The verdict is silent.
 
 ### Fixed
-
-- Music already switched on stayed silent on the main menu, on arriving and
-  on every return to it.
-- Mercy pressed during the first bow, before the snake had moved,
-  disqualified an honest run (UNR-174). Present since v0.5.0.
+- Music that was on stayed silent on the main menu.
+- Mercy during the opening bow disqualified an honest run.
 
 ## [0.5.9] — 2026-09-20
 
-The first of the sound work, and the rule that governs the rest of it:
-music is off until you ask for it.
-
 ### Added
-
-- **Music, off until you ask for it** (UNR-138). **M** and the corner speaker
-  now step through three states rather than toggling everything at once:
-  effects only, then effects and music, then silence. The cycle starts where a
-  new player starts, so one press turns music on. The icon reads as a ladder —
-  one wave, two waves, crossed out.
-- Music plays on the screens either side of a run: the start menu, dojo select,
-  the rankings and the verdict. A run is silent so the effects have it to
-  themselves, mercy is still inside the fight, and the moment of defeat lands
-  before anything else arrives. A tab you are not looking at stops singing.
-- **Column names on the defeat board** (UNR-173). The podium showed five
-  columns with no headings, so the dojo badge and the belt bar sat there
-  unexplained — and that board is where most people meet the leaderboard for
-  the first time. It now carries the same rank, name, dojo, belt and score as
-  the full rankings, from one shared definition.
+- **Music is off until you ask for it.** **M** and the speaker step through
+  effects only, effects and music, then silence.
+- **Column names on the defeat board:** rank, name, dojo, belt, score.
 
 ### Fixed
-
-- The board's by-kind alignment — numbers right, name left, badge and belt
-  centred, header and cells alike — had only ever applied to the rankings
-  screen. It now governs the defeat board too, whose cells had been built
-  without their column names.
-
-### Notes
-
-- No music ships in this release. `design/MUSIC-BRIEF.md` briefs the two
-  tracks, and until they exist the page asks for one, does not find it, and
-  carries on in silence. Tracks will be files beside the page, fetched only
-  when music is turned on.
-- Anyone who had muted the game stays muted: the old flag is carried over.
+- The defeat board's columns now line up like the rankings'.
 
 ## [0.5.8] — 2026-09-20
 
 ### Changed
-
-- **Picking a dojo is a beat on the card, not a banner** (UNR-168). The pick
-  used to play a full-width banner with the dojo's name and creed, about three
-  seconds between the player and every Arcade run. Now the card draws back,
-  flashes and holds a frame, the other two step away, and the run arrives:
-  711ms from Enter to the bow. Running out of clock says "Too slow. Sensei
-  chose for you." on the keys line instead.
-- **The page title and descriptions now lead with what people search for**
-  (UNR-171). The title reads "Strike First — Browser Snake Game | Play Free
-  Online" instead of just the name, and the search and share descriptions open
-  with playing snake in the browser, keeping the dojo twist second, so searches
-  like "browser snake game" can find it.
+- **Picking a dojo is instant:** the card flashes and the run starts, instead
+  of a three-second banner.
+- **Search-friendly title:** "Strike First — Browser Snake Game | Play Free
+  Online".
 
 ## [0.5.7] — 2026-09-18
 
 ### Fixed
-
-- **Enter during the fade into dojo select no longer picks a dojo you never
-  saw** (UNR-164). Since v0.5.0, pressing Enter or Space in the quarter-second
-  the title took to fade out chose the lit dojo unseen and skipped the select;
-  on a first visit that was always Cobra Kai. Keys and the back control now
-  wait until the cards are on screen.
+- Enter during the fade into dojo select picked a dojo you never saw.
 
 ## [0.5.6] — 2026-09-18
 
-Wax on, wax off: back over the fundamentals before anyone new is invited in.
-The two things that share the board with the egg both stopped being scenery. A
-rotten egg now lands where dodging it costs you something, and a mouse has to
-be earned rather than collected. Nothing plays by a new rule, so it is a patch.
+Back to basics before inviting anyone in.
 
 ### Changed
-
-- **Rotten eggs threaten rather than decorate** (UNR-155). One on a random
-  square is one you steer around, which changes nothing about how you play.
-  It lands **in the way** now — on a shortest route between your head and the
-  egg — and it follows a sequence through the run rather than being thrown at
-  you from the first egg. Nothing until you have eaten three rewards since the
-  last one left, so two never arrive back to back. In the last five points
-  before a belt score it sits **right beside the egg**, on the side facing you,
-  and the first egg of that stretch always brings one, once per belt: just
-  before a belt is when you have most to lose. Eat the egg it was guarding and
-  it leaves with it. It never lands within three squares of your head, never
-  boxes the egg in, and if nothing fits, no rotten egg comes at all. It is also
-  a little smaller, just under the egg rather than over it.
-- **Mice have to be earned** (UNR-159). A mouse used to land on any square
-  you could reach, which out in open board is a pickup rather than a choice.
-  It lands in a **tight spot** now — hard against a wall, in a corner, or
-  fenced in by your own body — so going for one means committing to a square
-  you may not get back out of. Never a dead end with a single way in, and
-  never within eight squares of your head: one at your feet is a gift. And it
-  is a **race**: instead of a flat sixty moves, its clock is set from how far
-  away it actually is, so every mouse asks the same question wherever it
-  lands. You are always given enough moves to reach it — what you can no
-  longer afford is to dither. The warning flash scales with the clock, and the
-  mouse twitches every few of your moves, because the more tempting reward
-  should not be the stiller one.
-- **Continuing from mercy bows you back in** (UNR-149). It used to wait one
-  step, which was 70ms at level 9: the better the run, the less time you
-  had to find the snake after the overlay had covered it. The bow is the
-  same half second at every level. A direction cuts it short, but never to
-  less than one step, so pausing on every move still can't make a run look
-  faster than it was.
-- **Reduced motion gets the same beat,** held still, on every start and
-  every Continue. It used to start cold.
-- **Mercy works during a bow,** and its button no longer blinks out while
-  the snake bows.
-
-- **Easier to read.** The grey used for labels, hints and keys is lighter,
-  up from about 4.4:1 to 5.4:1 against the mat, and the version line now
-  uses it too instead of its own darker grey. The header's labels and
-  numbers are a size up (UNR-147). The labels are bone rather than grey,
-  since they carry information, and the numbers are a pale yellow so they
-  still stand apart.
-- **Grey only where it carries nothing.** Hints, keys, column headings, the
-  dojo select's stat names and sensei, the rankings filter and the verdict's
-  line are bone now. Dojo stats read label in bone, value in pale yellow,
-  like the header. The rankings podium's places stand out by weight.
-- **Menu rows are bone, not grey,** when they aren't lit. The grey was too
-  muted and read as disabled. The lit row is still the only yellow one.
-- **One way back, on every screen you can leave** (UNR-163). A back arrow in
-  the top-left corner mirrors the speaker and ❚❚ in the top-right: the same
-  keycap, the same size, sized for a finger. **Esc** presses it. It is on
-  dojo select, which had no way out at all before, the rankings, where it
-  replaces the small `back` link, and the verdict, where it does what Main
-  menu does. Leaving dojo select stops its clock, so it can't bow you in on
-  the way out. There is none on the title, in a run, where mercy is the way
-  out and Quit counts, or while signing, which has no skip.
+- **Rotten eggs get in your way,** on your route to the egg, and right beside
+  it when a belt is close. Never unfairly close to your head.
+- **Mice have to be earned.** They land in tight spots, against walls and in
+  corners, with just enough moves to reach them.
+- **Continuing from mercy bows you back in:** the same half second at every
+  level.
+- **Easier to read:** lighter grey, larger header, and bone for anything a
+  player needs to read.
+- **One way back,** top-left, on every screen you can leave. **Esc** presses
+  it.
 
 ### Fixed
-
-- **The rankings filter no longer slides under the corner buttons.**
-  Scrolled down on a screen under 880px wide — an iPad in portrait
-  included — the pinned filter reached under the speaker, so a tap on Eagle
-  Fang could land on it and mute the game instead. It now pins just below the corner buttons
-  there. Wider screens, and the page before it scrolls, are unchanged.
-- **The snake flicks its tongue again** (UNR-160). It had quietly stopped,
-  and not because anything touched it: the flick was timed in milliseconds,
-  the board is drawn once per move, and the gentler level curve from v0.2.0
-  halved how often that happens. The flick went from three or four frames —
-  out, held, back — to one, which reads as a blink. It is counted in **your
-  moves** now, six to twenty between flicks, so the rhythm is the same whether
-  you are thinking your way through level 1 or flat out at level 9. A true
-  whip needs more than this and is still to come.
-- **The hood is no longer cut off at the edge of the board** (UNR-154). The
-  canvas now reaches a little past the board on every side, so the hood, the
-  tongue and food on an edge square can overhang the border. The wall is
-  still the border. Under mercy and the verdict the drawing stops at the
-  edge again, so nothing bright pokes out beside the darkened board.
+- The rankings filter slid under the corner buttons on narrow screens.
+- The snake had stopped flicking its tongue.
+- The cobra's hood was cut off at the edge of the board.
 
 ## [0.5.5] — 2026-09-17
 
-Start screen and repeat play. The game gets its menus: one on the title, and
-one inside every run for mercy, signing and what comes after a defeat. It
-reshapes the journey without adding a mechanic, so it is a patch. UNR-137.
+The game gets its menus.
 
 ### Added
-- **A menu under the crest.** Press start and **Arcade**, **Practice** and
-  **Rankings** take its place, Arcade lit. The lit row takes PRESS START's
-  voice; the others are the same letters with the power off. Arrows, W and
-  S, or Tab move it, Enter or Space chooses, and a mouse or a tap works too.
-  **B** jumps to Rankings, and back from them lands on the title.
-- **Practice.** Straight into a run, and it keeps nothing: no rankings, no
-  hi-score, no belt. Its defeat menu is **Practice / Arcade / Main menu**,
-  with no signing and no board.
-- **Quit, from mercy, is a forfeit, and it counts.** The verdict reads
-  **FORFEIT** and everything else goes as after a defeat, signing included.
-  Quit with nothing scored goes straight back to the title.
-- **Esc calls mercy and answers it,** the way Space does.
+- **A title menu:** Arcade, Practice, Rankings. Arrows, Tab, mouse or tap.
+- **Practice:** straight into a run that keeps nothing.
+- **Quit from mercy is a forfeit,** and it counts.
 
 ### Changed
-- **Arcade opens dojo select every time,** lit on your dojo, and goes
-  straight into the fight. **Rematch** skips it.
-- **Mercy is MERCY with Continue / Quit.** The helper line is gone.
-- **The defeat screen is DEFEATED with Rematch / Rankings / Main menu,**
-  anchored near the top so nothing moves while the board loads. DEFEATED,
-  MERCY and DISQUALIFIED are larger.
-- **Signing is an arcade entry.** Centred on the board, **AAA** the first
-  time, the next empty slot blinking yellow, and a single **Sign** row,
-  which buzzes when there are fewer than three letters. Refused initials get
-  a note under the letters. A save that fails goes to the menu rather than
-  asking again.
-- **A dojo card's back says dojo rank, not place:** *1st*, rather than *1st
-  of 3*, which read like a player's place.
-- **R is Rematch on the defeat screen, and does nothing mid-run.** A bad run
-  can no longer be thrown away off the record.
+- **Arcade opens dojo select every time.** Rematch skips it.
+- **Mercy and the verdict are menus:** Continue / Quit, and Rematch /
+  Rankings / Main menu.
+- **Signing is an arcade entry:** three letters, one Sign button.
+- **R is Rematch on the verdict,** and does nothing mid-run.
 
-### Removed
-- **The start screen on the board:** *Strike hard. No mercy.*, *arrows or
-  wasd to move*, the dojo line with **change**, and **Enter the dojo**.
-- **Arrival,** the grid lighting and the snake sliding in, which led only to
-  that start screen.
-- **Skip** on signing, **Again**, the **rankings** link under the call to
-  action, and the dojo totals under the defeat board — the Rankings row does
-  that job.
+### Killed
+- The start screen on the board, and the arrival animation that led to it.
+- Skip on signing, Again, and the dojo totals under the defeat board.
 
 ## [0.5.4] — 2026-09-17
 
-Corner controls. Sound and mercy become buttons everyone already recognises,
-in the same place on every screen. Nothing about how you play changes, so it
-is a patch.
-
 ### Added
-- **A speaker and a ❚❚ in the top-right corner** of every screen, as grey
-  keycaps that press down like the call to action. The speaker is crossed out
-  while sound is off. ❚❚ shows only during a run and turns into ▶ in mercy;
-  its slot stays put either way, so the speaker never moves.
-- **Key hints on hover.** With a mouse or trackpad, each button names its key
-  — **m** sound, **space** mercy — on hover or when tabbed to. Touch screens
-  never show them.
+- **A speaker and a pause button** in the top-right corner of every screen.
+  Hover names their keys.
 
 ### Changed
-- **M mutes on every screen, the title included,** without starting the game.
-  Someone playing in an office can silence it before anything plays.
-- **Mercy's button is for everyone,** not only touch screens, and has left the
-  scores for the corner.
-- **The sound on button** under the call to action is gone; **rankings** has
-  the line to itself.
-
-### Fixed
-- **On the title, M pressed start** instead of muting.
+- **M mutes anywhere,** the title included.
 
 ## [0.5.3] — 2026-09-17
 
-All Valley Rankings. The whole board gets a screen of its own, and The All
-Valley milestone is complete. Nothing about how you play changes, so it is a
-patch.
-
 ### Added
-- **All Valley Rankings.** The top ten, with your run and the ones either side
-  of it if you are further down, on a screen of its own. Open it with **B** or
-  the new **rankings** button on the start and defeat screens; **Esc**, **B**
-  or **back** returns. Never during a run. UNR-134.
-- **Filter by dojo.** All, Cobra Kai, Miyagi-Do or Eagle Fang, with **← →**,
-  **Tab** or a tap. Filtered, places count within the dojo and the dojo's
-  crest sits above the list. A dojo nobody has fought for yet says so.
-- **Column names** along the top, and the top three places in bone.
-
-### Changed
-- **The hint line** under the board names **b = rankings**.
-- **The sound switch** shares its line with the rankings button, so the
-  defeat screen is no taller than it was.
+- **All Valley Rankings:** the top ten and your neighbourhood, on its own
+  screen, filtered by dojo. Open it with **B**.
 
 ## [0.5.2] — 2026-09-16
 
-Disqualified. A tampered run is called for what it is. No honest player can
-ever see it, so it is a patch.
-
 ### Added
-- **Disqualified.** A run the rules could not have produced, which means the
-  page was tampered with, ends DISQUALIFIED instead of DEFEATED, the way a
-  referee calls *shil kyuk*. The bout does not count: the score goes to
-  nothing, the hi-score and belt it set are taken back, and there is nothing
-  to sign. No honest run can reach it. UNR-145.
+- **Disqualified.** A tampered run is called out, and doesn't count.
 
 ## [0.5.1] — 2026-09-16
 
-Scores you can trust. The board only takes runs the game could have
-produced. The one thing a player might notice is a beat after mercy, so it
-is a patch.
-
 ### Added
-- **Scores you can trust.** The database refuses a run the game could not
-  have produced. Score, length, moves and time are checked against each
-  other using hard limits taken from the rules: at most three points a move
-  and three a square of length, and no faster than the speed curve allows.
-  A forged score is refused, and every run actually played is accepted. The
-  page runs the same check before sending. Submissions are rate limited, per
-  caller and across everyone; the caller is known only by a hashed IP address,
-  kept for ten minutes. UNR-132.
-
-### Changed
-- **Continuing from mercy gives you a full step** before the snake moves,
-  rather than whatever was left of the step mercy interrupted. It closes a
-  hole where pausing on every move shrank a run's recorded time to nothing.
+- **Scores you can trust.** The board refuses runs the game couldn't have
+  produced, and rate-limits submissions.
 
 ## [0.5.0] — 2026-09-16
 
-The All Valley: pick a dojo, sign the board, and every score counts for your
-dojo as well as for you. A new thing to do, so it is a minor. The milestone's
-last two pieces, scores you can trust and the full board, follow as patches,
-since neither changes what the player does.
+The All Valley: pick a dojo, sign the board, score for your dojo.
 
 ### Added
-- **A title screen.** The game opens the way an arcade cabinet does: the crest
-  large and alone, a blinking *Press start* in the wordmark's offset lettering,
-  and along the foot, *@pushinpixls 2026* and *free play*. Any key, click or
-  tap presses start and does nothing else. A touch screen is told to tap.
-  Chosen from mocks over keeping the crest above the select screens.
-- **Dojo select.** The first time you press start you choose Cobra Kai,
-  Miyagi-Do or Eagle Fang, on an arcade select screen with 30 seconds on the
-  clock; when it runs out, the lit dojo is chosen for you. Each card carries
-  its crest, drawn by Astra, and flips to show where the dojo stands, its
-  team score, students, top student and founding sensei. The pick lands like
-  a kick with the dojo's creed under its name. The choice is remembered, and
-  the start screen offers to change it.
-- **Sign the board.** After a new hi-score the defeat screen asks for three
-  initials, arcade style. Last time's come back filled in, a short list of
-  rude ones is refused in the page and in the database, and signing saves the
-  run to a shared leaderboard under your dojo.
-- **The board on the defeat screen.** A podium - the top three, then the runs
-  either side of yours - with each dojo's pixel badge, and under it the dojos,
-  each scored as its best three players. When drawn small it comes down to
-  your neighbourhood and your dojo's standing.
-- **Scores that outlive the browser.** Runs are stored in a hosted database.
-  The page's public key can only add a score and read them back.
-
-### Changed
-- The game is no longer one file on its own: beside it sit the three dojo
-  crests, as 320px WebP, fetched only when the select might be shown.
+- **A title screen,** arcade-cabinet style. Press start.
+- **Dojo select:** Cobra Kai, Miyagi-Do or Eagle Fang, 30 seconds on the
+  clock. Flip a card to see how the dojo stands.
+- **Sign the board** with three initials after a new hi-score.
+- **A shared leaderboard,** with a podium on the defeat screen and every dojo
+  scored by its best three.
 
 ## [0.4.6] — 2026-09-15
 
-Reduced motion now covers the whole game. Nothing plays differently, and no
-one without the setting sees a change, so it is a patch.
-
 ### Changed
-- **Score feedback under reduced motion.** The `+N` fades in and out where it
-  appears instead of rising and growing, keeping its size, colour and sign.
-  The score counter turns briefly yellow instead of swelling. Chosen over
-  keeping the swell, side by side.
-- **The egg holds still** under reduced motion. Its pulse was decoration.
-
-With these, everything that moves either stops or calms when the setting is
-on: arrival, the opening bow, the defeat, the queasy shiver, the tongue
-flicks, the promotion ring, the button pulse, and now the score and the egg.
-The snake's own movement stays, because it is the game.
+- **Reduced motion covers the whole game,** score feedback and the egg
+  included.
 
 ## [0.4.5] — 2026-09-14
 
-The game arrives now, instead of simply being there. Nothing plays
-differently, so it is a patch.
-
 ### Added
-- **Arrival.** Once per session, on page load: the crest settles and flicks
-  its tongue, the mat's grid lights outward from the spawn, and the snake
-  slides in from the left wall one cell at a time, then the egg and the menu.
-  1.4 seconds. It ends on the start screen exactly as it is without one, and
-  any key, click or tap jumps there first and then does what it would have
-  done anyway. Reduced motion skips it. Chosen from four candidates side by
-  side, kept on `options/arrival`.
+- **An arrival animation** on first load.
 
 ## [0.4.4] — 2026-09-14
 
-Every run is a bout now, bowed into as well as out of. Nothing plays
-differently, so it is a patch.
-
 ### Added
-- **An opening bow.** Every run opens with a bow, the way every lost one
-  closes with one: the snake dips its head, draws back, and its first step
-  snaps forward as a strike. Half a second. The snake does not move until it
-  is over, so it never costs reaction time, and a direction pressed during it
-  cuts it short and is taken as the first move at once. Reduced motion skips
-  it. Chosen from four candidates side by side, kept on `options/start-bow`.
+- **An opening bow:** every run starts with a strike.
 
 ## [0.4.3] — 2026-09-14
 
-Losing gets a moment. The snake's last mistake plays out on the board before
-the verdict, and the verdict knows how close you came. Nothing plays
-differently, so it is a patch.
-
 ### Added
-- **A defeat sequence.** About a second on the board before the verdict: the
-  impact holds still, yellow sparks fly from the point of contact, the snake
-  is knocked back, drains to ash from the tail up and bows. Space, R or a tap
-  skips it after the first 300ms. Reduced motion keeps the flash and the
-  drain without the movement.
-- **Near-miss defeat lines.** Ending within three points of your hi-score, or
-  of the next belt on a new hi-score, says so and by how much.
-- **More defeat lines,** thirty-seven in all, with nods to the series.
-
-### Changed
-- **The same defeat line never appears twice in a row.**
-- **The overlay's button stands apart** from the title and line above it,
-  on every screen, so the verdict and the call to action read as two things.
-- "A record and a corpse" is now "A hi-score and a corpse", because the dojo
-  does not say record.
+- **A defeat sequence:** sparks, knock-back, and the snake drains to ash.
+- **Near-miss lines** when you fall just short, and 37 defeat lines in all.
 
 ## [0.4.2] — 2026-09-14
 
-The game makes noise. Arcade sound effects for everything that happens in a
-run, and a way to turn them off that is remembered. Nothing plays
-differently, so it is a patch.
-
 ### Added
-- **Sound effects** in an 80s/90s arcade register, generated in the page from
-  square and pulse waves and noise, so the game is still one file: a blip for
-  an egg, a squeak and ding for a mouse, a burp for a rotten egg, arpeggiated
-  chords for a promotion (in place of the food's sound, never over it) and a
-  two-octave fall for defeat. Nothing plays until a game has been started.
-  The candidates they were picked from are in `design/sound-options.html`.
-- **Mute.** Press M, or use the sound on / sound off button under the
-  overlay's main button, which is also how a tablet mutes: mercy brings the
-  overlay up mid-run. The choice is remembered.
-
-### Changed
-- **The keyboard hint wraps between controls,** never inside one. In the
-  side-by-side layout it used to split "r" from "= restart".
+- **Arcade sound effects,** generated in the page.
+- **Mute** with **M**, remembered.
 
 ## [0.4.1] — 2026-09-14
 
-The crest comes alive. Between runs the cobra flicks its tongue, the way a
-real snake smells the air. Nothing plays differently, so it is a patch.
-
 ### Added
-- **The crest cobra flicks its tongue** on the start, mercy and defeat
-  screens: mostly in pairs, at uneven pauses. It holds still for the whole
-  run, so nothing moves above the board while you play. Reduced motion turns
-  it off.
-
-### Changed
-- **The crest's mouth is closed at rest.** The tongue was always out; now it
-  only shows during a flick, drawn as five poses with a redrawn throat. The
-  artwork and its notes are in `design/title-crest/`.
+- **The crest flicks its tongue** between runs.
 
 ## [0.4.0] — 2026-09-14
 
-Plays anywhere. The game has a link: open it in a browser on a desktop or a
-tablet and play, with nothing to download or send around. This ships the
-milestone that touch controls, the fitted layout and the link preview in
-v0.3.2 were building towards. The game itself plays exactly as it did.
+Plays anywhere.
 
 ### Added
-- **A playable link** at <https://karinnielsen.github.io/strike-first/>. The
-  link preview, tab icon and home-screen icon from v0.3.2 now have somewhere
-  to point.
-- **An MIT licence** for the code, and a note that this is an unofficial,
-  non-commercial fan homage.
-
-### Changed
-- **The repository is public.** The README now opens with the link and a
-  picture of the game, lists what is coming next, and says where the process
-  lives: the commit history, `CLAUDE.md` and `design/`.
+- **A link:** <https://karinnielsen.github.io/strike-first/>. Nothing to
+  install.
+- **MIT licence.** An unofficial, non-commercial fan homage.
 
 ## [0.3.2] — 2026-09-14
 
-It plays on a tablet, and the whole board fits on the screen you have.
-Nothing about the game changes — same board, same rules, new ways to reach
-it.
-
 ### Added
-- **Touch controls, so it plays on a tablet.** Swipe on the board to steer;
-  the turn lands while your finger is still moving, and one stroke can round
-  a corner. A mercy button sits under the crest, never on the board. Swipes
-  obey exactly the same rules as keys. Touch screens get instructions that
-  say swipe rather than naming keys they don't have.
-- **A tab icon.** The cobra's hood from the crest, cropped close so it still
-  reads as a hood at sixteen pixels. Also the home-screen icon on a tablet.
-- **A link preview.** Pasting the link somewhere shows the crest and a line
-  saying what it is beside a board in play, with a real title and
-  description, rather than a bare URL.
-  It points at the published address, so it shows up once the game is live.
+- **Touch controls:** swipe to steer, on a tablet.
+- **A tab icon and a link preview.**
 
 ### Changed
-- **The whole board fits on short and landscape screens.** Stacked, the page
-  is 971px tall, so a landscape iPad, a laptop window or a 1080p browser cut
-  off the bottom of the board. When it doesn't fit, the crest sits centred on
-  top, the board below it on the left and the stats as a list beside it. The
-  crest shrinks first, then the board, never below 20px cells. Chosen by the
-  space available, not the device.
+- **The whole board fits** on short and landscape screens.
 
 ### Fixed
-- **Pages that fit no longer scroll on iPad Safari.** It centred against a
-  height that included the hidden toolbar.
-- **The board has a visible edge again**, and the start overlay no longer
-  darkens it away.
+- Pages that fit scrolled on iPad Safari.
 
 ## [0.3.1] — 2026-09-12
 
-The game gets its face. A drawn cobra crest where the typed wordmark was,
-and one yellow doing the work two were doing before. Nothing plays
-differently — this is all art.
+The game gets its face.
 
 ### Added
-- **Drawn artwork on the board.** The egg, the rotten egg, the mouse and the
-  cobra's head are commissioned illustration rather than shapes hand-coded into
-  canvas, and the snake finishes in a pointed tail that trails the body.
-- **The board is drawn half as large again** — 30px cells instead of 20px, on
-  the same 21×21 grid. Nothing about the game changes: same distances, same
-  speed curve, same difficulty. At 20px the artwork simply could not be read.
-- **The primary button looks like a button on a cabinet.** A solid slab edge
-  under it, no blur, borrowing the language the wordmark already uses; it
-  travels down onto that shadow when you press it, the way a real key does; and
-  a slow warm bloom calls you back to it. Bold, because the overlay title above
-  it is bold and a lighter button read as the lesser of the two — which is
-  backwards for the one thing the screen is asking you to do.
-- The button finally has a **visible focus ring**. Keyboard users were getting
-  whatever the browser decided.
-- **The cobra crest.** The wordmark is a drawn lockup now — the hood above and
-  through the words, the lettering outlined into the artwork rather than set in
-  a display face. It is the first thing on the page and it says what the game
-  is before you have read a word.
+- **The cobra crest.**
+- **Drawn artwork** for the egg, rotten egg, mouse and the cobra's head, on a
+  board half as large again.
+- **A cabinet-style button** you can see focus on.
 
 ### Changed
-- **Electric yellow is the system yellow.** The dojo has one colour instead of
-  two: the yellow on the cobra is the same yellow as the primary button, the
-  overlay title and the `+5`. The old gold was a generic arcade gold sitting
-  next to a very specific one, and carrying two yellows where only one meant
-  anything was one too many. Rank is untouched — a belt has always worn its
-  own colour, and none of the seven is yellow.
+- **One yellow,** shared by the crest, the button and the score.
 
-### Removed
-- **The last thing this page fetched.** The display face existed for exactly
-  one line of CSS, the title, and the crest's lettering is drawn — so the
-  webfont and its three `<link>` tags are gone with it. The game now requests
-  nothing at all: "one self-contained HTML file, no dependencies" is literally
-  true rather than nearly true.
+### Killed
+- The web font. The game fetches nothing.
 
 ## [0.3.0] — 2026-09-08
 
-Earn your belt. Score becomes a rank you hold rather than a number you lose,
-the snake wears it, and beating your own record is now a moment that happens
-while you are still playing.
+Earn your belt.
 
 ### Added
-- **Belts.** A rank you hold across runs, derived from your best score ever
-  rather than the run you are in. You are promoted only by beating your own
-  record, and only by beating it by enough to cross a threshold — so a small
-  personal best doesn't promote you and a breakthrough does. Seven ranks
-  following the real Tang Soo Do ladder: white, orange, green, brown, red,
-  Cho Dan Bo, midnight blue. Red sits near the top, which inverts what most
-  people expect, and the last belt is midnight blue rather than black because
-  black symbolises an end.
-- The snake **wears its belt** as a single coloured band one segment behind the
-  head. A belt is literally a band around a body, so it needs no explaining,
-  and it leaves the rest of the snake free to show condition instead. At white
-  belt the band is bone, so you visibly have no belt until you earn one.
-- The same swatch annotates **best** in the header. Your best score is what
-  produces your rank, so putting them together makes the link visible without
-  a tutorial — and it's what connects "my snake has an orange block" to "I am
-  an orange belt".
-- **Your rank is named in words in the header, always.** Roughly one man in
-  twelve can't separate the brown and red belts, and those are consecutive
-  ranks — so without a name, the promotion someone most wants to see is the one
-  they can't see. The swatch stays the quick read for everyone else; the name is
-  what makes it unambiguous. Verified against a deuteranopia simulation rather
-  than by eye.
-- The header row is split into two clusters: **score and level are live** and
-  move while you play; **hi-score and belt are standing** and a bad run can't
-  take them away. Every item reads label-then-value, so the row has one grammar
-  rather than three. `best` became `hi-score` — the arcade string, and what
-  bought the width for an explicit `belt` label. The name carries the
-  information and the colour reinforces it, never the other way round: seven
-  hues can't be told apart under a colour vision deficiency.
-- **The promotion moment.** Crossing a threshold pulses a ring around the board
-  in your new belt colour and names the rank below the board. It fires mid-run,
-  while you're still playing — peripheral vision reads motion better than text,
-  and your eyes are on the snake, so the alert reaches you without the board
-  ever being covered. Honours the reduced-motion preference.
-- **Defeat lines that know how you died.** Sixteen of them, grouped into four
-  cases: you hit a wall, you ate yourself, you scored nothing, or you died on a
-  new record. A line that names your actual mistake is worth three generic ones.
-  The record lines are warm rather than cutting — somebody who has just beaten
-  their own best deserves acknowledgement, not a joke at their expense.
-- A microcopy and tone-of-voice guide at `design/MICROCOPY.md`: two voices, the
-  locked vocabulary, capitalisation, and how to write a defeat line. The house
-  style is asserted in the tests, so a line that contracts, shouts or runs long
-  fails the build rather than being noticed later.
+- **Belts,** from white to midnight blue, following Tang Soo Do. Earned by
+  beating your own hi-score by enough.
+- **The snake wears its belt,** and the header names it.
+- **A promotion ring,** mid-run, the moment you cross a belt.
+- **Defeat lines that know how you died.**
 
 ### Changed
-- The start screen's controls line is lowercase, matching the footer and the
-  utility voice. It was the one string in the game with no voice at all.
-- The defeat screen no longer repeats your score. It is still in the header
-  where you have been watching it all run, so the screen gets one thing to say
-  and it may as well be worth reading.
-- **Eating a rotten egg is much harder to miss.** The whole body turns green
-  now, not just the head — one square changing colour at the end of a moving
-  snake was nothing. The head also shudders while the queasiness lasts, fading
-  out as it wears off, which is skipped for anyone who has asked for reduced
-  motion.
-- The rule about rank and colour is narrower than it first looked. **The band
-  owns rank colour; the body is free to use colour for condition,** because the
-  body's baseline is bone at every rank. The green was briefly removed on the
-  grounds that it collided with the green belt — that objection was written
-  when the belt was going to colour the whole snake, and stopped applying once
-  rank moved onto a single band. At green belt the band does blend into a
-  queasy body for a few moves, which is a fair trade: condition is temporary
-  and urgent, rank is permanent and also in the header.
-- **Your best score now updates the moment you pass it**, rather than when you
-  die. That's what lets a promotion land mid-run, which is the whole point of
-  it — you find out while you're still trying not to die, not afterwards.
+- **A rotten egg turns the whole snake green** and makes it shudder.
+- **Your hi-score updates as you pass it,** not when you die.
 
 ## [0.2.0] — 2026-09-08
 
-The core loop. Three foods filling three roles, never more than two on the
-board, and a speed ramp you can see. The scoring dynamic is settled, which is
-what belts get built on next.
+The core loop.
 
 ### Added
-- **Eggs** replace apples as the baseline food. Cobras raid nests; they don't
-  eat fruit. Same rule, same behaviour, different sprite, so nothing to relearn.
-- **Rotten eggs**, worth -3 points. The first thing in the game that punishes
-  you rather than rewarding you, and the first use of the red popup styling
-  that the "red means losing points" rule was written for. Eating one costs
-  points but not length, deliberately: taking length off would be a *relief*
-  late in a run, which is the opposite of a punishment.
-- Only ever two things on the board — the egg plus at most one visitor, which
-  is either a mouse or a rotten egg. Enforced by there being a single slot
-  rather than by anyone remembering the rule, so every decision stays binary.
-- The snake **turns green and sticks its tongue out** for a while after eating
-  a rotten egg, then recovers. Measured in your moves rather than seconds, so
-  it lasts the same number of decisions at every speed. You get to watch
-  yourself regret it, rather than only seeing a number go down.
+- **Eggs** replace apples. Cobras raid nests.
+- **Rotten eggs,** worth −3.
+- **Never more than two things on the board.**
 
 ### Changed
-- **Levels.** The speed ramp is now visible tiers rather than an invisible
-  continuous slope, shown in the header beside score and best. A run gets a
-  rhythm: settle in, master a pace, get pushed.
-- The opening pace is slower, 260ms a move rather than 200. There are three
-  things to read on the board now instead of two, and the old opening was too
-  brisk for that.
-- A mouse now costs **2 length** instead of 1, so taking one is a real
-  decision rather than pure upside. Confirmed by play before release.
-- **Visitors only appear somewhere you could actually reach them.** Whether
-  you catch a mouse is now about whether it's worth the length and the risk
-  of boxing yourself in, not about whether it happened to spawn across the
-  board. Missing one should be a decision that went wrong, never bad luck.
-- `MOUSE_LIFE` raised to 60 moves. It was cut to 45 on the arithmetic that
-  the longest crossing is 40 moves; playing it showed that assumes you spot
-  the mouse instantly and travel in a straight line, and you do neither.
-- Score is floored at zero. A negative score reads as broken, and belt
-  thresholds are all defined upwards from nothing.
+- **Levels:** visible speed tiers.
+- **A slower start,** 260ms a move.
+- **A mouse costs 2 length.**
+- **Visitors only land where you can reach them.**
+- Score never goes below zero.
 
 ### Fixed
-- Turns are queued instead of overwriting each other, so a fast two-key corner
-  no longer loses the second press. Previously a turn was checked against the
-  direction you were travelling rather than the one it would actually follow,
-  so rounding a corner quickly threw the second press away as a U-turn.
+- A fast two-key corner lost the second turn.
 
 ## [0.1.0] — 2026-09-07
 
-First playable version.
+First playable version: a cobra-styled snake with apples, mice, score
+popups and a speed-up, in one HTML file.
 
-### Added
-- **A grid-based snake game** in a single self-contained HTML file, with wall
-  and self collision, pause, restart and a persisted best score.
-- **Apples** worth 1 point, always exactly one on the board.
-- **Mice** worth 5 points, appearing after roughly two apples in five, expiring
-  after a set number of player moves and flashing before they bolt.
-- **Floating score popups**, sized and coloured by value, with red reserved for
-  losses.
-- **A progressive speed-up**, from 200ms per move down to a 70ms floor.
-- **Cobra styling** for the snake: hooded head, tapering tail, direction-aware
-  eyes, blinking, a flicking tongue and X eyes on defeat.
-- **A black-and-gold dojo theme** with a brush-script wordmark on a fire
-  gradient.
-- **The version number** in the footer.
-
-[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.5.3...HEAD
+[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.5.13...HEAD
+[0.5.13]: https://github.com/karinnielsen/strike-first/compare/v0.5.12...v0.5.13
+[0.5.12]: https://github.com/karinnielsen/strike-first/compare/v0.5.11...v0.5.12
+[0.5.11]: https://github.com/karinnielsen/strike-first/compare/v0.5.10...v0.5.11
+[0.5.10]: https://github.com/karinnielsen/strike-first/compare/v0.5.9...v0.5.10
+[0.5.9]: https://github.com/karinnielsen/strike-first/compare/v0.5.8...v0.5.9
+[0.5.8]: https://github.com/karinnielsen/strike-first/compare/v0.5.7...v0.5.8
+[0.5.7]: https://github.com/karinnielsen/strike-first/compare/v0.5.6...v0.5.7
+[0.5.6]: https://github.com/karinnielsen/strike-first/compare/v0.5.5...v0.5.6
+[0.5.5]: https://github.com/karinnielsen/strike-first/compare/v0.5.4...v0.5.5
+[0.5.4]: https://github.com/karinnielsen/strike-first/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/karinnielsen/strike-first/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/karinnielsen/strike-first/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/karinnielsen/strike-first/compare/v0.5.0...v0.5.1
