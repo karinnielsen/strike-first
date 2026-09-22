@@ -20,6 +20,8 @@ The All Valley opens. Scores are real from here.
 - **The verdict shows the podium first,** then the menu. The menu stays put
   while the podium loads.
 - **Every menu is centred,** with the ▶ beside the lit row.
+- **Landscape puts the crest and stats beside the board,** with the board on
+  the right for the hand that swipes.
 - **The crest flicks its tongue during a run,** not only between them.
 - **A rotten egg blinks out** over a few moves instead of vanishing.
 - **The snake's tongue lashes,** and is drawn to the board's scale.
