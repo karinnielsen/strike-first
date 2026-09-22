@@ -354,19 +354,22 @@
      Rankings, and on the board mercy's Continue / Quit, Sign, and the
      verdict's three. The lit row takes PRESS START's voice - yellow, the
      hard offset and the bloom - and the others are the same letters with
-     the power off, like bulbs in a marquee, so only one thing shouts. The
-     marker has its own column, so labels never shift as it moves. No
-     helper text under any row: a row that needs a caption has the wrong
-     name. */
+     the power off, like bulbs in a marquee, so only one thing shouts.
+     Every row is centred, on the same line as the heading and the tables
+     around it, and the marker hangs outside the lit row, so it never pushes
+     a label off that line. Left-aligned rows centred as a block, marker
+     column included, sat off the line by a different amount on every menu
+     (22 September). No helper text under any row: a row that needs a
+     caption has the wrong name. */
   .menu[hidden], .menu button[hidden] { display: none; }
-  .menu { display: grid; justify-items: start; justify-self: center; }
+  .menu { display: grid; justify-items: center; justify-self: center; }
   .menu button {
-    all: unset; cursor: pointer; box-sizing: border-box;
-    display: grid; grid-template-columns: 1.5em auto; align-items: center;
+    all: unset; cursor: pointer; box-sizing: border-box; position: relative;
+    display: grid; align-items: center;
     font-weight: bold; letter-spacing: 0.16em; text-transform: uppercase;
     color: var(--text);        /* bone: a real option. Grey read as disabled */
   }
-  .menu .mark { font-size: 0.7em; visibility: hidden; }
+  .menu .mark { position: absolute; right: 100%; margin-right: 0.3em; font-size: 0.7em; visibility: hidden; }
   .menu button.on { color: var(--yellow); }
   .menu button.on .label { animation: menu-punch 0.16s steps(2, end); }
   .menu button.on .mark { visibility: visible; animation: press-start 1.1s steps(1, end) infinite; }
@@ -387,9 +390,6 @@
   .run-menu { margin-top: 24px; }
   .run-menu button { min-height: 44px; font-size: 20px; text-shadow: 0 3px 0 #1e1d22; }
   .run-menu button.on { text-shadow: 0 3px 0 var(--yellow-deep), 0 0 18px rgba(255, 255, 0, 0.3); }
-  /* One row: its marker hangs outside, so SIGN centres under the letters. */
-  #sign-menu button { grid-template-columns: auto; position: relative; }
-  #sign-menu .mark { position: absolute; right: 100%; margin-right: 0.3em; }
 
   /* THE VERDICT. Anchored to the top of the board rather than centred, so
      the menu sits in the same place on every defeat, however tall the
@@ -402,7 +402,16 @@
   .overlay #overlay-rival { margin-top: 6px; color: var(--value); }
   .overlay #overlay-rival:empty { display: none; }
   .overlay.verdict .run-menu { margin-top: 32px; }
-  .overlay.verdict .board { margin-top: 44px; }
+
+  /* WITH A PODIUM. The result, where it puts you, then what next: the
+     podium sits between the line and the menu (chosen 22 September). The
+     podium arrives after the verdict, so the menu is anchored to the
+     bottom instead, from the moment a podium is due: it still sits in the
+     same place on every defeat, and a podium that loads late fills the
+     space above it rather than pushing it. Only Arcade has one. */
+  .overlay.verdict.podium { display: flex; flex-direction: column; }
+  .overlay.verdict.podium .board { margin: auto 0 0; padding: 24px 0; }
+  .overlay.verdict.podium #verdict-menu { margin: auto auto 48px; align-self: center; }
 
   /* Signing has no table under it, so it is centred instead. The heading
      moves once, when the menu takes over. */
@@ -504,7 +513,8 @@
   @container overlay (max-height: 540px) {
     .overlay.verdict h2, .overlay.verdict.with-board h2 { margin-top: 32px; }
     .overlay.verdict .run-menu { margin-top: 20px; }
-    .overlay.verdict .board { margin-top: 24px; }
+    .overlay.verdict.podium .board { padding: 12px 0; }
+    .overlay.verdict.podium #verdict-menu { margin-bottom: 24px; }
     .board td { height: 26px; }
     .board th { height: 22px; }
     .board .gap td { height: 14px; }
@@ -1269,6 +1279,7 @@
       <p  id="overlay-text"></p>
       <p  id="overlay-rival"></p>
       <div class="initials" id="initials" hidden></div>
+      <div class="board" id="board" hidden></div>
       <nav class="menu run-menu" id="mercy-menu" aria-label="mercy" hidden>
         <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Continue</span></button>
         <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Quit</span></button>
@@ -1286,7 +1297,6 @@
         <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Rankings</span></button>
         <button type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Main menu</span></button>
       </nav>
-      <div class="board" id="board" hidden></div>
     </div>
   </div>
 
@@ -4927,6 +4937,8 @@ function showBoard() {
   const shown = boardDue && board !== null && entry === null && signing === null;
   boardEl.hidden = !shown;
   overlay.classList.toggle('with-board', shown);
+  // Due, not loaded: the menu takes its place before the podium arrives.
+  overlay.classList.toggle('podium', boardDue && entry === null && signing === null);
   if (!shown) return;
 
   const cell = (text, className) => {
