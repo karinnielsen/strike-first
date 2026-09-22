@@ -76,7 +76,7 @@ PRs welcome — start with an
 [open starter issue](https://github.com/karinnielsen/strike-first/labels/good%20first%20issue).
 Local copies write to a sandbox, not the live board.
 
-Current version: **v1.0.1** — see [CHANGELOG.md](CHANGELOG.md).
+Current version: **v1.0.2** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Credits and licence
 

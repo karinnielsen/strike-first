@@ -2,6 +2,12 @@
 
 What changed in each release of Strike First.
 
+## [1.0.2] — 2026-09-22
+
+### Fixed
+- Late in a run, a mouse could be out of reach before its time ran out.
+  Its time now comes from the real route around your body.
+
 ## [1.0.1] — 2026-09-22
 
 ### Fixed
