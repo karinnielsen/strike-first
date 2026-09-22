@@ -1510,9 +1510,9 @@ const ROTTEN_GAP      = 3;   // never closer than this to the head: no ambush at
 // to it, NOW? It is still never bad luck, because the route is always
 // there to be found - what you can no longer afford is to dither.
 const MOUSE_CRAMP  = 2;    // open sides: 2 is a corner or a pocket, 3 is a wall
-const MOUSE_NEAR   = 8;    // never closer to the head than this
+const MOUSE_NEAR   = 8;    // never closer to the head than this, in moves around the body
 const MOUSE_FAR    = 30;   // ...nor further away than this
-const MOUSE_SLACK  = 1.5;  // moves allowed per step of the direct route
+const MOUSE_SLACK  = 1.5;  // moves allowed per move of the shortest route
 const MOUSE_FLOOR  = 10;   // ...but never so few that a close one is a trick
 
 // How often the mouse twitches, counted in YOUR MOVES like everything else
@@ -1672,15 +1672,22 @@ function openSides(spot) {
 // a wall, then wherever it can. A preference rather than a rule, because
 // early in a run on an open board there may be nothing tight in range at
 // all - and a mouse that doesn't come is worse than one in open board.
+//
+// The band is measured along the real route, around the body, so a square
+// just behind a wall of your own body counts as far. A square with no route
+// at all never gets a mouse, and if nowhere is reachable, no mouse comes.
 function mouseSquare() {
-  const head  = snake[0];
+  const moves = routeMoves(snake, direction, grow);
   const spots = [];
-  for (let tries = 0; tries < 300; tries++) {
-    const spot  = randomEmptySquare();
-    const steps = stepsBetween(spot, head);
-    if (steps >= MOUSE_NEAR && steps <= MOUSE_FAR) spots.push(spot);
+  for (let x = 0; x < COLS; x++) {
+    for (let y = 0; y < ROWS; y++) {
+      const spot = {x, y};
+      const d    = moves.get(x + ',' + y);
+      if (d === undefined || isOccupied(spot)) continue;
+      if (d >= MOUSE_NEAR && d <= MOUSE_FAR) spots.push(spot);
+    }
   }
-  if (!spots.length) return randomEmptySquare();   // give up rather than spin
+  if (!spots.length) return null;
   const pick   = list => list[Math.floor(Math.random() * list.length)];
   const pocket = spots.filter(s => openSides(s) === MOUSE_CRAMP);
   if (pocket.length) return pick(pocket);
@@ -1689,9 +1696,57 @@ function mouseSquare() {
   return pick(spots);
 }
 
-// The clock a mouse arrives with, counted from how far it actually is.
+// The clock a mouse arrives with, counted from the real route to it. The
+// straight-line distance ignored the body, and late in a run, when the body
+// fences off the tight spots mice land in, the route was up to two and a
+// half times longer: a third of mice around 60 points could not be caught
+// by perfect play. UNR-183.
 function mouseClock(spot) {
-  return Math.max(MOUSE_FLOOR, Math.ceil(stepsBetween(snake[0], spot) * MOUSE_SLACK));
+  const d = routeMoves(snake, direction, grow).get(spot.x + ',' + spot.y) ?? stepsBetween(snake[0], spot);
+  return Math.max(MOUSE_FLOOR, Math.ceil(d * MOUSE_SLACK));
+}
+
+// The fewest moves from the head to every square it can reach, keyed
+// 'x,y'. The body gets out of the way as you go: the square a segment holds
+// is free once the tail has passed it, which takes one move per segment
+// behind it, plus any growth still owed. The head can never reverse on its
+// first move.
+//
+// Every route counted is one the snake can really take: it never stands
+// still waiting for the body to clear, because it can't. A square only
+// reachable by circling while the tail passes counts as unreachable, so a
+// clock is never shorter than the route. Pure, so it needs no harness to
+// test.
+function routeMoves(body, dir, owed) {
+  // Squares are numbered x + y * COLS here: this runs whenever a mouse
+  // arrives, and has to fit well inside a 70ms step on a slow machine.
+  const len    = body.length;
+  const freeAt = new Int32Array(COLS * ROWS);
+  body.forEach((s, i) => { freeAt[s.x + s.y * COLS] = len - i + owed; });
+  const at     = new Int32Array(COLS * ROWS);   // moves to reach; 0 is not yet
+  const head   = body[0].x + body[0].y * COLS;
+  at[head] = -1;
+  const steps  = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  let frontier = [head];
+  for (let t = 1; frontier.length; t++) {
+    const found = [];
+    for (const p of frontier) {
+      const px = p % COLS, py = (p - px) / COLS;
+      for (const [dx, dy] of steps) {
+        if (t === 1 && dx === -dir.x && dy === -dir.y) continue;
+        const x = px + dx, y = py + dy;
+        if (x < 0 || y < 0 || x >= COLS || y >= ROWS) continue;
+        const n = x + y * COLS;
+        if (at[n] !== 0 || freeAt[n] >= t) continue;   // been, or a segment is still there
+        at[n] = t;
+        found.push(n);
+      }
+    }
+    frontier = found;
+  }
+  const moves = new Map();
+  at.forEach((t, n) => { if (t > 0) moves.set((n % COLS) + ',' + Math.floor(n / COLS), t); });
+  return moves;
 }
 
 function placeEgg() {
@@ -1729,16 +1784,18 @@ function maybeSpawnVisitor() {
     if (spot) spawn('rotten', spot);
     return;
   }
-  spawn('mouse', mouseSquare());
+  const spot = mouseSquare();
+  if (spot) spawn('mouse', spot);
 }
 
 function spawn(kind, spot) {
+  const clock = kind === 'rotten' ? ROTTEN_LIFE : mouseClock(spot);
   visitor = {
     kind,
     x:      spot.x,
     y:      spot.y,
-    life:   kind === 'rotten' ? ROTTEN_LIFE : mouseClock(spot),
-    born:   kind === 'rotten' ? ROTTEN_LIFE : mouseClock(spot),   // for the warning
+    life:   clock,
+    born:   clock,                              // for the warning
     facing: Math.random() < 0.5 ? 1 : -1,       // which way it happens to sit
     beat:   Math.floor(Math.random() * MOUSE_TWITCH)   // so two mice never twitch in step
   };
