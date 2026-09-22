@@ -2,6 +2,13 @@
 
 What changed in each release of Strike First.
 
+## [1.0.6] — 2026-09-22
+
+### Added
+- A challenge now keeps the score to beat in the stats, beside your own,
+  for as long as the run lasts. It was named on the title screen and then
+  gone until the run was over.
+
 ## [1.0.5] — 2026-09-22
 
 ### Changed

@@ -214,6 +214,7 @@ globalThis.game = {
   backFrom, goBack, get backShown() { return !backHud.hidden }, crestEl, titleScreenEl,
   verdictItems, challengeUrl, challengeText, challengeIdFrom, rivalRequest, rivalFrom, rivalLine, loadRival,
   isPhone, PHONE_MAX, ON_PHONE, rivalEl, MENU_LABELS,
+  playArcade, showToBeat, toBeatEl, rivalScoreEl,
   get rival() { return rival }, set rival(v) { rival = v },
   STARS_SHOWN_FROM, starCountText, starsFrom, fetchStars, loadStars
 };`;
@@ -3086,6 +3087,23 @@ describe('challenge a friend, UNR-116', () => {
     game.mode = 'arcade';
     is(game.rival, rival, 'still there for Arcade');
     game.rival = null;
+  });
+
+  test('the score to beat is on screen for the whole Arcade run', () => {
+    freshGame();
+    game.rival = { initials: 'KAR', dojo: 'cobra-kai', score: 47 };
+    game.playArcade();
+    game.commitDojo('cobra-kai');
+    game.closeDojoSelect();
+    is(game.toBeatEl.hidden, false, 'shown once a challenge is loaded');
+    is(String(game.rivalScoreEl.textContent), '47', "the rival's score, not yours");
+    game.playPractice();
+    is(game.toBeatEl.hidden, true, 'Practice cannot settle a challenge');
+    game.rival = null;
+    game.mode = 'arcade';
+    game.showToBeat();
+    is(game.toBeatEl.hidden, true, 'no challenge, no target');
+    game.toTitle();   // Arcade left the dojo select open, and the suite shares one game
   });
 
   test('a phone is judged by the short side of its screen', () => {
