@@ -9,6 +9,10 @@ What changed in each release of Strike First.
   for as long as the run lasts. It was named on the title screen and then
   gone until the run was over.
 
+### Changed
+- The stats above the board are one evenly spaced row, edge to edge,
+  rather than two clumps.
+
 ## [1.0.5] — 2026-09-22
 
 ### Changed
