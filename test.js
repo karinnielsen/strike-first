@@ -2990,15 +2990,27 @@ describe('challenge a friend, UNR-116', () => {
     is(game.MENU_LABELS.challenge, 'Challenge a friend', 'says what it does');
   });
 
-  test('the link points at the run, from wherever the page is served', () => {
+  test('the link points at the run, through the challenge page', () => {
     is(game.challengeUrl({ origin: 'https://karinnielsen.github.io', pathname: '/strike-first/' }, 42),
-       'https://karinnielsen.github.io/strike-first/?vs=42', 'published');
+       'https://karinnielsen.github.io/strike-first/challenge/?vs=42', 'published');
     is(game.challengeUrl({ origin: 'http://localhost:8765', pathname: '/' }, 7),
-       'http://localhost:8765/?vs=7', 'local, so the sandbox board');
+       'http://localhost:8765/challenge/?vs=7', 'local, so the sandbox board');
+    is(game.challengeUrl({ origin: 'http://localhost:8765', pathname: '/index.html' }, 7),
+       'http://localhost:8765/challenge/?vs=7', 'served as a file name, not a folder');
   });
 
-  test('a challenge says the score, so a pasted link has a reason to click', () => {
-    is(game.challengeText(42), 'I scored 42 in Strike First, a karate Snake game. Beat it.', 'text');
+  test('a challenge says the score and the dojo it was scored for', () => {
+    is(game.challengeText(42, 'cobra-kai'), 'I scored 42 for Cobra Kai. Beat it.', 'text');
+    is(game.challengeText(42, null), 'I scored 42. Beat it.', 'no dojo chosen yet');
+    is(game.challengeText(42, 'no-such-dojo'), 'I scored 42. Beat it.', 'not a dojo');
+  });
+
+  test('the challenge page carries its own preview card and forwards', () => {
+    const page = fs.readFileSync(path.join(__dirname, 'challenge', 'index.html'), 'utf8');
+    is(/property="og:title" content="[^"]*challenged/.test(page), true, 'a title of its own');
+    is(/property="og:title" content="[^"]*Karate snake game/.test(page), false, 'not the game\'s title');
+    is(page.includes("location.replace('../' + location.search"), true, 'forwards, keeping ?vs=');
+    is(page.includes('name="robots" content="noindex"'), true, 'kept out of search');
   });
 
   test('a link is read back to a run id, or to nothing', () => {
