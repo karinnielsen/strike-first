@@ -1106,8 +1106,20 @@
     gap: clamp(40px, 6vw, 64px); white-space: nowrap;
   }
   .rankings li { color: var(--text); transition: color 0.15s; }
-  .rankings li.on { color: rgb(var(--glow)); }
-  .rankings .pick { all: unset; cursor: pointer; min-height: 44px; display: grid; align-items: center; }
+  /* Lit like a menu row: yellow and the marker, whatever the dojo. Dojo
+     colours read as a second voice beside the crest, and Miyagi-Do's red
+     was too dim for text this size. */
+  .rankings li.on { color: var(--yellow); }
+  .rankings .pick { all: unset; cursor: pointer; min-height: 44px; display: grid; align-items: center; position: relative; }
+  /* The menus' marker, so the lit name shows between the blinks and the
+     page opens with All visibly chosen. It hangs in the gap, like SIGN's,
+     so the line is no wider. */
+  .rankings .mark {
+    position: absolute; right: 100%; margin-right: 0.5em;
+    font-size: clamp(9px, 1.8vw, 14px); visibility: hidden;
+    transform: translateY(-0.125em);   /* on the caps' middle, not their baseline: measured */
+  }
+  .rankings li.on .mark { visibility: visible; animation: press-start 1.1s steps(1, end) infinite; }
   /* The lit name is the selection. The keys move it without moving focus,
      so a focus ring only marked wherever the last click happened to land. */
   .rankings .pick:focus-visible { outline: none; }
@@ -1152,6 +1164,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .rankings li { transition: none; }
+    .rankings li.on .mark { animation: none; }
   }
 </style>
 </head>
@@ -3366,7 +3379,6 @@ function loop() {
   // still arrives rather than waiting for the tab to come back.
   if (phase === 'dying' && defeatElapsed() >= DEFEAT_MS) showVerdict();
   draw();
-  watchCrest();
   showMercy();
   loopTimer = setTimeout(loop, stepDelay());
 }
@@ -3962,10 +3974,10 @@ function bowFrame() {
 
 // ---- the crest's tongue ----------------------------------------------
 // Real snakes flick their tongues to smell, constantly and irregularly: a
-// double flick, a pause, another. The crest does the same, but only while
-// you aren't playing. The crest sits right above the board, and a twitch
-// in the corner of your eye every few seconds would teach you to ignore
-// that corner - which is where the promotion ring needs you to look.
+// double flick, a pause, another. The crest does the same, in a run too.
+// It was held still while you played (UNR-129), so the eye stayed on the
+// board, but a crest that goes dead the moment you start looked wrong in
+// play (22 September).
 //
 // The flick is drawn, not squashed: five poses in the crest artwork
 // (design/title-crest/strike-first-tongue-poses.svg), shown one at a time.
@@ -4022,8 +4034,7 @@ function flickTongue(flicks) {
   tongueFrame = requestAnimationFrame(step);
 }
 
-// Cut a flick short and close the mouth, so a run that starts mid-flick
-// gets a still crest from its first step rather than when the flick ends.
+// Cut a flick short and close the mouth.
 function stillTongue() {
   cancelAnimationFrame(tongueFrame);
   tongueFrame = 0;
@@ -4037,16 +4048,8 @@ document.addEventListener('visibilitychange', stillTongue);
 // the snake, and the tongue should not flick faster when you're good.
 function idleTongue() {
   const plan = tongueFlickPlan(Math.random(), Math.random());
-  if (phase !== 'playing') flickTongue(plan.flicks);
+  flickTongue(plan.flicks);
   setTimeout(idleTongue, plan.pauseMs);
-}
-
-// Called from the loop after draw(). All it does is close the mouth once a
-// run is under way. Flicking during a run - when a mouse appears, or on
-// every reward - was built and set aside in UNR-129: any motion up here
-// pulls the eye off the board, towards nothing you need.
-function watchCrest() {
-  if (phase === 'playing' && tongueFrame) stillTongue();
 }
 
 // The crest, which the title and dojo select fade, and whose tongue flicks.
@@ -5695,8 +5698,7 @@ function rankingsEmpty(dojo, mine) {
 
 const rankingsPicks = RANKINGS_FILTERS.map((dojo, i) => {
   const li = document.createElement('li');
-  li.style.setProperty('--glow', dojo ? DOJO_GLOWS[dojo] : DOJO_GLOWS['eagle-fang']);
-  li.innerHTML = `<button class="pick" type="button"><span class="name">${dojo ? DOJO_NAMES[dojo] : 'All'}</span></button>`;
+  li.innerHTML = `<button class="pick" type="button"><span class="mark" aria-hidden="true">&#9654;</span><span class="name">${dojo ? DOJO_NAMES[dojo] : 'All'}</span></button>`;
   const pick = li.querySelector('.pick');
   pick.addEventListener('click', () => { pick.blur(); filterRankings(i); });
   rankingsFilterEl.append(li);
