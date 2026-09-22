@@ -657,71 +657,68 @@
     color: var(--dim);         /* its own darker grey was 2.2:1 */
   }
 
-  /* SHORT WINDOWS: CREST ON TOP, BOARD AND STATS SIDE BY SIDE.
+  /* SHORT WINDOWS: THE CREST AND STATS BESIDE THE BOARD.
      Stacked, the page is 971px tall, so a landscape iPad (about 690 once
      Safari has its share), a laptop window and even a 1080p browser cut
      off the bottom of the board. Whenever the stacked page doesn't fit,
-     the crest stays centred over everything, the board sits under it on
-     the left, and the stats get a column of their own on the right as a
-     list with room in it.
+     the crest and the stats share a column on the left, as a list with
+     room in it, and the board takes the right with the key hints under
+     it. Chosen by the space available, not by the device: a short laptop
+     window and a landscape iPad are the same problem. Tall windows keep
+     the stacked page.
 
-     Chosen by the space available, not by the device: a short laptop
-     window and a landscape iPad are the same problem. Touch only decides
-     input - the swipe copy and the mercy button. Tall windows keep the
-     stacked page.
+     The crest sat centred over both until 22 September, which floated it
+     alone over the page and took its height from the board. The board is
+     on the right for the hand that swipes: most people steer with their
+     right, and a hand over the board then covers nothing else.
 
-     When space runs short the crest gives way first, the board takes
-     what is left, and nothing shrinks the stats. */
+     The top 72px belong to the corner keycaps. Without the crest across
+     the top, the board and crest would rise into them at iPad widths, and
+     a tap on the board's corner would mute instead of steer. */
   @media (max-height: 970px) and (min-aspect-ratio: 1/1) and (min-width: 800px) {
     .wrap {
-      /* Full size while the board can still have all 632px under it,
-         then shrinking with the window down to 250px. Its height is 0.36
-         of its width, and 680px is the board plus the padding and gap. */
-      --crest-w: clamp(250px, calc((100svh - 680px) / 0.36), 400px);
       --stats-w: 240px;
       display: grid;
-      grid-template-columns: auto var(--stats-w);
-      grid-template-rows: auto 1fr auto auto;
+      grid-template-columns: var(--stats-w) auto;
+      grid-template-rows: auto 1fr auto;
       column-gap: 48px;
       padding: 16px 24px;
     }
+    /* Only where the board is: the title, dojo select and the rankings
+       have their own top. */
+    .wrap:not(.titling):not(.selecting):not(.ranking) { padding-top: 72px; }
 
     /* The header's two halves go to different places, so it steps aside
        and lets them be grid items in their own right. */
     header { display: contents; }
 
-    h1.crest {
-      grid-column: 1 / -1;
-      grid-row: 1;
-      margin: 0 0 16px;          /* the +N no longer rises this way */
-    }
-    h1.crest svg { width: var(--crest-w); }
+    h1.crest { grid-column: 1; grid-row: 1; margin: 0; }
+    h1.crest svg { width: var(--stats-w); }
 
-    /* The board takes whatever height the crest leaves, up to full size.
-       On an iPad Air that is about 555px, a 26px cell. It never goes below
-       420px, 20px cells, the size the artwork was first drawn for: a
-       window shorter than that scrolls rather than shrinking the board
-       past where it reads. Swipes steer by distance moved, so a smaller
-       board changes nothing about input. */
+    /* The board takes the height the keycaps and the hint line leave, up
+       to full size. It never goes below 420px, 20px cells, the size the
+       artwork was first drawn for: a window shorter than that scrolls
+       rather than shrinking the board past where it reads. Swipes steer by
+       distance moved, so a smaller board changes nothing about input. */
     .stage {
-      grid-column: 1;
-      grid-row: 2 / -1;
+      grid-column: 2;
+      grid-row: 1 / 3;
       align-self: start;         /* square, not stretched down the rows */
       width: clamp(420px,
-                   min(calc(100svh - 48px - var(--crest-w) * 0.36),
+                   min(calc(100svh - 72px - 16px - 44px),   /* keycaps, padding, hint */
                        calc(100vw - 384px)),   /* padding, gap, stats, a scrollbar */
                    632px);
     }
 
     /* THE STATS AS A LIST. One thing per row, label left and value right,
-       and the gap between the two groups is what still says live versus
-       standing. */
+       all four evenly spaced: a gap between live and standing split one
+       short list into two (22 September). */
     .scores {
-      grid-column: 2;
+      grid-column: 1;
       grid-row: 2;
       flex-direction: column;
       justify-content: flex-start;
-      gap: 36px;
+      gap: 0;
       padding-top: 52px;         /* room for the +N to rise out of the top row */
     }
     .scores .group { flex-direction: column; gap: 0; }
@@ -731,6 +728,8 @@
       justify-content: space-between;
       padding: 12px 0;
       border-bottom: 1px solid var(--line);
+      min-height: 49px;          /* belt has no number to hold it open */
+      box-sizing: border-box;
     }
     .scores b { font-size: 20px; }
     .scores .rank { align-items: center; }
@@ -742,7 +741,7 @@
 
 
     .hint    { grid-column: 2; grid-row: 3; }
-    .version { grid-column: 2; grid-row: 4; }
+    .version { grid-column: 1; grid-row: 3; align-self: end; }
   }
 
   @keyframes float-up-right {
