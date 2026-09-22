@@ -212,7 +212,7 @@ globalThis.game = {
   get board() { return board }, get boardDue() { return boardDue },
   get boardShown() { return !boardEl.hidden },
   backFrom, goBack, get backShown() { return !backHud.hidden }, crestEl, titleScreenEl,
-  verdictItems, challengeUrl, challengeIdFrom, rivalRequest, rivalFrom, rivalLine, loadRival,
+  verdictItems, challengeUrl, challengeText, challengeIdFrom, rivalRequest, rivalFrom, rivalLine, loadRival,
   isPhone, PHONE_MAX, ON_PHONE, rivalEl, MENU_LABELS,
   get rival() { return rival }, set rival(v) { rival = v },
   STARS_SHOWN_FROM, starCountText, starsFrom, fetchStars, loadStars
@@ -2884,6 +2884,10 @@ describe('challenge a friend, UNR-116', () => {
        'https://karinnielsen.github.io/strike-first/?vs=42', 'published');
     is(game.challengeUrl({ origin: 'http://localhost:8765', pathname: '/' }, 7),
        'http://localhost:8765/?vs=7', 'local, so the sandbox board');
+  });
+
+  test('a challenge says the score, so a pasted link has a reason to click', () => {
+    is(game.challengeText(42), 'I scored 42 in Strike First, a karate Snake game. Beat it.', 'text');
   });
 
   test('a link is read back to a run id, or to nothing', () => {
