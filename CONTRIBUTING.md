@@ -23,7 +23,7 @@ The version line says `sandbox scores` when that's the case.
 | `index.html` | The whole game, in one file with numbered, commented sections |
 | `test.js` | Tests. They load the script from `index.html` and run it against a fake browser |
 | `db/scores.sql` | Database schema and access rules |
-| `design/` | Specs, tooling, and the options that weren't chosen |
+| `design/` | Specs: the copy rules (`MICROCOPY.md`) and the art constraints (`ASSET-BRIEF.md`) |
 
 ## Rules of the code
 

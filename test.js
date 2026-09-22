@@ -1661,7 +1661,7 @@ describe('the crest tongue', () => {
 });
 
 
-// The sounds themselves are judged by ear, in design/sound-options.html.
+// The sounds themselves are judged by ear.
 // What can be tested is WHICH sound fires, and when. Each one is swapped
 // for a spy that writes down its name.
 describe('sound', () => {
@@ -2014,9 +2014,8 @@ describe('scores - how a run is measured, UNR-106', () => {
     }
   });
 
-  // Karin's call, 18 September, with the real board wiped: nothing writes to
-  // it until v1.0.0, the published link included, so the first scores on it
-  // are made by players rather than by us.
+  // Before launch nothing wrote to the real board, the published link
+  // included, so its first scores were made by players.
   test('before launch, everything is the sandbox, published link included', () => {
     for (const host of ['karinnielsen.github.io', 'localhost', 'anything.example']) {
       is(game.serviceFor(host, true), 'sandbox', host);

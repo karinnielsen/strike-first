@@ -1,6 +1,6 @@
 # Working on Strike First
 
-How to work on this repo with the maintainer. Also read:
+Rules for working on this repo. Also read:
 
 - `README.md`: what the game is.
 - `CONTRIBUTING.md`: setup, the file map and the rules of the code.
@@ -11,33 +11,32 @@ How to work on this repo with the maintainer. Also read:
 
 The reasons behind each rule are in the git history of this file.
 
-## How the maintainer works
+## Working rules
 
 - **Ask before acting.** "Is there a way…", "what about…" and "could we…"
-  want an answer and a proposal, not an implementation. Exploring or
+  get an answer and a proposal, not an implementation. Exploring or
   brainstorming is never a request to build. When unsure, ask.
 - **Confirm before anything outward-facing:** committing, pushing, creating
   repos, changing Linear configuration. Issue statuses and the two kinds of
-  Linear comment don't need asking.
-- **Less is more.** Push back when the maintainer goes too far. That
-  applies to what ships. Writing an idea down costs nothing.
-- **Show two versions rather than describing the difference.** Use the
-  tooling in `design/demo/`. Judge at actual size, change one variable, and
-  never scale two versions to fit side by side. Keep the losing version on a
-  branch (e.g. `assets/pixel-sprites`).
+  Linear comment don't need confirming.
+- **Less is more.** Push back on scope. That applies to what ships; writing
+  an idea down costs nothing.
+- **Show two versions rather than describing the difference.** Judge at
+  actual size, change one variable, and never scale two versions to fit side
+  by side. Keep the losing version on a branch (e.g. `assets/pixel-sprites`).
 - **Say when another tool is the right one.** Detailed artwork goes to
-  ChatGPT/Astra: never hand-code an illustration as SVG, since the crest
-  failed twice. Whether it's fun, music that lands, and motion feel all need
-  a human or a specialist tool. Do contrast checks, research and structural
-  code here.
+  ChatGPT/Astra: never hand-code an illustration as SVG. Whether it's fun,
+  music that lands, and motion feel need a play test or a specialist tool.
+  Contrast checks, research and structural code belong here.
 - **Anything new in the stack arrives with a safe way to test it.** Before
-  the first commit that writes to or calls something new, answer two
-  questions: what does it look like when *I* run it, and how do I tell that
-  apart from the real thing?
+  the first commit that writes to or calls something new, define what a
+  local run looks like and how it is told apart from the real thing.
 - **Shell commands must match the allowlist** in `.claude/settings.json`, or
-  they prompt the maintainer. Each part of `a && b` is checked separately.
+  they prompt for permission. Each part of `a && b` is checked separately.
   Never use `git -C`. A command that keeps prompting belongs in the shared
   file, not in "always allow".
+- **Docs and comments read as specs:** what is true, what to do, and why.
+  Never write about people ("X wants", "X's call").
 
 ## Linear
 
@@ -130,16 +129,16 @@ one.
 
 - the title
 - dojo select, on a first visit and on a return
-- the start screen and a run
-- mercy and defeat
-- initials and rankings, then back again
+- a run, mercy and defeat
+- initials, Challenge a friend and rankings, then back again
+- a challenge link opened on a phone
 
 Use keyboard, mouse and touch, in both the stacked and the side-by-side
 layout. Checking only the changed screen is how broken releases shipped.
 
 When reporting ready, say which journeys were walked. **A journey that
-wasn't walked** (usually the real iPad) **is the maintainer's decision before
-release,** not a footnote after it.
+wasn't walked** (usually the real iPad) **is raised before release,** not
+noted after it.
 
 ## Running it
 
@@ -166,9 +165,8 @@ release,** not a footnote after it.
 
 - **Two score databases.** Local, `file://` and private-network runs use
   the sandbox; only the published site is real (`serviceFor()`).
-  `BEFORE_LAUNCH = true` keeps everything on the sandbox until v1.0.0.
-  `db/scores.sql` is the schema: change it there first, then the maintainer
-  runs it in the SQL Editor. Only a publishable key may appear in the page,
+  `db/scores.sql` is the schema: change it there first, then run it by hand
+  in each project's SQL Editor. Only a publishable key may appear in the page,
   and a test enforces that. Both are free projects, which pause after a
   quiet week, so `keep-scores-awake.yml` reads production daily. Run by
   hand, it defaults to the sandbox.
@@ -181,23 +179,25 @@ release,** not a footnote after it.
   ignored, log `event.key` first.
 - **The Browser pane's scaled viewport emulation misplaces clicks.** Use the
   keyboard, or test the mouse at desktop size.
+- **A hidden Browser pane pauses animations and slows timers** (the app
+  window off screen reports `visibilityState: hidden`). Walk journeys there
+  only while it is visible; otherwise drive headless Chrome over CDP.
 - **The iPad simulator is slower than one game step,** so swipes look
   broken:
   - Test on a temporary copy with `stepDelay()` at ~2500ms, writing `phase`,
     `direction`, `turnQueue` and `scrollY` into the version line.
   - `inspect` doesn't work on Safari content.
-  - Rotating needs the maintainer.
+  - Rotating needs a person at the Mac.
   - A second URL adds a tab bar about 35pt tall, so measure tap positions
     again.
 - **The room above the score is load-bearing.** The `+N` popup rises 24px:
   - Stacked, the crest's bottom margin is 68px.
-  - Side by side, the crest's margin is 16px and the stats have 52px of
-    `padding-top`.
+  - Side by side, the stats have 52px of `padding-top` under the crest.
 
   Both are fixed on purpose. Measure both layouts after touching either.
 - **The board draws on the step only.** Every-frame drawing was reverted:
-  it felt less responsive on the Intel Mac. Don't bring it back without
-  the maintainer playing it.
+  it felt less responsive on the Intel Mac. Don't bring it back without a
+  play test there.
 - **Drawing code was authored for a 20px cell.** Anything hand-drawn in
   canvas coordinates must multiply by `CELL_SCALE`.
 - **The test harness's fake canvas must match the page:** 630px, so there
