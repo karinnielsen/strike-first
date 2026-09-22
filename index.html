@@ -12,7 +12,6 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Strike First">
 <meta property="og:title" content="🐍 Strike First: Karate snake game in your browser">
 <meta property="og:description" content="Pick a dojo, chase rewards, earn your belt, challenge friends.">
 <meta property="og:url" content="https://karinnielsen.github.io/strike-first/">
@@ -20,7 +19,12 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="The Strike First cobra crest beside a game board, with a snake wearing an orange belt, a mouse and an egg.">
+<!-- Slack shows a card whole only when twitter:image is there beside the
+     card type; with og:image alone it crops the middle into a thumbnail. -->
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://karinnielsen.github.io/strike-first/og-image.png">
+<meta name="twitter:title" content="🐍 Strike First: Karate snake game in your browser">
+<meta name="twitter:description" content="Pick a dojo, chase rewards, earn your belt, challenge friends.">
 <style>
   :root {
     --bg:     #09090b;   /* the mat, at night          */
@@ -1335,7 +1339,7 @@ const ROWS = (canvas.height - 2 * BOARD_BLEED) / CELL;    // 21 rows down
 // Single source of truth for the version. Bump this, add a CHANGELOG entry,
 // update the Current version line in README.md, and tag the commit - those
 // four go together, always.
-const VERSION = '1.0.3';
+const VERSION = '1.0.4';
 // The version line also says which board you are on whenever it isn't the
 // real one. Bone rather than the dim grey around it, because that carries
 // information: it is the difference between a score that counts and one that

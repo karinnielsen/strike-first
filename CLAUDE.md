@@ -37,6 +37,10 @@ The reasons behind each rule are in the git history of this file.
   file, not in "always allow".
 - **Docs and comments read as specs:** what is true, what to do, and why.
   Never write about people ("X wants", "X's call").
+- **A commit message is one line:** what changed, in the present tense. No
+  body, no essay. Reasoning that is worth keeping goes where it will be
+  read again — a comment beside the code, a rule in this file, or the
+  Linear issue. Commits made before this rule keep their long messages.
 
 ## Linear
 
@@ -62,8 +66,7 @@ Workspace **Unruly labs** (`UNR`), project
 - **An issue ID goes only where it should link.** Never cite one for
   context. A release PR lists one `Closes UNR-N` per issue.
 - **New issues:** ask first if none matches, and set `assignee: "me"`. Give
-  it a title and two to five lines: the problem and "done when". Reasoning
-  goes in the commit message.
+  it a title and two to five lines: the problem and "done when".
 - **Two kinds of comment, no others:**
   - At `In Review`: what changed and how it was checked, at most three
     bullets.
