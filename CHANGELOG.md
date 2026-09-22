@@ -2,6 +2,13 @@
 
 What changed in each release of Strike First.
 
+## [1.0.1] — 2026-09-22
+
+### Fixed
+- A fleeing mouse flashed so slowly it could vanish for moves at a time. It
+  now blinks once a move.
+- A mouse reached on its last move gave nothing.
+
 ## [1.0.0] — 2026-09-22
 
 The All Valley opens. Scores are real from here.
