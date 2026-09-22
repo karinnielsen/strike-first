@@ -8,6 +8,8 @@ What changed in each release of Strike First.
 - A challenge now keeps the score to beat in the stats, beside your own,
   for as long as the run lasts. It was named on the title screen and then
   gone until the run was over.
+- Pass that score and the target is struck out where it stands, so the
+  win lands on the move that earns it rather than at the verdict.
 
 ### Changed
 - The stats above the board are one evenly spaced row, edge to edge,

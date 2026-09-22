@@ -133,6 +133,19 @@
   .scores .to-beat b { color: var(--yellow); }
   .scores .to-beat[hidden] { display: none; }
 
+  /* Passed. The number stays legible - it is what was beaten, and the
+     verdict will name it - but drops to the shadow side of its own yellow
+     and takes a line through it, so target and trophy read apart at a
+     glance. The state is the information; the bump is only what pulls the
+     eye to it, and it is the score counter's own 260ms, because this lands
+     on the same move as a +N and must not outshout a promotion. */
+  .scores .to-beat.beaten b {
+    color: var(--yellow-deep);
+    text-decoration: line-through;
+  }
+  /* inline-block, otherwise a scale() transform has nothing to scale. */
+  .scores .to-beat.crossing b { display: inline-block; animation: bump 260ms ease-out; }
+
   /* The swatch sits on `best` rather than in a column of its own, because
      your best score is literally what produces your rank. Putting them
      together makes the causal link visible without a tutorial, and it is
@@ -651,6 +664,10 @@
 
     /* The counter brightens to the reward yellow instead of swelling. */
     #score.bump { animation-name: bump-glow; }
+
+    /* A beaten target needs no motion at all: the dimmed, struck-through
+       number says it, and says it for the rest of the run. */
+    .scores .to-beat.crossing b { animation: none; }
   }
 
   @keyframes pop-fade {
@@ -2045,6 +2062,7 @@ function addScore(points, kind) {
   score = Math.max(0, score + points);
   scoreEl.textContent = score;
   levelEl.textContent = levelFor(score);
+  markToBeat();
 
   // Rank moves the INSTANT you pass your own record, not when you die.
   // That is what lets a promotion land mid-run, which is the entire point
@@ -2206,6 +2224,7 @@ function disqualify() {
   score = 0;
   scoreEl.textContent = score;
   levelEl.textContent = levelFor(score);
+  markToBeat();
   best = bestAtStart;
   localStorage.setItem('strikeFirstBest', best);
   bestEl.textContent = best;
@@ -4060,6 +4079,9 @@ function showBestBelt() {
 function startGame() {
   audio();    // always a click or a key, so the browser will allow it
   reset();
+  // The mark is cleared here rather than in reset(), which also runs at
+  // load, before the challenge state exists.
+  markToBeat();
   hideInitials();
   dropBoard();
   overlay.classList.add('hidden');
@@ -5156,6 +5178,37 @@ async function loadRival(runId, send = globalThis.fetch) {
 function showToBeat() {
   toBeatEl.hidden = !rival || mode === 'practice';
   if (rival) rivalScoreEl.textContent = rival.score;
+  markToBeat();
+}
+
+// How long the crossing's bump runs, matching the CSS.
+const BEATEN_MS = 260;
+
+// Whether the target has been passed. Read by markToBeat() to tell a
+// crossing from every point after it.
+let beaten = false;
+
+// Whether the challenge is currently beaten, and the moment it becomes so.
+// The answer is recomputed rather than latched, because a rotten egg takes
+// points away: a score that falls back below the target is behind again,
+// which is what the verdict will say at the end. So the mark follows the
+// score in both directions and the moment fires on each crossing upwards -
+// rare enough to be a moment, and free of bookkeeping.
+//
+// Passing a stranger's score is smaller news than a promotion, so it gets
+// the score counter's bump rather than a beat of its own. UNR-189.
+function markToBeat() {
+  const ahead = !!rival && mode === 'arcade' && score > rival.score;
+  if (ahead === beaten) return;
+  beaten = ahead;
+  toBeatEl.classList.toggle('beaten', ahead);
+  if (!ahead) return;
+
+  // The same restart trick the score counter uses: off, reflow, on.
+  toBeatEl.classList.remove('crossing');
+  void toBeatEl.offsetWidth;
+  toBeatEl.classList.add('crossing');
+  setTimeout(() => toBeatEl.classList.remove('crossing'), BEATEN_MS);
 }
 
 // Output only: the challenge under the crest.
