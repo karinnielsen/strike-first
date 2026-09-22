@@ -2,6 +2,13 @@
 
 What changed in each release of Strike First.
 
+## [1.0.4] — 2026-09-22
+
+### Fixed
+- Slack cropped a pasted link's card into a small square, slicing the
+  wordmark. It now shows the card whole, and stops repeating the game's
+  name under its own title.
+
 ## [1.0.3] — 2026-09-22
 
 ### Changed

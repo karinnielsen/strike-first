@@ -3013,6 +3013,19 @@ describe('challenge a friend, UNR-116', () => {
     is(page.includes('name="robots" content="noindex"'), true, 'kept out of search');
   });
 
+  // Slack picks its cropped thumbnail layout unless twitter:image is there
+  // beside the card type, whatever og:image says. UNR-185.
+  test('both pages offer the card to Slack as well', () => {
+    const challenge = fs.readFileSync(path.join(__dirname, 'challenge', 'index.html'), 'utf8');
+    for (const [where, page] of [['game', html], ['challenge', challenge]]) {
+      const og = page.match(/property="og:image" content="([^"]+)"/);
+      const twitter = page.match(/name="twitter:image" content="([^"]+)"/);
+      is(twitter && twitter[1], og && og[1], `${where}: the same image both ways`);
+      is(/name="twitter:card" content="summary_large_image"/.test(page), true, `${where}: shown large`);
+      is(/property="og:site_name"/.test(page), false, `${where}: no site name under the title`);
+    }
+  });
+
   test('a link is read back to a run id, or to nothing', () => {
     is(game.challengeIdFrom('?vs=42'), 42, 'plain');
     is(game.challengeIdFrom('?utm_source=x&vs=42'), 42, 'among other parameters');
