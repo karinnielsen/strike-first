@@ -91,12 +91,14 @@
     height: auto;      /* 1000x360 viewBox, so 400x144 at full size */
   }
 
-  /* Pushed to the outer edges of the board rather than huddled together. */
-  /* Two clusters rather than four evenly spread items, because these are
-     two kinds of thing. Score and level are LIVE - they move while you
-     play. Best and rank are STANDING - they are what you hold, and a bad
-     run cannot take them away. Spacing them equally would have implied
-     four things of one kind.
+  /* One row of evenly spaced items, spanning the width of the board.
+     It was two clusters - live (score, level) beside standing (hi-score,
+     belt) - which held while there were four items and only four. A fifth
+     made the 174px between the clusters read as a gap rather than a
+     grouping, and the side-by-side list had already dropped the same
+     divide (22 September). Both layouts now present the stats as one
+     list, and the kinds are told apart by what each item says, not by
+     where it sits.
 
      Every item reads label then value - score 0, level 1, hi-score 53,
      belt GREEN - so the row has one grammar rather than three.
@@ -115,7 +117,11 @@
     font-size: 14px;
     color: var(--text);        /* labels are information, so not grey */
   }
-  .scores .group { display: flex; gap: 20px; }
+  /* The groups stay in the markup - they are what the side-by-side list
+     and the `to beat` rule read - but `contents` lifts their spans out, so
+     space-between measures every item rather than two clumps. The gaps
+     stay even whether the row holds four items or five. */
+  .scores .group { display: contents; }
   .scores b { color: var(--value); font-size: 17px; }
 
   /* The rival's score, in the same yellow the title screen gives it, so
@@ -730,8 +736,10 @@
     }
 
     /* THE STATS AS A LIST. One thing per row, label left and value right,
-       all four evenly spaced: a gap between live and standing split one
-       short list into two (22 September). */
+       all of them evenly spaced: a gap between live and standing split one
+       short list into two (22 September). The groups are `display: contents`
+       in both layouts now, so every row is a child of this column and the
+       spacing needs no rule of its own. */
     /* The list sits as one block a little above the column's middle, so
        the two columns read as a pair. Top-aligned it ended a third of the
        way down a column as tall as the board, leaving the left side empty
@@ -745,7 +753,6 @@
       padding-top: 52px;         /* room for the +N to rise out of the top row */
       padding-bottom: 96px;      /* what lifts the block above the middle */
     }
-    .scores .group { flex-direction: column; gap: 0; }
     .scores .group span {
       display: flex;
       align-items: baseline;
