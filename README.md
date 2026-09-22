@@ -42,6 +42,9 @@
 Rotten eggs land where dodging them costs you something, and get harsher as a
 run goes on.
 
+A mouse or a rotten egg blinks once a move before it leaves. While you can
+see it, you can still reach it.
+
 ## Belts
 
 Your rank comes from your best score ever, so only a real breakthrough
