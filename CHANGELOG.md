@@ -2,9 +2,13 @@
 
 What changed in each release of Strike First.
 
-## [Unreleased]
+## [1.0.0] — 2026-09-22
+
+The All Valley opens. Scores are real from here.
 
 ### Added
+- **The leaderboard is live.** Every signed run lands on the real board, which
+  starts empty.
 - **Challenge a friend.** Send a link to your best run. Your friend sees the
   score to beat, and their run lands on the same board. On a desktop it copies
   *"I scored N… Beat it."* with the link; on a tablet it opens the share sheet.
@@ -270,7 +274,7 @@ The core loop.
 First playable version: a cobra-styled snake with apples, mice, score
 popups and a speed-up, in one HTML file.
 
-[Unreleased]: https://github.com/karinnielsen/strike-first/compare/v0.5.13...HEAD
+[1.0.0]: https://github.com/karinnielsen/strike-first/compare/v0.5.13...v1.0.0
 [0.5.13]: https://github.com/karinnielsen/strike-first/compare/v0.5.12...v0.5.13
 [0.5.12]: https://github.com/karinnielsen/strike-first/compare/v0.5.11...v0.5.12
 [0.5.11]: https://github.com/karinnielsen/strike-first/compare/v0.5.10...v0.5.11

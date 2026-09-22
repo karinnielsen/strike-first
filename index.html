@@ -1339,7 +1339,7 @@ const ROWS = (canvas.height - 2 * BOARD_BLEED) / CELL;    // 21 rows down
 // Single source of truth for the version. Bump this, add a CHANGELOG entry,
 // update the Current version line in README.md, and tag the commit - those
 // four go together, always.
-const VERSION = '0.5.13';
+const VERSION = '1.0.0';
 // The version line also says which board you are on whenever it isn't the
 // real one. Bone rather than the dim grey around it, because that carries
 // information: it is the difference between a score that counts and one that
@@ -4357,17 +4357,11 @@ const SCORE_SERVICES = {
 // one journey that most needs a sandbox - signing, on a real device, at the
 // release gate - would be the one still writing to the live board.
 //
-// UNTIL v1.0.0 SHIPS, EVERYTHING RUNS ON THE SANDBOX - the published link
-// included. Karin's call on 18 September, along with wiping the real board.
-// Nobody knows the game exists yet, so the only scores the real board could
-// collect between now and launch are our own testing, and those would have
-// to be wiped again on the day. Keeping it empty until then means the board
-// people first see is the board players made.
-//
-// AT LAUNCH: set this to false. That is the entire change. The hostname rule
-// below then takes over, so the published game starts keeping real scores
-// while anyone running it locally, or on their own wi-fi, still doesn't.
-const BEFORE_LAUNCH = true;
+// Until v1.0.0 everything ran on the sandbox, the published link included,
+// so the real board opened empty and the first scores on it were players'.
+// Off since v1.0.0: the hostname rule below decides, so the published game
+// keeps real scores and a local or wi-fi copy still doesn't.
+const BEFORE_LAUNCH = false;
 
 // Takes a hostname, and the flag, rather than reading either itself - so
 // both sides of launch day can be tested today.
