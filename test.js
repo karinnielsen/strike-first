@@ -214,7 +214,7 @@ globalThis.game = {
   backFrom, goBack, get backShown() { return !backHud.hidden }, crestEl, titleScreenEl,
   verdictItems, challengeUrl, challengeText, challengeIdFrom, rivalRequest, rivalFrom, rivalLine, loadRival,
   isPhone, PHONE_MAX, ON_PHONE, rivalEl, MENU_LABELS,
-  playArcade, showToBeat, toBeatEl, rivalScoreEl,
+  playArcade, showToBeat, markToBeat, toBeatEl, rivalScoreEl, get beaten() { return beaten },
   get rival() { return rival }, set rival(v) { rival = v },
   STARS_SHOWN_FROM, starCountText, starsFrom, fetchStars, loadStars
 };`;
@@ -3104,6 +3104,27 @@ describe('challenge a friend, UNR-116', () => {
     game.showToBeat();
     is(game.toBeatEl.hidden, true, 'no challenge, no target');
     game.toTitle();   // Arcade left the dojo select open, and the suite shares one game
+  });
+
+  test('the target is beaten, and unbeaten again if the score falls back', () => {
+    freshGame();
+    game.rival = { initials: 'KAR', dojo: 'cobra-kai', score: 5 };
+    game.mode = 'arcade';
+    game.score = 5;
+    game.addScore(0, 'egg');
+    is(game.beaten, false, 'a tie does not beat it, as in the verdict');
+    game.addScore(1, 'egg');
+    is(game.beaten, true, 'one point past it');
+    game.addScore(-3, 'rotten');
+    is(game.beaten, false, 'a rotten egg puts it back out of reach');
+    game.addScore(9, 'mouse');
+    is(game.beaten, true, 'and passing it again is another crossing');
+    game.mode = 'practice';
+    game.markToBeat();
+    is(game.beaten, false, 'Practice cannot beat it');
+    game.rival = null;
+    game.mode = 'arcade';
+    game.markToBeat();
   });
 
   test('a phone is judged by the short side of its screen', () => {

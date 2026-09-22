@@ -133,6 +133,30 @@
   .scores .to-beat b { color: var(--yellow); }
   .scores .to-beat[hidden] { display: none; }
 
+  /* Passed. The number stays legible - it is what was beaten, and the
+     verdict will name it - but drops to the shadow side of its own yellow
+     and takes a line through it, so target and trophy read apart at a
+     glance. The state is the information; the word rising out of the stat
+     is what pulls the eye to it, borrowing the +N's float so the two kinds
+     of good news move alike. */
+  .scores .to-beat.beaten b {
+    color: var(--yellow-deep);
+    text-decoration: line-through;
+  }
+  .scores .to-beat.crossing .beaten-pop {
+    position: absolute;
+    left: 50%;
+    bottom: 100%;                    /* directly above the target */
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    white-space: nowrap;
+    pointer-events: none;
+    color: var(--yellow);
+    transform: translateX(-50%);
+    animation: float-up 900ms ease-out forwards;
+  }
+
   /* The swatch sits on `best` rather than in a column of its own, because
      your best score is literally what produces your rank. Putting them
      together makes the causal link visible without a tutorial, and it is
@@ -651,6 +675,10 @@
 
     /* The counter brightens to the reward yellow instead of swelling. */
     #score.bump { animation-name: bump-glow; }
+
+    /* The word still arrives, it just stops travelling - the same calming
+       the +N gets, for the same reason: it carries information. */
+    .scores .to-beat.crossing .beaten-pop { animation-name: pop-fade; }
   }
 
   @keyframes pop-fade {
@@ -2045,6 +2073,7 @@ function addScore(points, kind) {
   score = Math.max(0, score + points);
   scoreEl.textContent = score;
   levelEl.textContent = levelFor(score);
+  markToBeat();
 
   // Rank moves the INSTANT you pass your own record, not when you die.
   // That is what lets a promotion land mid-run, which is the entire point
@@ -2206,6 +2235,7 @@ function disqualify() {
   score = 0;
   scoreEl.textContent = score;
   levelEl.textContent = levelFor(score);
+  markToBeat();
   best = bestAtStart;
   localStorage.setItem('strikeFirstBest', best);
   bestEl.textContent = best;
@@ -4060,6 +4090,9 @@ function showBestBelt() {
 function startGame() {
   audio();    // always a click or a key, so the browser will allow it
   reset();
+  // The mark is cleared here rather than in reset(), which also runs at
+  // load, before the challenge state exists.
+  markToBeat();
   hideInitials();
   dropBoard();
   overlay.classList.add('hidden');
@@ -5156,6 +5189,43 @@ async function loadRival(runId, send = globalThis.fetch) {
 function showToBeat() {
   toBeatEl.hidden = !rival || mode === 'practice';
   if (rival) rivalScoreEl.textContent = rival.score;
+  markToBeat();
+}
+
+// How long the word takes to rise and fade, matching the CSS.
+const BEATEN_MS = 900;
+
+// Whether the target has been passed. Read by markToBeat() to tell a
+// crossing from every point after it.
+let beaten = false;
+
+// Whether the challenge is currently beaten, and the moment it becomes so.
+// The answer is recomputed rather than latched, because a rotten egg takes
+// points away: a score that falls back below the target is behind again,
+// which is what the verdict will say at the end. So the mark follows the
+// score in both directions and the moment fires on each crossing upwards -
+// rare enough to be a moment, and free of bookkeeping.
+//
+// Passing a stranger's score is smaller news than a promotion, so the word
+// rises and goes rather than taking the board. UNR-189.
+function markToBeat() {
+  const ahead = !!rival && mode === 'arcade' && score > rival.score;
+  if (ahead === beaten) return;
+  beaten = ahead;
+  toBeatEl.classList.toggle('beaten', ahead);
+  if (!ahead) return;
+
+  const pop = document.createElement('div');
+  pop.className = 'beaten-pop';
+  pop.textContent = 'BEATEN';
+  toBeatEl.appendChild(pop);
+  toBeatEl.classList.add('crossing');
+
+  // CSS handles the rise and the fade; we just clear up afterwards.
+  setTimeout(() => {
+    pop.remove();
+    toBeatEl.classList.remove('crossing');
+  }, BEATEN_MS);
 }
 
 // Output only: the challenge under the crest.

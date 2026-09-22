@@ -15,8 +15,8 @@
 - **Dojos.** Fight for Cobra Kai, Miyagi-Do or Eagle Fang. Every run counts
   for you and your dojo on the All Valley Rankings.
 - **Challenge a friend** with a link that says who they are up against. The
-  score to beat sits in the stats for the whole run. Their score lands on the
-  same board.
+  score to beat sits in the stats for the whole run, struck out the moment
+  you pass it. Their score lands on the same board.
 - **Sound.** Arcade effects, and an original soundtrack that stays off until
   you ask for it.
 - **Keyboard or tablet.** Swipe to steer on a touch screen. Phones get a page
