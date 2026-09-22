@@ -679,12 +679,18 @@
      the top, the board and crest would rise into them at iPad widths, and
      a tap on the board's corner would mute instead of steer. */
   @media (max-height: 970px) and (min-aspect-ratio: 1/1) and (min-width: 800px) {
+    /* The column and the gap grow with the window, up to a crest large
+       enough to read the cobra by and a gap wider than any one column's
+       margin. Both are capped: past that the crest outgrows the stats it
+       sits over. Below the caps they shrink with the width, so an 800px
+       window still fits its board without scrolling sideways. */
     .wrap {
-      --stats-w: 240px;
+      --stats-w: clamp(240px, 25vw, 360px);
+      --column-gap: clamp(48px, 9vw, 120px);
       display: grid;
       grid-template-columns: var(--stats-w) auto;
       grid-template-rows: auto 1fr auto;
-      column-gap: 48px;
+      column-gap: var(--column-gap);
       padding: 16px 24px;
     }
     /* Only where the board is: the title, dojo select and the rankings
@@ -709,20 +715,26 @@
       align-self: start;         /* square, not stretched down the rows */
       width: clamp(420px,
                    min(calc(100svh - 72px - 16px - 44px),   /* keycaps, padding, hint */
-                       calc(100vw - 384px)),   /* padding, gap, stats, a scrollbar */
+                       calc(100vw - var(--stats-w) - var(--column-gap) - 64px)),
+                                           /* padding and a scrollbar */
                    632px);
     }
 
     /* THE STATS AS A LIST. One thing per row, label left and value right,
        all four evenly spaced: a gap between live and standing split one
        short list into two (22 September). */
+    /* The list sits as one block a little above the column's middle, so
+       the two columns read as a pair. Top-aligned it ended a third of the
+       way down a column as tall as the board, leaving the left side empty
+       below it (22 September). */
     .scores {
       grid-column: 1;
       grid-row: 2;
       flex-direction: column;
-      justify-content: flex-start;
+      justify-content: center;
       gap: 0;
       padding-top: 52px;         /* room for the +N to rise out of the top row */
+      padding-bottom: 96px;      /* what lifts the block above the middle */
     }
     .scores .group { flex-direction: column; gap: 0; }
     .scores .group span {
@@ -1339,7 +1351,7 @@ const ROWS = (canvas.height - 2 * BOARD_BLEED) / CELL;    // 21 rows down
 // Single source of truth for the version. Bump this, add a CHANGELOG entry,
 // update the Current version line in README.md, and tag the commit - those
 // four go together, always.
-const VERSION = '1.0.4';
+const VERSION = '1.0.5';
 // The version line also says which board you are on whenever it isn't the
 // real one. Bone rather than the dim grey around it, because that carries
 // information: it is the difference between a score that counts and one that
