@@ -161,7 +161,7 @@ globalThis.game = {
   update, reset, isOccupied, stepDelay, mixColour, KEYS, addScore, queasiness,
   levelFor,
   MOUSE_CRAMP, MOUSE_NEAR, MOUSE_FAR, MOUSE_SLACK, MOUSE_FLOOR, MOUSE_TWITCH,
-  openSides, mouseSquare, mouseClock, mouseIdle, spawn, visitorShows,
+  openSides, mouseSquare, mouseClock, mouseIdle, spawn, visitorShows, routeMoves,
   TONGUE_GAP_MIN, TONGUE_GAP_MAX, nextFlickIn,
   SCORE_SERVICES, SCORE_TARGET, serviceFor, BEFORE_LAUNCH,
   get tongueOut() { return tongueOut }, set tongueOut(v) { tongueOut = v },
@@ -757,14 +757,83 @@ describe('the mouse: where it lands, and for how long', () => {
 });
 
 
+describe('the route to a mouse', () => {
+  // UNR-183. The clock came from the straight-line distance, which ignores
+  // the body; late in a run a third of mice could not be caught in time.
+  const route = (snake, dir, spot, owed = 0) =>
+    game.routeMoves(snake, dir, owed).get(spot.x + ',' + spot.y);
+
+  test('on an open board it is the straight-line distance', () => {
+    const snake = [{x: 10, y: 10}, {x: 9, y: 10}, {x: 8, y: 10}];
+    is(route(snake, {x: 1, y: 0}, {x: 14, y: 13}), 7, 'seven moves');
+  });
+
+  test('the head cannot turn straight back on itself', () => {
+    const snake = [{x: 10, y: 10}, {x: 9, y: 10}];
+    is(route(snake, {x: 1, y: 0}, {x: 8, y: 10}), 4, 'round, not through');
+  });
+
+  test('a wall of body is walked around', () => {
+    // A column of body at x = 11 from y = 0 to 15, head beside it at the top.
+    const snake = [];
+    for (let y = 0; y <= 15; y++) snake.push({x: 11, y});
+    snake.unshift({x: 10, y: 0});
+    const d = route(snake, {x: 0, y: 1}, {x: 12, y: 0});
+    is(d > 2, true, 'longer than the two squares it looks');
+    is(d <= 2 + 2 * 16, true, 'no longer than going round the end');
+  });
+
+  test("the tail's square is free once the tail has moved on", () => {
+    // Coiled so the only way to (5,6) is where the tail is now.
+    const snake = [{x: 5, y: 5}, {x: 4, y: 5}, {x: 4, y: 6}];
+    is(route(snake, {x: 1, y: 0}, {x: 4, y: 6}), 2, 'on the second move, once the tail has gone');
+    const owed = route(snake, {x: 1, y: 0}, {x: 4, y: 6}, 5);
+    is(owed === undefined || owed >= 7, true, 'not while it still grows');
+  });
+
+  test('a square sealed off by the body has no route', () => {
+    // A ring of body around (1,1) in the corner, head outside it.
+    const ring = [{x: 3, y: 3}, {x: 3, y: 2}, {x: 3, y: 1}, {x: 3, y: 0},
+                  {x: 2, y: 0}, {x: 2, y: 2}, {x: 1, y: 2}, {x: 0, y: 2}];
+    const snake = [{x: 4, y: 3}, ...ring];
+    is(route(snake, {x: 1, y: 0}, {x: 1, y: 1}, 0) > 0, true, 'reachable once the ring moves on');
+    const moves = game.routeMoves([{x: 4, y: 3}, ...ring], {x: 1, y: 0}, 0);
+    is(moves.has('4,3'), false, 'never the head itself');
+  });
+
+  test('a mouse never lands where it cannot be reached in time', () => {
+    for (let run = 0; run < 20; run++) {
+      freshGame();
+      // A long body snaking across the board, as late in a run.
+      const snake = [];
+      for (let y = 2; y < 19; y += 2) {
+        for (let x = 2; x < 19; x++) snake.push({x: y % 4 ? x : 20 - x, y});
+      }
+      game.snake = snake;
+      game.direction = {x: 1, y: 0};
+      const spot = game.mouseSquare();
+      if (!spot) continue;
+      is(route(game.snake, game.direction, spot) <= game.mouseClock(spot), true, 'in time');
+    }
+  });
+
+  test('if nowhere is reachable, no mouse comes', () => {
+    freshGame({ snake: [{x: 0, y: 0}, {x: 1, y: 0}, {x: 1, y: 1}, {x: 0, y: 1}] });
+    game.direction = {x: 0, y: -1};    // facing the top wall, boxed in
+    game.snake = [{x: 0, y: 0}, {x: 1, y: 0}, {x: 1, y: 1}, {x: 0, y: 1}];
+    game.grow = 400;                   // and the body never moves out of the way
+    is(game.mouseSquare(), null, 'no square');
+  });
+});
+
+
 describe('where visitors appear', () => {
   test('a mouse lands inside its band, never at your feet', () => {
     freshGame();
     for (let i = 0; i < 300; i++) {
       const spot = game.mouseSquare();
-      const head = game.snake[0];
-      const steps = Math.abs(spot.x - head.x) + Math.abs(spot.y - head.y);
-      is(steps >= game.MOUSE_NEAR && steps <= game.MOUSE_FAR, true, 'in the band');
+      const steps = game.routeMoves(game.snake, game.direction, game.grow).get(spot.x + ',' + spot.y);
+      is(steps >= game.MOUSE_NEAR && steps <= game.MOUSE_FAR, true, 'in the band, along the route');
     }
   });
 
@@ -2258,8 +2327,9 @@ describe('scores you can trust', () => {
         const beat = timer;
         timer = null;
         beat.fn();
-        if (lucky && game.score === before + game.EGG_POINTS && !game.visitor) {
-          const spot = game.mouseSquare();
+        const spot = lucky && game.score === before + game.EGG_POINTS && !game.visitor
+          && game.mouseSquare();                    // null when nowhere is reachable
+        if (spot) {
           game.visitor = { kind: 'mouse', life: game.mouseClock(spot), facing: 1,
                            born: game.mouseClock(spot), beat: 0, ...spot };
         }
