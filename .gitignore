@@ -1,6 +1,7 @@
 .DS_Store
 CLAUDE.local.md
 
-# Built by design/demo/build-trailer.js and for comparisons; regenerate, never commit
-design/demo/trailer.html
-design/demo/compare/
+# Design work in progress stays local. Only the specs are published.
+design/*
+!design/MICROCOPY.md
+!design/ASSET-BRIEF.md

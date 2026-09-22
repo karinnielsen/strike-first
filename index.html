@@ -6,8 +6,7 @@
 <title>Strike First — Browser Snake Game | Play Free Online</title>
 <!-- What the link looks like when it is pasted somewhere. Chat apps only
      fetch preview images from an absolute URL, so these point at the
-     published address even before it exists. The images are rendered from
-     the game itself by design/share/card.html. -->
+     published address. The images are rendered from the game itself. -->
 <meta name="description" content="Play snake free in your browser, with a dojo twist: eat eggs, chase mice, dodge rotten ones and earn your belt. Nothing to install.">
 <meta name="theme-color" content="#09090b">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -815,8 +814,7 @@
   .title-screen .title-foot > :last-child { justify-self: end; }
   /* The star: GitHub's button shape in the game's look - square corners,
      a thin outline, bone text because it is something to act on, no fill.
-     Picked from design/star-link/ on 21 September. The count waits until
-     it is worth showing: STARS_SHOWN_FROM. */
+     The count waits until it is worth showing: STARS_SHOWN_FROM. */
   .title-screen .star {
     display: inline-flex;
     align-items: stretch;
@@ -905,9 +903,8 @@
   body.phone .wrap.titling h1.crest svg { width: calc(100vw - 48px); }
   /* DOJO SELECT. UNR-114. A screen of its own after the title, like an
      arcade select: the crest, board, stats and hints all step aside and
-     the select has the page. Settled across 15 and 16 September from a
-     mock; its README, recording what each choice beat, is in the history
-     at commit 09df41e (design/dojo-select-compare/). Last in the sheet for the same reason as the title. */
+     the select has the page. Last in the sheet for the same reason as the
+     title. */
   .wrap.selecting {
     display: flex;
     flex-direction: column;
@@ -1539,7 +1536,7 @@ const QUEASY_MOVES  = 14;
 // roughly halved that rate through the mid-game: at score 30 it went from
 // 12.5 draws a second to 5.9. The flick had been covering three or four
 // consecutive frames, which reads as out-held-back, and dropped to one,
-// which reads as a blink. Karin noticed it was gone and was right. UNR-160.
+// which reads as a blink. UNR-160.
 //
 // Counted in moves, the rhythm is the same at 260ms a move and at 70ms,
 // like MOUSE_LIFE and QUEASY_MOVES before it. The whip itself - an
@@ -2104,8 +2101,8 @@ function disqualify() {
 // ---- sound ------------------------------------------------------------
 // 80s/90s arcade: square and pulse waves and a noise channel, generated
 // here rather than shipped as files, so the game stays one file. Each
-// sound was picked by ear from candidates in design/sound-options.html,
-// which is where to audition changes before making them here.
+// sound was picked by ear from candidates; audition a change before
+// making it here.
 //
 // Time is counted in FRAMES, a 60th of a second, because that is how 8-bit
 // sound drivers stepped: pitch and volume change on the frame and never in
@@ -2335,8 +2332,8 @@ const SOUNDS = {
   // not a fanfare. In the theme's key, E minor: i-iv-V-i, where the B chord
   // borrows D# to pull home and the landing turns major (G#), so the road
   // is minor and the arrival bright. It was C major I-IV-V-I until UNR-153,
-  // the one effect outside the music's key. Karin chose this from three
-  // retunings by ear (21 September).
+  // the one effect outside the music's key. Chosen by ear from three
+  // retunings.
   promotion() {
     const chords = [
       [note('E5'), note('G5'), note('B5')],
@@ -2385,12 +2382,12 @@ const SOUNDS = {
   // theme's key, E minor, so they sit inside the music rather than on it.
 
   // No tick for the clock's last seconds. One was made - a blip climbing
-  // the scale as the number turned red - and Karin cut it on hearing it
-  // (21 September). The red and the beat say it without sound.
+  // the scale as the number turned red - and it was cut by ear. The red
+  // and the beat say it without sound.
 
   // A card turning over, 400ms: noise swept up to the edge-on moment, then
   // down as the other face comes round. Half as loud and a narrower sweep
-  // than first written, which Karin found too present: it is only a card.
+  // than first written, which was too present: it is only a card.
   whoosh() {
     const steps = [];
     for (let k = 0; k < 10; k++) steps.push([0.6 + k * 0.07, 0.02 + k * 0.006, 1]);
@@ -2460,7 +2457,7 @@ function showSound() {
 
 // ---- music -----------------------------------------------------------
 // A file beside the page, not oscillators. A theme that lands is written in
-// a music tool (design/README.md, Music), and 45 seconds of it as a data URI
+// a music tool, and 45 seconds of it as a data URI
 // would sit inside index.html and be downloaded by everyone, including
 // everyone who never turns music on. So it is fetched the first time it is
 // wanted and never before - which is also what "off until asked" means when
@@ -2471,7 +2468,7 @@ function showSound() {
 //
 // Iron Resolve, a 48-second loop made in Astra, mixed here from its stems
 // without the drums or lead. The full mix was made too, for the start menu
-// and dojo select, and Karin preferred the calmer one everywhere. The two
+// and dojo select; the calmer one plays everywhere instead. The two
 // screen names stay, so a second track can come back as a one-line change.
 // AAC rather than MP3: every browser plays it, and MP3's encoder padding
 // leaves a gap at the loop point that AAC's container trims. Mono, 80kbps,
@@ -2495,7 +2492,7 @@ function musicFor({ phase, dojoPhase, rankingsOpen, titling, startPressed }) {
   if (dojoPhase !== 'closed') return 'arrival';
   if (rankingsOpen) return 'rankings';
   // The verdict stays silent too: you see it after every single run, so
-  // music there would grate fast (Karin, 21 September). It comes back with
+  // music there would grate fast. It comes back with
   // the next screen.
   if (phase === 'over') return null;
   // The crest alone is silent: a browser blocks audio until the page has
@@ -3297,7 +3294,7 @@ function deadColour(rgbString, drain) {
 // A quick dip, then the head draws back and the first step snaps it
 // forward: Strike First. Chosen 14 September over no bow, the defeat's bow
 // played forward, and a dip rippling down the whole body. Those are kept
-// on the branch options/start-bow, with design/bow-options.html to compare.
+// on the branch options/start-bow.
 const BOW_MS   = 520;
 const BOW_COIL = 0.3;     // cells the head draws back before the strike
 
@@ -4011,7 +4008,7 @@ function bowFrame() {
 // play (22 September).
 //
 // The flick is drawn, not squashed: five poses in the crest artwork
-// (design/title-crest/strike-first-tongue-poses.svg), shown one at a time.
+// (#sf-red-crest-tongue-1 to 5), shown one at a time.
 // At rest the mouth is closed and no tongue shows. Swapped, never faded -
 // a crossfade between poses shows two sets of forks at once.
 //
@@ -4747,7 +4744,7 @@ const DOJO_NAMES = { 'cobra-kai': 'Cobra Kai', 'miyagi-do': 'Miyagi-Do', 'eagle-
 // Each dojo's 18px badge, as [fill, path] pairs on an 18x18 grid: one
 // unit is one pixel. Drawn natively at that size rather than shrunk from
 // the crests, and only in the game's own palette. Kept as path data so
-// the page stays one file. UNR-114; the sources are design/dojo-crests/.
+// the page stays one file.
 const DOJO_BADGES = {
   'cobra-kai': [
     ['#ffff00', 'M7 2h4v1h-4ZM6 3h6v1h-6ZM5 4h2v1h-2ZM8 4h2v1h-2ZM11 4h2v1h-2ZM4 5h3v1h-3ZM11 5h3v1h-3ZM3 6h3v1h-3ZM7 6h4v1h-4ZM12 6h3v1h-3ZM3 7h2v1h-2ZM6 7h1v1h-1ZM11 7h1v1h-1ZM13 7h2v1h-2ZM3 8h2v1h-2ZM6 8h1v1h-1ZM11 8h1v1h-1ZM13 8h2v1h-2ZM4 9h1v1h-1ZM7 9h1v1h-1ZM10 9h1v1h-1ZM13 9h1v1h-1ZM5 10h1v1h-1ZM7 10h4v1h-4ZM12 10h1v1h-1ZM7 11h1v1h-1ZM10 11h1v1h-1ZM7 12h4v1h-4ZM7 13h1v1h-1ZM10 13h1v1h-1ZM4 14h10v1h-10ZM3 15h2v1h-2ZM7 15h4v1h-4ZM13 15h2v1h-2Z'],
@@ -5169,8 +5166,7 @@ loadRival(challengeIdFrom(location.search));
 //  THE STAR COUNT on the title's foot
 // =====================================================================
 // A count of 0 or 3 beside a star button puts people off, so the button
-// stands alone until there are enough stars to be worth showing. Karin's
-// call, 21 September.
+// stands alone until there are enough stars to be worth showing.
 const STARS_SHOWN_FROM = 10;
 const STARS_URL = 'https://api.github.com/repos/karinnielsen/strike-first';
 
@@ -5230,8 +5226,7 @@ loadStars(location.search);
 // =====================================================================
 // A screen of its own, opened every time Arcade is chosen: every run that
 // counts, counts for a dojo, so choosing your side is part of the ritual.
-// It opens on the dojo you had. UNR-137. Settled from a mock
-// whose README records each choice: design/dojo-select-compare/ at 09df41e.
+// It opens on the dojo you had. UNR-137.
 //
 // Arcade rules: 30 seconds on the clock, and when it runs out the lit dojo
 // is chosen for you. The highlight starts on the dojo you had, or a random

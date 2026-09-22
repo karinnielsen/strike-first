@@ -22,7 +22,7 @@ Repo: `karinnielsen/strike-first`, branch `main`.
 | Belt colours | `BELTS` in `index.html` |
 | Board size: `CELL`, `COLS`, `ROWS` | top of the `<script>` in `index.html` |
 | Board sprites | `SPRITE` in `index.html` |
-| Wordmark | inline `<svg>` in `h1.crest`; sources in `design/title-crest/` |
+| Wordmark | inline `<svg>` in `h1.crest` |
 | Dojo crests | `assets/crests/` (320px WebP) |
 | Dojo badges (18px) | `DOJO_BADGES` in `index.html` |
 
@@ -213,7 +213,7 @@ Nothing is open.
 
 | Asset | Status |
 | -- | -- |
-| Cobra crest for the title | Shipped v0.3.1. `design/title-crest/` |
+| Cobra crest for the title | Shipped v0.3.1 |
 | Board sprites: egg, rotten egg, mouse, head, body | Shipped v0.3.1 as vector. Sources on `asset-review/board-sprites` |
 | Dojo crests and 18px badges | Shipped v0.5.0. Sources and prompts in draft PR #6 |
 | Character portraits | Dropped 18 September. Spec on `mock/character-select` |
