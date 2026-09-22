@@ -2023,12 +2023,12 @@ describe('scores - how a run is measured, UNR-106', () => {
     }
   });
 
-  // This one is meant to be changed, on the day, by hand. It is the tripwire
-  // that stops the flag being forgotten: launch without flipping it and the
-  // suite still passes, which is the failure worth preventing.
-  test('the launch flag is still set - flip it when v1.0.0 ships', () => {
-    is(game.BEFORE_LAUNCH, true, 'before launch');
-    is(game.SCORE_TARGET, 'sandbox', 'so nothing writes to the real board yet');
+  // Flipped at v1.0.0. The published game keeps real scores; a copy run
+  // here still writes to the sandbox.
+  test('launched: the published link is the real board, a local copy is not', () => {
+    is(game.BEFORE_LAUNCH, false, 'launched');
+    is(game.serviceFor('karinnielsen.github.io'), 'production', 'published');
+    is(game.SCORE_TARGET, 'sandbox', 'the test run itself');
   });
 
   test('the two databases are different places', () => {
