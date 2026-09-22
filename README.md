@@ -42,6 +42,9 @@
 Rotten eggs land where dodging them costs you something, and get harsher as a
 run goes on.
 
+A mouse or a rotten egg blinks once a move before it leaves. While you can
+see it, you can still reach it.
+
 ## Belts
 
 Your rank comes from your best score ever, so only a real breakthrough
@@ -73,7 +76,7 @@ PRs welcome — start with an
 [open starter issue](https://github.com/karinnielsen/strike-first/labels/good%20first%20issue).
 Local copies write to a sandbox, not the live board.
 
-Current version: **v1.0.0** — see [CHANGELOG.md](CHANGELOG.md).
+Current version: **v1.0.1** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Credits and licence
 

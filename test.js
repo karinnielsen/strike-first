@@ -161,7 +161,7 @@ globalThis.game = {
   update, reset, isOccupied, stepDelay, mixColour, KEYS, addScore, queasiness,
   levelFor,
   MOUSE_CRAMP, MOUSE_NEAR, MOUSE_FAR, MOUSE_SLACK, MOUSE_FLOOR, MOUSE_TWITCH,
-  openSides, mouseSquare, mouseClock, mouseIdle, spawn,
+  openSides, mouseSquare, mouseClock, mouseIdle, spawn, visitorShows,
   TONGUE_GAP_MIN, TONGUE_GAP_MAX, nextFlickIn,
   SCORE_SERVICES, SCORE_TARGET, serviceFor, BEFORE_LAUNCH,
   get tongueOut() { return tongueOut }, set tongueOut(v) { tongueOut = v },
@@ -636,6 +636,48 @@ describe('the visitor countdown', () => {
     freshGame({ visitor: {kind: 'rotten', x: 18, y: 18, life: 1, facing: 1} });
     game.update();
     is(game.visitor, null, 'visitor');
+  });
+
+  // UNR-181. It was on the board in the last frame, so reaching it counts.
+  test('a mouse reached on its last move is still caught', () => {
+    freshGame({ visitor: {kind: 'mouse', x: 6, y: 5, life: 1, facing: 1} });
+    game.update();
+    is(game.score, game.MOUSE_POINTS, 'score');
+    is(game.visitor, null, 'visitor');
+  });
+
+  test('a rotten egg reached on its last move still counts', () => {
+    freshGame({ visitor: {kind: 'rotten', x: 6, y: 5, life: 1, facing: 1} });
+    game.update();
+    is(game.queasy, game.QUEASY_MOVES, 'queasy');
+    is(game.visitor, null, 'visitor');
+  });
+});
+
+
+describe('the warning flash', () => {
+  // UNR-181. The board is drawn once per step, so the flash has to be
+  // counted in moves: a wall-clock flash stalled for many moves at a time.
+  const mouse = life => ({kind: 'mouse', x: 0, y: 0, life, born: 30, facing: 1});
+
+  test('steady until the warning starts', () => {
+    for (let life = 10; life <= 30; life++) is(game.visitorShows(mouse(life)), true, 'life ' + life);
+  });
+
+  test('then alternates every move', () => {
+    for (let life = 1; life < 10; life++) {
+      is(game.visitorShows(mouse(life)), life % 2 === 1, 'life ' + life);
+    }
+  });
+
+  test('the last move before it bolts shows it', () => {
+    is(game.visitorShows(mouse(1)), true, 'life 1');
+  });
+
+  test('a rotten egg warns for the flat count', () => {
+    const rotten = life => ({kind: 'rotten', x: 0, y: 0, life, born: game.ROTTEN_LIFE, facing: 1});
+    is(game.visitorShows(rotten(game.WARNING_MOVES)), true, 'before the warning');
+    is(game.visitorShows(rotten(game.WARNING_MOVES - 1)), game.WARNING_MOVES % 2 === 0, 'first warning move');
   });
 });
 
