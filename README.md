@@ -14,7 +14,8 @@
   can land mid-run.
 - **Dojos.** Fight for Cobra Kai, Miyagi-Do or Eagle Fang. Every run counts
   for you and your dojo on the All Valley Rankings.
-- **Challenge a friend** with a link. Their score lands on the same board.
+- **Challenge a friend** with a link that says who they are up against. Their
+  score lands on the same board.
 - **Sound.** Arcade effects, and an original soundtrack that stays off until
   you ask for it.
 - **Keyboard or tablet.** Swipe to steer on a touch screen. Phones get a page
@@ -76,7 +77,7 @@ PRs welcome — start with an
 [open starter issue](https://github.com/karinnielsen/strike-first/labels/good%20first%20issue).
 Local copies write to a sandbox, not the live board.
 
-Current version: **v1.0.2** — see [CHANGELOG.md](CHANGELOG.md).
+Current version: **v1.0.3** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Credits and licence
 

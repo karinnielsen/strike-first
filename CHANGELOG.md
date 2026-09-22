@@ -2,6 +2,14 @@
 
 What changed in each release of Strike First.
 
+## [1.0.3] — 2026-09-22
+
+### Changed
+- A challenge link now looks like a challenge: its own preview card, and a
+  message naming the dojo you fight for.
+- The game's own link leads with what it is and what you do in it.
+- Killed the tagline on the preview image. The crest and the board say it.
+
 ## [1.0.2] — 2026-09-22
 
 ### Fixed
