@@ -849,6 +849,27 @@
     .title-screen #start-btn { animation: none; }
   }
 
+  /* THE TOAST. Says a link was copied, over the top of the board, where the
+     verdict is, on the corner keycaps' surface. Chosen 22 September over
+     renaming the row, which read as a different option and was gone in two
+     seconds, and over a line under the menu, which was below where the eye
+     was. Off the board - the phone landing - it pins to the window's top. */
+  .toast {
+    position: fixed; top: 16px; left: 50%; z-index: 5;
+    transform: translate(-50%, -8px);
+    padding: 10px 16px; border-radius: 6px;
+    background: var(--line); box-shadow: 0 4px 0 #0e0e11;
+    font-size: 14px; letter-spacing: 0.04em; white-space: nowrap; color: var(--text);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .stage > .toast { position: absolute; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast b { color: var(--yellow); }
+  @media (prefers-reduced-motion: reduce) {
+    .toast, .toast.show { transform: translate(-50%, 0); transition: opacity 0.2s; }
+  }
+
   /* A CHALLENGE, opened from a link. UNR-116. Written for someone who has
      never seen the game: who, what game, what number. No belt - it is
      jargon until you have played. */
@@ -1211,6 +1232,7 @@
     <nav class="menu run-menu" id="phone-menu" aria-label="send" hidden>
       <button type="button" class="on"><span class="mark" aria-hidden="true">&#9654;</span><span class="label">Send it to myself</span></button>
     </nav>
+    <div class="toast" id="toast" role="status"></div>
     <p class="title-foot"><span>@pushinpixls 2026</span><a class="star" id="star-link" href="https://github.com/karinnielsen/strike-first" target="_blank" rel="noopener" aria-label="star on github"><span class="btn"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>Star</span><span class="count" id="star-count" hidden></span></a><span>free play</span></p>
   </div>
 
@@ -4083,9 +4105,6 @@ function verdictItems(mode, runId) {
   return runId ? ['rematch', 'challenge', 'rankings', 'menu'] : ['rematch', 'rankings', 'menu'];
 }
 
-// For a moment after the link is copied, its row says so. UNR-116.
-let linkCopied = false;
-
 // Which row a step lands on, wrapping at either end. Pure.
 function menuStep(at, delta, length) {
   return ((at + delta) % length + length) % length;
@@ -4116,8 +4135,7 @@ function showMenu(menu) {
     row.hidden = i >= menu.items.length;
     row.classList.toggle('on', i === menu.at);
     const item = menu.items[i];
-    row.querySelector('.label').textContent =
-      item === 'challenge' && linkCopied ? 'Link copied' : MENU_LABELS[item] || '';
+    row.querySelector('.label').textContent = MENU_LABELS[item] || '';
   });
 }
 
@@ -5035,27 +5053,35 @@ function showChallenge() {
   showPhone();
 }
 
-const SHARE_TEXT = 'Beat my score in Strike First, a karate Snake game.';
+// What a challenge says, with the number in it: a bare link pasted into a
+// chat gave no reason to click, and the link's preview is the same card
+// for every run. The run a challenge points at is your latest signed one,
+// which is always your hi-score (see verdictItems). Pure.
+function challengeText(score) {
+  return `I scored ${score} in Strike First, a karate Snake game. Beat it.`;
+}
 
 // Hand a link on. A touch screen gets the share sheet, which is where
 // messages are sent from; anything else gets the link copied, since a
-// desktop share sheet is a detour. Resolves to 'shared', 'copied' or
-// 'failed'. A share sheet closed without sending counts as shared: the
-// player chose not to, and nothing needs saying.
-async function shareLink(url, text) {
+// desktop share sheet is a detour. `copied` is what goes on the clipboard,
+// since a share sheet sends the text and the link together and a paste
+// has only what was copied. Resolves to 'shared', 'copied' or 'failed'. A
+// share sheet closed without sending counts as shared: the player chose
+// not to, and nothing needs saying.
+async function shareLink(url, text, copied = url) {
   const touch = matchMedia('(pointer: coarse)').matches;
   if (touch && navigator.share) {
     try { await navigator.share({ title: 'Strike First', text, url }); } catch (e) {}
     return 'shared';
   }
   try {
-    await navigator.clipboard.writeText(url);
+    await navigator.clipboard.writeText(copied);
     return 'copied';
   } catch (e) {
     // No clipboard API off a secure origin, such as a LAN address. The old
     // way still works there.
     const area = document.createElement('textarea');
-    area.value = url;
+    area.value = copied;
     document.body.append(area);
     area.select();
     const ok = document.execCommand('copy');
@@ -5064,17 +5090,40 @@ async function shareLink(url, text) {
   }
 }
 
-const LINK_COPIED_MS = 2000;
+const TOAST_MS = 3000;
+const toastEl = document.getElementById('toast');
+let toastTimer = 0;
+
+// Output only. Over the board when it is showing, else at the window's top.
+function showToast(lead, rest) {
+  const stage = document.getElementById('stage');
+  (stage.offsetParent ? stage : document.body).append(toastEl);
+  const b = document.createElement('b');
+  b.textContent = lead;
+  toastEl.replaceChildren(b, ` ${rest}`);
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, TOAST_MS);
+}
+
+function hideToast() {
+  if (!toastEl.classList.contains('show')) return;
+  clearTimeout(toastTimer);
+  toastEl.classList.remove('show');
+}
+
+// Anything you do next clears it, so Rematch never starts a run under it.
+// Captured, so it runs before the press that might show it again.
+document.addEventListener('keydown', hideToast, true);
+document.addEventListener('pointerdown', hideToast, true);
 
 async function sendChallenge() {
   if (!lastRunId) return;
   const url = challengeUrl(location, lastRunId);
-  const result = await shareLink(url, SHARE_TEXT);
-  if (result === 'failed') return window.prompt('Copy this link:', url);
-  if (result !== 'copied') return;
-  linkCopied = true;
-  showMenus();
-  setTimeout(() => { linkCopied = false; showMenus(); }, LINK_COPIED_MS);
+  const text = challengeText(best);
+  const result = await shareLink(url, text, `${text} ${url}`);
+  if (result === 'failed') return window.prompt('Copy this link:', `${text} ${url}`);
+  if (result === 'copied') showToast('Link copied.', 'Paste it to a friend.');
 }
 
 // ---- a phone ------------------------------------------------------------
@@ -5102,13 +5151,10 @@ function showPhone() {
 }
 
 document.querySelector('#phone-menu button').addEventListener('click', async () => {
-  const button = document.querySelector('#phone-menu .label');
   // Sent to yourself, so it carries the link as it came - challenge and all.
   const result = await shareLink(location.href, 'Strike First, a karate Snake game.');
   if (result === 'failed') return window.prompt('Copy this link:', location.href);
-  if (result !== 'copied') return;
-  button.textContent = 'Link copied';
-  setTimeout(() => { button.textContent = 'Send it to myself'; }, LINK_COPIED_MS);
+  if (result === 'copied') showToast('Link copied.', 'Open it on a bigger screen.');
 });
 
 showPhone();
