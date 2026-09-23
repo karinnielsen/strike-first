@@ -1777,7 +1777,7 @@ const LIZARD_FLOOR  = 13;
 //
 // It is the first prey longer than one square: SNAKE_LENGTH squares, head
 // first, still the one visitor. It crawls a square every SNAKE_CRAWL moves,
-// slower than you, and like the frog and lizard it only ever crawls onto an
+// as fast as you, and like the frog and lizard it only ever crawls onto an
 // open square the snake can still reach, so its head is never out of reach
 // unless the board already put it there.
 //
@@ -1793,7 +1793,10 @@ const SNAKE_POINTS   = 21;         // seven a square, under the lizard's 7.5
 const SNAKE_GROWTH   = SNAKE_LENGTH;
 const SNAKE_BELT     = 'Cho Dan Bo';
 const SNAKE_SHARE    = 1 / 2;
-const SNAKE_CRAWL    = 2;          // moves per square it crawls: half your speed
+// Moves per square it crawls: as fast as you. At half your speed a chasing
+// bot caught 81% of snakes against the lizard's 21%, worth less; at this
+// speed it catches about half, and most of the rest run out their clock.
+const SNAKE_CRAWL    = 1;
 const SNAKE_STRAIGHT = 0.6;        // chance it carries straight on when it can
 const SNAKE_SLACK    = 2;          // its clock, the frog's to start with
 const SNAKE_FLOOR    = 13;

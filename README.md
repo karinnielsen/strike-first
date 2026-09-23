@@ -43,7 +43,7 @@
 | 🐁 Mouse | +5 | +2 | long enough to reach it, if you go now |
 | 🐸 Frog, from Brown belt | +10 | +2 | longer than a mouse, since it hops a square every 6 moves |
 | 🦎 Lizard, from Red belt | +15 | +2 | as long as a frog, running along the walls as fast as you |
-| 🐍 Snake, from Cho Dan Bo | +21 | +3 | as long as a frog, crawling at half your speed. Only its head counts: bite anywhere else and it bolts |
+| 🐍 Snake, from Cho Dan Bo | +21 | +3 | as long as a frog, crawling as fast as you. Only its head counts: bite anywhere else and it bolts |
 | 🤢 Rotten egg | −3 | none, but you're queasy for 14 moves | 45 moves |
 
 Rotten eggs land where dodging them costs you something, and get harsher as a
