@@ -182,7 +182,7 @@ globalThis.game = {
   BONE_BODY, DUSTY_TAIL, SICK_GREEN, blend, bodyColour, BELT_SEGMENT,
   QUEASY_SHAKE, queasyShake,
   TONGUE_DOUBLE, TONGUE_PAUSE_MIN, TONGUE_PAUSE_MAX, tongueFlickPlan,
-  TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt, tonguePose, CREST_LEAN_MAX, crestLean, HOOD_FLARE, HOOD_TAPER, HOOD_CENTRE, hoodFlareAt, hoodEdge, PROMOTION_MS, promote,
+  TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt, tonguePose, CREST_LEAN_MAX, crestLean, crestHead, charmAim, charmStep, charmGlance, CHARM_GLANCE, HOOD_FLARE, HOOD_TAPER, HOOD_CENTRE, hoodFlareAt, hoodEdge, PROMOTION_MS, promote,
   DEFEAT_LINES, defeatLine, defeatPool, fillLine, showVerdict,
   BOW_MS, bowPose, bowElapsed,
   DEFEAT_MS, DEFEAT_HOLD_MS, defeatRecoil, defeatDrain, defeatJolt, defeatBow, canRestart,
@@ -2103,6 +2103,42 @@ describe('the crest lean', () => {
 
   test('moves under a degree per column', () => {
     is(game.crestLean(11, game.COLS) < 1, true, 'one column');
+  });
+});
+
+describe('the charmer', () => {
+  test('follows the pipe across the crest, full lean at its edges', () => {
+    is(game.charmAim(500, 100, 800), 0, 'over the middle');
+    is(game.charmAim(100, 100, 800), -game.CREST_LEAN_MAX, 'left edge');
+    is(game.charmAim(900, 100, 800), game.CREST_LEAN_MAX, 'right edge');
+    is(game.charmAim(5000, 100, 800), game.CREST_LEAN_MAX, 'never past the lean');
+  });
+
+  test('holds still on the title, and sways everywhere else', () => {
+    is(/\.wrap\.titling #sf-red-crest-head\.swaying \{ animation: none; \}/.test(html), true, 'stilled on the title');
+  });
+
+  test('looks where it leans', () => {
+    is(game.charmGlance(0), 0, 'ahead when upright');
+    is(game.charmGlance(game.CREST_LEAN_MAX), game.CHARM_GLANCE, 'right at a full right lean');
+    is(game.charmGlance(-game.CREST_LEAN_MAX), -game.CHARM_GLANCE, 'left at a full left lean');
+  });
+
+  // Late and with weight: it overshoots once, then settles on the pipe.
+  test('turns after the pipe, overshoots a touch, and settles', () => {
+    let a = 0, v = 0, peak = 0;
+    for (let i = 0; i < 180; i++) {
+      [a, v] = game.charmStep(a, v, 8, 1 / 60);
+      peak = Math.max(peak, a);
+      if (i === 5) is(a < 4, true, 'a beat late');
+    }
+    is(peak > 8 && peak < 10, true, 'overshoots, stays near');
+    is(Math.abs(a - 8) < 0.1, true, 'settles');
+  });
+
+  test('PRESS START flashes the eyes red', () => {
+    is(/function pressStart\(\)[^}]*crestFlash\(\)/.test(html), true, 'flashed on the press');
+    is(/@keyframes crest-eye-flash \{\s*0%, 100% \{ fill: #ffff00; \}/.test(html), true, 'yellow at both ends');
   });
 });
 
