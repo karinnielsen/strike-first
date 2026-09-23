@@ -2,6 +2,16 @@
 
 What changed in each release of Strike First.
 
+## [1.1.0] — 2026-09-23
+
+Frogs.
+
+### Added
+- **Frogs** come to your dojo once you reach brown belt. Worth ten, twice a
+  mouse, but they hop a square every few moves, so chase one and it may not
+  be there when you arrive. They stay longer than a mouse to make up for it.
+- Earning brown belt tells you the frogs are coming.
+
 ## [1.0.12] — 2026-09-23
 
 ### Added
@@ -363,6 +373,7 @@ The core loop.
 First playable version: a cobra-styled snake with apples, mice, score
 popups and a speed-up, in one HTML file.
 
+[1.1.0]: https://github.com/karinnielsen/strike-first/compare/v1.0.12...v1.1.0
 [1.0.12]: https://github.com/karinnielsen/strike-first/compare/v1.0.11...v1.0.12
 [1.0.11]: https://github.com/karinnielsen/strike-first/compare/v1.0.10...v1.0.11
 [1.0.10]: https://github.com/karinnielsen/strike-first/compare/v1.0.9...v1.0.10
