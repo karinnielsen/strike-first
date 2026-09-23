@@ -5136,9 +5136,12 @@ function charmGlance(angle) {
   return angle / CREST_LEAN_MAX * CHARM_GLANCE;
 }
 
+// The spring overshoots, but the head never goes past the lean the
+// lettering was measured for: the overshoot shows short of the edges.
 function showCharm() {
-  crestHead.style.setProperty('transform', `rotate(${charmAngle.toFixed(2)}deg)`);
-  const glance = `translate(${charmGlance(charmAngle).toFixed(1)}px, 0px)`;
+  const angle = Math.max(-CREST_LEAN_MAX, Math.min(CREST_LEAN_MAX, charmAngle));
+  crestHead.style.setProperty('transform', `rotate(${angle.toFixed(2)}deg)`);
+  const glance = `translate(${charmGlance(angle).toFixed(1)}px, 0px)`;
   for (const eye of charmEyes) eye.style.setProperty('transform', glance);
 }
 
@@ -5535,6 +5538,14 @@ function crestFlash() {
   crestHead.classList.remove('flash');
   crestHead.getBoundingClientRect();
   crestHead.classList.add('flash');
+}
+// Off again once it has played, or been cut short by the crest hiding (on
+// to dojo select mid-flash). Left on, it would play again every time the
+// crest is shown after being hidden, so the eyes would arrive red.
+for (const type of ['animationend', 'animationcancel']) {
+  crestHead.addEventListener(type, (e) => {
+    if (e.animationName === 'crest-eye-flash') crestHead.classList.remove('flash');
+  });
 }
 
 function openTitleMenu(at) {
