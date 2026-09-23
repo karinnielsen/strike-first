@@ -166,6 +166,8 @@ globalThis.game = {
   FROG_POINTS, FROG_GROWTH, FROG_BELT, FROG_SHARE, FROG_HOP, FROG_BREATH, FROG_BREATH_DEPTH,
   PREY, UNLOCKS, frogsCome, frogSquare, frogHopTo, frogBreath, promote,
   FROG_SLACK, FROG_FLOOR, frogClock,
+  LIZARD_POINTS, LIZARD_GROWTH, LIZARD_BELT, LIZARD_SHARE, LIZARD_RUN, LIZARD_SLACK, LIZARD_FLOOR,
+  lizardsCome, preyKind, onWall, lizardSquare, wallDirs, lizardRunTo, lizardClock, lizardPose,
   TONGUE_GAP_MIN, TONGUE_GAP_MAX, nextFlickIn,
   SCORE_SERVICES, SCORE_TARGET, serviceFor, BEFORE_LAUNCH,
   get tongueOut() { return tongueOut }, set tongueOut(v) { tongueOut = v },
@@ -1714,9 +1716,110 @@ describe('the frog, UNR-201', () => {
     is(game.frogBreath(8), 1, 'rest again');
   });
 
-  test('promotion to Brown says frogs now come, and no other belt says anything', () => {
+  test('promotion to Brown says frogs now come, and to Red lizards', () => {
     is(game.UNLOCKS[game.FROG_BELT], 'frogs now come to your dojo', 'Brown');
-    is(Object.keys(game.UNLOCKS), [game.FROG_BELT], 'only Brown, for now');
+    is(game.UNLOCKS[game.LIZARD_BELT], 'lizards now come to your dojo', 'Red');
+    is(Object.keys(game.UNLOCKS), [game.FROG_BELT, game.LIZARD_BELT], 'no other belt says anything');
+  });
+});
+
+
+// The second prey a belt unlocks. UNR-204.
+describe('the lizard, UNR-204', () => {
+  function withRolls(rolls, fn) {
+    const math = vm.runInContext('Math', sandbox);
+    const real = math.random;
+    let i = 0;
+    math.random = () => rolls[Math.min(i++, rolls.length - 1)];
+    try { fn(); } finally { math.random = real; }
+  }
+  const beltScore = name => game.BELTS.find(b => b.name === name).from;
+  const lizard = (x, y, dir, more) => ({kind: 'lizard', x, y, dir, life: 30, born: 30, facing: 1, beat: 0, ...more});
+  const saved = game.best;
+
+  test('lizards come from Red belt, going by the best score', () => {
+    game.best = beltScore('Red') - 1;
+    is(game.lizardsCome(), false, 'one point short');
+    game.best = beltScore('Red');
+    is(game.lizardsCome(), true, 'at Red');
+    game.best = saved;
+  });
+
+  test('at Red a prey is a lizard half the time, a frog a third, a mouse a sixth', () => {
+    game.best = beltScore('Red');
+    is(game.preyKind(0.49), 'lizard', 'first half');
+    is(game.preyKind(0.51), 'frog', 'just past it');
+    is(game.preyKind(0.83), 'frog', 'up to five sixths');
+    is(game.preyKind(0.84), 'mouse', 'the last sixth');
+    game.best = beltScore('Brown');
+    is(game.preyKind(0.49), 'frog', 'at Brown the same roll is a frog');
+    game.best = saved;
+  });
+
+  test('a lizard lands against a wall, and sets off along it', () => {
+    freshGame({ egg: {x: 15, y: 15} });
+    game.best = beltScore('Red');
+    withRolls([0.4, 0.4, 0.3], () => game.maybeSpawnVisitor());   // comes, isn't rotten, is a lizard
+    const v = game.visitor;
+    is(v && v.kind, 'lizard', 'a lizard');
+    is(game.onWall(v), true, 'on a wall square');
+    is(game.wallDirs(v).some(d => d.x === v.dir.x && d.y === v.dir.y), true, 'heading along the wall');
+    game.best = saved;
+  });
+
+  test('eating a lizard scores fifteen, grows two, and clears the slot', () => {
+    freshGame({ visitor: lizard(6, 5, {x: 1, y: 0}) });
+    game.update();
+    is(game.score, 15, 'score');
+    is(game.snake.length + game.grow, 3 + game.LIZARD_GROWTH, 'length owed');
+    is(game.visitor, null, 'visitor');
+  });
+
+  // Every other move was too easy: a chase always closed the gap.
+  test('it runs a square along the wall every move, as fast as you, and scuttles', () => {
+    is(game.LIZARD_RUN, 1, 'a square a move');
+    freshGame({ visitor: lizard(10, 0, {x: 1, y: 0}) });
+    game.update();
+    is([game.visitor.x, game.visitor.y, game.visitor.running], [11, 0, true], 'first move: a square on, mid-stride');
+    game.update();
+    is([game.visitor.x, game.visitor.y, game.visitor.running], [12, 0, false], 'second: a square on, feet down');
+    game.update();
+    is([game.visitor.x, game.visitor.running], [13, true], 'third: mid-stride again');
+  });
+
+  test('it turns at a corner and keeps to the wall', () => {
+    freshGame({ snake: [{x: 5, y: 10}, {x: 4, y: 10}, {x: 3, y: 10}] });
+    const liz = lizard(20, 0, {x: 1, y: 0});
+    game.visitor = liz;
+    is(game.lizardRunTo(liz), { to: {x: 20, y: 1}, dir: {x: 0, y: 1} }, 'round the corner, down the wall');
+  });
+
+  test('it turns back when the way ahead is blocked, and waits when boxed in', () => {
+    freshGame({ snake: [{x: 12, y: 1}, {x: 12, y: 0}, {x: 13, y: 0}], direction: {x: 0, y: 1}, egg: {x: 10, y: 0} });
+    const liz = lizard(11, 0, {x: 1, y: 0});
+    game.visitor = liz;
+    is(game.lizardRunTo(liz), null, 'snake ahead, egg behind: it waits');
+    game.egg = {x: 15, y: 15};
+    is(game.lizardRunTo(liz), { to: {x: 10, y: 0}, dir: {x: -1, y: 0} }, 'the way back is open: it turns');
+  });
+
+  test('its clock starts where the frog\'s is', () => {
+    freshGame();
+    is(game.lizardClock({x: 15, y: 0}), game.frogClock({x: 15, y: 0}), 'same clock, for now');
+  });
+
+  test('it faces the way it runs, belly down or to the wall, never upside down', () => {
+    is(game.lizardPose({x: 5, y: 0, dir: {x: 1, y: 0}}),  { turn: 0, flipX: false, flipY: false }, 'right along the top');
+    is(game.lizardPose({x: 5, y: 0, dir: {x: -1, y: 0}}), { turn: 0, flipX: true,  flipY: false }, 'left along the top');
+    is(game.lizardPose({x: 20, y: 5, dir: {x: 0, y: -1}}), { turn: -1, flipX: false, flipY: false }, 'up the right wall');
+    is(game.lizardPose({x: 20, y: 5, dir: {x: 0, y: 1}}),  { turn: 1, flipX: false, flipY: true }, 'down the right wall');
+    is(game.lizardPose({x: 0, y: 5, dir: {x: 0, y: 1}}),   { turn: 1, flipX: false, flipY: false }, 'down the left wall');
+    is(game.lizardPose({x: 0, y: 5, dir: {x: 0, y: -1}}),  { turn: -1, flipX: false, flipY: true }, 'up the left wall');
+  });
+
+  test('both poses paint the same seven layers in the same colours', () => {
+    is(game.SPRITE.lizard.length, 7, 'standing paths');
+    is(game.SPRITE.lizard.map(l => l.fill).join(), game.SPRITE.lizardRun.map(l => l.fill).join(), 'same fills in order');
   });
 });
 
@@ -1761,7 +1864,8 @@ describe('sprites', () => {
       egg:       12.8 * game.SPRITE_SIZE.egg.scale,
       rottenEgg: 13.6 * game.SPRITE_SIZE.rottenEgg.scale,
       mouse:     14.8 * game.SPRITE_SIZE.mouse.scale,
-      frog:      11.5 * game.SPRITE_SIZE.frog.scale
+      frog:      11.5 * game.SPRITE_SIZE.frog.scale,
+      lizard:    11.6 * game.SPRITE_SIZE.lizard.scale
     };
     const small = Object.entries(heights).filter(([, h]) => h < 15);
     is(small.length, 0, 'too small: ' + JSON.stringify(small));
@@ -2372,9 +2476,9 @@ describe('scores you can trust', () => {
     });
   };
 
-  test('an egg and a frog in a row is the most a move or a square can earn', () => {
-    is(game.POINTS_PER_MOVE, 5.5, 'per move');
-    is(game.POINTS_PER_SQUARE, 5.5, 'per square');
+  test('an egg and a lizard in a row is the most a move or a square can earn', () => {
+    is(game.POINTS_PER_MOVE, 8, 'per move');
+    is(game.POINTS_PER_SQUARE, 8, 'per square');
   });
 
   test('the page and the database hold the same numbers', () => {
@@ -2392,7 +2496,7 @@ describe('scores you can trust', () => {
   test('the fastest run climbs the curve as steeply as the score allows', () => {
     is(game.fastestRun(0, 3), 0, 'no moves');
     is(game.fastestRun(10, 3), 2600, 'no growth, so level 1 throughout');
-    is(game.fastestRun(2, 5), 485, 'eleven points at most, so level 2 on the second move');
+    is(game.fastestRun(2, 5), 450, 'sixteen points at most, so level 2 from the first move');
     is(game.fastestRun(1e9, 441) > 0, true, 'a huge claim still answers');
   });
 
@@ -2404,7 +2508,7 @@ describe('scores you can trust', () => {
       { score: 999999, length: 999999, moves: 999999 },
       { length: 500 },                          // more than the board
       { moves: 20 },                            // grew faster than it moved
-      { score: 149 },                           // more than 5.5 a square
+      { score: 217 },                           // more than 8 a square
       { durationMs: 1000 }                      // faster than the curve
     ];
     for (const change of forged) {
@@ -2414,7 +2518,7 @@ describe('scores you can trust', () => {
   });
 
   test('the limits are inclusive, so the best possible run is allowed', () => {
-    is(game.plausibleRun({ ...honest, score: 148.5 }), true, 'five and a half a square exactly');
+    is(game.plausibleRun({ ...honest, score: 216 }), true, 'eight a square exactly');
     is(game.plausibleRun({ ...honest, moves: 27 }), true, 'a square a move exactly');
     const fastest = game.fastestRun(honest.moves, honest.length);
     is(game.plausibleRun({ ...honest, durationMs: fastest }), true, 'the curve exactly');

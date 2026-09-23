@@ -148,6 +148,7 @@ or drops its full stop fails.
 | `Sign` / `The dojo will not print that.` | initials | Dojo |
 | `<BELT> BELT` | promotion | Dojo |
 | `frogs now come to your dojo` | the hint, after the promotion to Brown | Dojo |
+| `lizards now come to your dojo` | the hint, after the promotion to Red | Dojo |
 | `All Valley Rankings` | rankings heading | Utility |
 | `Challenge a friend` / `Link copied` | defeat, once you've signed a run | Utility |
 | `KAR of Cobra Kai challenges you to Snake.` / `Score to beat: 47` | title, from a challenge link. No belt: they've never played | Utility |

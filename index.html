@@ -1738,11 +1738,35 @@ const FROG_BREATH       = 8;
 const FROG_BREATH_DEPTH = 0.07;   // how much taller at the top of a breath
 const FROG_GROUND       = 16.7;   // where its feet are, in the artwork's 20x20 box
 
+// THE LIZARD, UNR-204: a rainbow agama, the second prey, from Red belt.
+//
+// Worth half as much again as a frog, for the same two squares. It lands
+// on a square against a wall and runs along the walls, a square every
+// LIZARD_RUN moves, turning at the corners. It only ever runs onto an open
+// square the snake can still reach, and turns back when the way ahead is
+// blocked.
+//
+// At a square every two moves it was too easy in play at Red: you gained a
+// square every two moves, so following it along the wall always caught it.
+// At a square every move it is as fast as you, so a chase never closes the
+// gap: you have to read where it is heading and cut across to meet it.
+//
+// It takes the first LIZARD_SHARE of prey visitors, and frogs and mice
+// share the rest as they did at Brown: a half, a third and a sixth.
+const LIZARD_POINTS = 15;
+const LIZARD_GROWTH = 2;
+const LIZARD_BELT   = 'Red';     // the rank that brings lizards
+const LIZARD_SHARE  = 1 / 2;
+const LIZARD_RUN    = 1;         // moves per square it runs: as fast as you
+const LIZARD_SLACK  = 2;         // its clock, the frog's to start with: settle by play at Red
+const LIZARD_FLOOR  = 13;
+
 // What each prey is worth and what it costs in length, so eating one is a
 // lookup rather than a branch per animal.
 const PREY = {
-  mouse: { points: MOUSE_POINTS, growth: MOUSE_GROWTH },
-  frog:  { points: FROG_POINTS,  growth: FROG_GROWTH }
+  mouse:  { points: MOUSE_POINTS,  growth: MOUSE_GROWTH },
+  frog:   { points: FROG_POINTS,   growth: FROG_GROWTH },
+  lizard: { points: LIZARD_POINTS, growth: LIZARD_GROWTH }
 };
 
 // How long the snake looks ill after a rotten egg. Counted in YOUR MOVES
@@ -1965,6 +1989,74 @@ function frogStep() {
   visitor.hopping = true;
 }
 
+// Whether lizards come to this player: from Red belt, like frogs from Brown.
+function lizardsCome() {
+  return beltFor(best) >= BELTS.findIndex(b => b.name === LIZARD_BELT) + 1;
+}
+
+// Which prey a visitor is, from one roll of the dice. The newest prey
+// takes its share first, and the older ones split the rest as they did
+// before it came: a half, a third and a sixth at Red.
+function preyKind(r) {
+  if (lizardsCome()) {
+    if (r < LIZARD_SHARE) return 'lizard';
+    r = (r - LIZARD_SHARE) / (1 - LIZARD_SHARE);
+  }
+  return frogsCome() && r < FROG_SHARE ? 'frog' : 'mouse';
+}
+
+// The squares around the edge of the board, where lizards live.
+function onWall(s) {
+  return s.x === 0 || s.y === 0 || s.x === COLS - 1 || s.y === ROWS - 1;
+}
+
+// Where a lizard goes: a square against a wall, in the mouse's band. If no
+// wall square is in the band, no lizard comes this time.
+function lizardSquare() {
+  const spots = preySquares().filter(onWall);
+  return spots.length ? spots[Math.floor(Math.random() * spots.length)] : null;
+}
+
+// The ways a lizard on `s` can run and stay on the wall: back and forth
+// along an edge, or either way round a corner.
+function wallDirs(s) {
+  return [{x: 1, y: 0}, {x: -1, y: 0}, {x: 0, y: 1}, {x: 0, y: -1}]
+    .filter(d => { const n = {x: s.x + d.x, y: s.y + d.y}; return onBoard(n) && onWall(n); });
+}
+
+// Where the lizard runs next, and which way it is then heading, or null if
+// it is boxed in. It keeps going the way it faces, round a corner when it
+// reaches one, and turns back when the way ahead is blocked or out of
+// reach. Called after the snake has moved, like the frog's hop.
+function lizardRunTo(liz) {
+  const reach = routeMoves(snake, direction, grow);
+  const dirs  = wallDirs(liz);
+  const ahead = dirs.find(d => d.x === liz.dir.x && d.y === liz.dir.y)
+             || dirs.find(d => !(d.x === -liz.dir.x && d.y === -liz.dir.y));
+  for (const d of [ahead, ...dirs.filter(d => d !== ahead)]) {
+    if (!d) continue;
+    const to = {x: liz.x + d.x, y: liz.y + d.y};
+    if (!isOccupied(to) && reach.has(to.x + ',' + to.y)) return { to, dir: d };
+  }
+  return null;
+}
+
+// Move the lizard if this is a running move. `running` says which pose
+// draw() shows this move: the stride on every other square it runs, and
+// standing on the squares between, which is what makes its legs scuttle.
+function lizardStep() {
+  visitor.running = false;
+  const age = visitor.born - visitor.life;    // 0 on the move it arrived
+  if (age === 0 || age % LIZARD_RUN !== 0) return;
+  const run = lizardRunTo(visitor);
+  if (!run) return;                          // boxed in: it waits
+  visitor.x   = run.to.x;
+  visitor.y   = run.to.y;
+  visitor.dir = run.dir;
+  visitor.strides = (visitor.strides || 0) + 1;
+  visitor.running = visitor.strides % 2 === 1;
+}
+
 // The clock a mouse arrives with, counted from the real route to it. The
 // straight-line distance ignored the body, and late in a run, when the body
 // fences off the tight spots mice land in, the route was up to two and a
@@ -1979,6 +2071,10 @@ function mouseClock(spot) {
 // to get in the first play test at Brown.
 function frogClock(spot) {
   return preyClock(spot, FROG_SLACK, FROG_FLOOR);
+}
+
+function lizardClock(spot) {
+  return preyClock(spot, LIZARD_SLACK, LIZARD_FLOOR);
 }
 
 function preyClock(spot, slack, floor) {
@@ -2064,18 +2160,17 @@ function maybeSpawnVisitor() {
     if (spot) spawn('rotten', spot);
     return;
   }
-  if (frogsCome() && Math.random() < FROG_SHARE) {
-    const spot = frogSquare();
-    if (spot) spawn('frog', spot);
-    return;
-  }
-  const spot = mouseSquare();
-  if (spot) spawn('mouse', spot);
+  const kind = preyKind(Math.random());
+  const spot = kind === 'lizard' ? lizardSquare()
+             : kind === 'frog'   ? frogSquare()
+             :                     mouseSquare();
+  if (spot) spawn(kind, spot);
 }
 
 // Prey arrive on a clock set from the route to them.
 function spawn(kind, spot) {
   const clock = kind === 'rotten' ? ROTTEN_LIFE
+              : kind === 'lizard' ? lizardClock(spot)
               : kind === 'frog'   ? frogClock(spot)
               :                     mouseClock(spot);
   visitor = {
@@ -2087,6 +2182,11 @@ function spawn(kind, spot) {
     facing: Math.random() < 0.5 ? 1 : -1,       // which way it happens to sit
     beat:   Math.floor(Math.random() * MOUSE_TWITCH)   // so two mice never twitch in step
   };
+  // A lizard sets off one way or the other along its wall.
+  if (kind === 'lizard') {
+    const dirs = wallDirs(spot);
+    visitor.dir = dirs[Math.floor(Math.random() * dirs.length)];
+  }
 }
 
 // Whether a visitor is drawn this move. It flashes when it's nearly out of
@@ -2289,7 +2389,8 @@ function update() {
 
   // Last, once the body is where it will be drawn, so a hop is judged
   // against the board as it really is.
-  if (visitor && visitor.kind === 'frog') frogStep();
+  if (visitor && visitor.kind === 'frog')   frogStep();
+  if (visitor && visitor.kind === 'lizard') lizardStep();
 }
 
 // Every point in the game goes through here, so the feedback can never
@@ -2705,6 +2806,20 @@ const SOUNDS = {
     ], 12);
   },
 
+  // A fast upward slide, like a lizard shooting up a wall, then the ding a
+  // step higher again than the frog's, because it was worth more. It rises,
+  // like every reward: the frog's first croak fell and sounded like a
+  // penalty. Chosen by ear from five options.
+  lizard() {
+    const slide = [];
+    for (let k = 0; k < 7; k++) slide.push([note('E5') * Math.pow(2, k / 7), 0.3, 1]);
+    tone('square', slide);
+    tone('p25', [
+      [note('E6'), 0.4, 3], [note('B6'), 0.4, 5],
+      [note('B6'), 0.24, 5], [note('B6'), 0.1, 5],
+    ], 8);
+  },
+
   // A burp. Pitch jumps up and down every frame (the roughness) while
   // sliding down overall (running out of air), volume flutters on
   // alternate frames (the throat), and low noise crackles underneath.
@@ -3046,9 +3161,10 @@ function draw() {
   drawEgg(egg.x * CELL + CELL / 2, egg.y * CELL + CELL / 2, breathe);
 
   if (visitor && visitorShows(visitor)) {
-    if (visitor.kind === 'mouse')     drawMouse();
-    else if (visitor.kind === 'frog') drawFrog();
-    else                              drawRottenEgg();
+    if (visitor.kind === 'mouse')       drawMouse();
+    else if (visitor.kind === 'frog')   drawFrog();
+    else if (visitor.kind === 'lizard') drawLizard();
+    else                                drawRottenEgg();
   }
 
   drawSnake();
@@ -3130,6 +3246,38 @@ const SPRITE = {
     { fill: '#a6d77a', d: 'M8.6 14.2C11 13.2 13.8 11.6 15.9 10.5C15.6 11.6 13.2 13.4 10.6 14.2C9.8 14.4 9 14.4 8.6 14.2Z' },
     { fill: '#3f7f2c', d: 'M3.9 12.6C4.1 11.2 5.7 10.6 7 11.3C8 11.9 8.1 13 7.6 13.8L4 17C3.8 17.2 3.9 17.5 4.2 17.6L4.6 17.8C5 18 4.8 18.6 4.4 18.6L1.2 18.6C0.6 18.6 0.5 17.9 1 17.6L2.6 16.6L4.4 14.4C4 13.9 3.8 13.3 3.9 12.6ZM14 10.5L17.6 11.4C18.2 11.6 18.1 12.5 17.5 12.4L13.4 11.9Z' },
     { fill: '#09090b', d: 'M11.7 6.1A0.85 0.95 0 1 1 13.4 6.1A0.85 0.95 0 1 1 11.7 6.1ZM14.7 5A0.72 0.85 0 1 1 16.14 5A0.72 0.85 0 1 1 14.7 5Z' }
+  ],
+
+  // THE LIZARD, a rainbow agama: turquoise with an orange head, colours
+  // nothing else on the board uses, because a reward should look like one.
+  // Side on and facing right, plump, head raised on its neck. Drawn here
+  // after references for the character; terracotta was tried and kept for
+  // rodents. Seven paths in both poses, in the same order and colours:
+  // far legs, body with neck, head and tail, the orange head over it, the
+  // underside with the near legs, spots, eye ring, eye. Every outline is
+  // wound the same way, so nonzero fill joins them.
+  lizard: [
+    { fill: '#157a8a', d: 'M11.2 14.6L12.6 14.6L13 16.8L14.2 17L14.2 17.6L11.6 17.6ZM5.6 14.4L7 14.6L6.4 16.8L7.4 17L7.3 17.6L4.8 17.6Z' },
+    { fill: '#23b3c7', d: 'M4.9 13.2A4.7 2.9 0 1 1 14.3 13.2A4.7 2.9 0 1 1 4.9 13.2ZM12 11L14.4 8.6L16.4 9.6L14.6 13.4ZM13 8.2A3.1 2.2 0 1 1 19.2 8.2A3.1 2.2 0 1 1 13 8.2ZM0.3 16.9C2.4 16.6 4 15.4 5.6 12.8L7 15.3C5 16.6 2.8 17.4 0.3 16.9Z' },
+    { fill: '#f7892a', d: 'M12 11L14.4 8.6L16.4 9.6L14.6 13.4ZM13 8.2A3.1 2.2 0 1 1 19.2 8.2A3.1 2.2 0 1 1 13 8.2Z' },
+    { fill: '#157a8a', d: 'M8 15.9C9.8 15 12 13.6 13.6 12.2L15.6 10.2C16 11.2 15.4 12.8 14.2 14C12.6 15.4 10.4 16.1 8 15.9ZM13.2 13.4L15 13.4L15.4 16.3L17 16.5L17 17.4L13.6 17.4ZM7.4 14L9.4 14.2L8.4 16.3L9.6 16.5L9.5 17.4L6.4 17.4Z' },
+    { fill: '#c8f1f6', d: 'M7.5 11A0.6 0.6 0 1 1 8.7 11A0.6 0.6 0 1 1 7.5 11ZM9.4 10.5A0.6 0.6 0 1 1 10.6 10.5A0.6 0.6 0 1 1 9.4 10.5ZM11.3 10.7A0.6 0.6 0 1 1 12.5 10.7A0.6 0.6 0 1 1 11.3 10.7Z' },
+    { fill: '#fff1dc', d: 'M15.7 7.6A1.05 1.05 0 1 1 17.8 7.6A1.05 1.05 0 1 1 15.7 7.6Z' },
+    { fill: '#09090b', d: 'M16.35 7.6A0.5 0.55 0 1 1 17.35 7.6A0.5 0.55 0 1 1 16.35 7.6Z' }
+  ],
+
+  // Running, shown on the moves it runs: low and stretched, head thrust
+  // forward, tail lifted, legs in a diagonal stride. Standing and running
+  // on alternate moves makes it scuttle. Turned a quarter to run up or
+  // down a side wall, which reads as climbing.
+  lizardRun: [
+    { fill: '#157a8a', d: 'M11.6 15L13 15L11.8 17.4L10.4 17.4ZM8.4 15.2L9.8 15.2L11 17.4L9.6 17.4Z' },
+    { fill: '#23b3c7', d: 'M5 13.8A5 2.4 0 1 1 15 13.8A5 2.4 0 1 1 5 13.8ZM13.2 12.2L15 10.4L16.8 12.2L14.6 15ZM13.2 11.2A3.1 2.1 0 1 1 19.4 11.2A3.1 2.1 0 1 1 13.2 11.2ZM0.2 11.2C2 12 3.6 12.4 5.4 12.2L6.2 14.8C3.8 14.6 1.8 13.2 0.2 11.2Z' },
+    { fill: '#f7892a', d: 'M13.2 12.2L15 10.4L16.8 12.2L14.6 15ZM13.2 11.2A3.1 2.1 0 1 1 19.4 11.2A3.1 2.1 0 1 1 13.2 11.2Z' },
+    { fill: '#157a8a', d: 'M6.8 15.4C9.4 16.4 12.4 16 14.4 14.6L16.2 12.9C16.6 14 15.8 15.4 14.2 16.2C11.8 17.2 8.8 17 6.8 15.4ZM13.4 14.2L15 14L17 16L18.2 16.1L18.2 16.9L15.8 16.9ZM7 14.4L8.8 15L5.6 16.6L4.6 17.2L3.4 17.2L3.6 16.4Z' },
+    { fill: '#c8f1f6', d: 'M7.6 12.2A0.6 0.6 0 1 1 8.8 12.2A0.6 0.6 0 1 1 7.6 12.2ZM9.6 11.7A0.6 0.6 0 1 1 10.8 11.7A0.6 0.6 0 1 1 9.6 11.7ZM11.6 11.8A0.6 0.6 0 1 1 12.8 11.8A0.6 0.6 0 1 1 11.6 11.8Z' },
+    { fill: '#fff1dc', d: 'M16.1 10.6A1.05 1.05 0 1 1 18.2 10.6A1.05 1.05 0 1 1 16.1 10.6Z' },
+    { fill: '#09090b', d: 'M16.75 10.6A0.5 0.55 0 1 1 17.75 10.6A0.5 0.55 0 1 1 16.75 10.6Z' }
   ],
 
   // THE COBRA'S HEAD, in four groups so the eyes can change state without
@@ -3220,7 +3368,9 @@ const SPRITE_SIZE = {
   // The frog is squat, so it needs the egg's scale to stand as tall as a
   // food must. Its centre sits a little low so it rests on the cell.
   frog:      { scale: 1.35, cx: 10.2, cy: 11.2 },
-  frogHop:   { scale: 1.35, cx:  9.3, cy: 11.1 }
+  frogHop:   { scale: 1.35, cx:  9.3, cy: 11.1 },
+  lizard:    { scale: 1.3,  cx:  9.75, cy: 12.3 },
+  lizardRun: { scale: 1.3,  cx:  9.8, cy: 13.2 }
 };
 
 // Turn the authored paths into Path2D once, at load. These are painted
@@ -3382,6 +3532,41 @@ function drawFrog() {
   ctx.translate(0, FROG_GROUND);
   ctx.scale(1, tall);
   ctx.translate(0, -FROG_GROUND);
+  for (const layer of SPRITE[name]) {
+    ctx.fillStyle = layer.fill;
+    ctx.fill(layer.path);
+  }
+  ctx.restore();
+}
+
+
+// ---- the lizard -------------------------------------------------------
+// Faces the way it runs. Along the top or bottom wall it faces left or
+// right, belly down, never upside down. Up or down a side wall it turns a
+// quarter with its belly to the wall, which reads as climbing. Pure: it
+// returns the turn in quarters clockwise, and whether to mirror across
+// and along the body.
+function lizardPose(liz) {
+  if (liz.dir.y === 0) return { turn: 0, flipX: liz.dir.x < 0, flipY: false };
+  const turn  = liz.dir.y > 0 ? 1 : -1;
+  const belly = liz.dir.y > 0 ? -1 : 1;      // which side the belly faces after the turn
+  const wall  = liz.x === 0 ? -1 : 1;
+  return { turn, flipX: false, flipY: belly !== wall };
+}
+
+function drawLizard() {
+  const cx   = visitor.x * CELL + CELL / 2;
+  const cy   = visitor.y * CELL + CELL / 2;
+  const name = visitor.running ? 'lizardRun' : 'lizard';
+  const size = SPRITE_SIZE[name];
+  const pose = lizardPose(visitor);
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(pose.turn * Math.PI / 2);
+  const m = size.scale * CELL_SCALE;
+  ctx.scale(pose.flipX ? -m : m, pose.flipY ? -m : m);
+  ctx.translate(-size.cx, -size.cy);
   for (const layer of SPRITE[name]) {
     ctx.fillStyle = layer.fill;
     ctx.fill(layer.path);
@@ -4410,7 +4595,10 @@ function promote(belt) {
 
 // What each belt brings, shown in the hint after its promotion. Hints are
 // lowercase; the belt name before it is the one line allowed voice caps.
-const UNLOCKS = { [FROG_BELT]: 'frogs now come to your dojo' };
+const UNLOCKS = {
+  [FROG_BELT]:   'frogs now come to your dojo',
+  [LIZARD_BELT]: 'lizards now come to your dojo'
+};
 const UNLOCK_MS = 2400;   // longer than the belt: a sentence, not two words
 
 // The header swatch, which is the persistent one. It annotates `hi-score`
@@ -5107,12 +5295,13 @@ function runDuration(startedAt, endedAt, paused) {
 //
 // The best a run can do is an egg and the richest prey, one after the
 // other, on consecutive moves - prey only ever arrive after an egg. Since
-// the frog (UNR-201) that pair is eleven points over two moves. It also
-// realises only two squares of length, because the frog's second square is
-// still owed if you die straight away. So neither moves nor length can buy
-// more than five and a half points each. Before the frog it was three.
-const POINTS_PER_MOVE   = (EGG_POINTS + FROG_POINTS) / 2;
-const POINTS_PER_SQUARE = (EGG_POINTS + FROG_POINTS) / (EGG_GROWTH + FROG_GROWTH - 1);
+// the lizard (UNR-204) that pair is sixteen points over two moves. It also
+// realises only two squares of length, because the lizard's second square
+// is still owed if you die straight away. So neither moves nor length can
+// buy more than eight points each. It was three before the frog, and five
+// and a half before the lizard.
+const POINTS_PER_MOVE   = (EGG_POINTS + LIZARD_POINTS) / 2;
+const POINTS_PER_SQUARE = (EGG_POINTS + LIZARD_POINTS) / (EGG_GROWTH + LIZARD_GROWTH - 1);
 
 // Timers only ever fire late, so a real run is never faster than the speed
 // curve. The slack is for clocks that don't read exactly: some browsers
