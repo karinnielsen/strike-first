@@ -338,6 +338,69 @@
     .key-tip kbd { display: none; }
   }
 
+  /* FEEDBACK. UNR-197. A small card on the keycaps' surface, centred over
+     whatever screen it was opened from, with the page dimmed and inert
+     behind it. Two taps is the whole report: a kind, then Send. The kinds
+     are keycaps like the corner's; a chosen one lights yellow, the one
+     thing the card is asking for. */
+  .feedback {
+    position: fixed; inset: 0; z-index: 20;
+    display: grid; place-items: center;
+    padding: 16px;
+    background: rgba(9, 9, 11, 0.75);
+  }
+  .feedback[hidden] { display: none; }
+  .feedback form {
+    display: grid; gap: 14px;
+    width: min(360px, 100%);
+    padding: 20px;
+    border-radius: 9px;
+    background: var(--panel);
+    box-shadow: 0 0 0 1px var(--line), 0 6px 0 #0e0e11;
+    color: var(--text);
+    font-size: 14px;
+  }
+  .feedback h2 { margin: 0; font-size: 16px; letter-spacing: 0.04em; }
+  .feedback .kinds { display: flex; gap: 8px; }
+  .feedback button {
+    min-height: 44px; margin: 0; padding: 0 12px;
+    font: inherit; font-weight: bold;
+    color: var(--text); background: var(--line);
+    border: 0; border-radius: 6px;
+    box-shadow: 0 4px 0 #0e0e11;
+    cursor: pointer;
+    animation: none;
+  }
+  .feedback .kinds button { flex: 1; }
+  .feedback button:hover { background: #34343b; }
+  .feedback button:active { transform: translateY(4px); box-shadow: 0 0 0 #0e0e11; }
+  .feedback .kinds button[aria-pressed="true"] { color: var(--bg); background: var(--yellow); box-shadow: 0 4px 0 var(--yellow-deep); }
+  .feedback input {
+    min-height: 44px; padding: 0 12px;
+    font: inherit; font-size: 16px;      /* under 16px, iPad Safari zooms in */
+    color: var(--text); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 6px;
+  }
+  .feedback input::placeholder { color: var(--dim); }
+  .feedback input:focus-visible, .feedback button:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+  .feedback .head { display: flex; align-items: center; justify-content: space-between; }
+  /* The × is a 44px target drawn smaller, flat on the card, so it never
+     reads as a fourth kind. */
+  .feedback #feedback-close {
+    width: 44px; margin: -12px -12px -12px 0; padding: 0;
+    display: grid; place-items: center;
+    fill: currentColor; background: none; box-shadow: none;
+  }
+  .feedback #feedback-close:hover { background: none; color: var(--yellow); }
+  .feedback #feedback-close:active { transform: none; }
+  .feedback #feedback-send:disabled { cursor: default; opacity: 0.5; }
+  .feedback p { margin: 0; font-size: 12px; }
+  .feedback p:empty { display: none; }
+  .feedback kbd { font: inherit; font-weight: bold; }
+  @media (hover: none), (pointer: coarse) {
+    .feedback .keys { display: none; }
+  }
+
   /* THE CANVAS BLEEDS PAST THE BOARD. The hood is wider than a cell, so on
      an edge row a canvas that ended at the grid sliced it flat (UNR-154).
      The canvas is the grid plus BOARD_BLEED (14 of its 630 units) on every
@@ -1359,8 +1422,30 @@
   <button id="back-btn" type="button" aria-label="back"><span class="key-tip" aria-hidden="true"><kbd>esc</kbd> back</span><svg viewBox="0 0 10 10" width="20" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="4" width="8" height="2"/><rect x="2" y="3" width="1" height="4"/><rect x="3" y="2" width="1" height="6"/><rect x="4" y="1" width="1" height="8"/></svg></button>
 </div>
 <div class="hud" id="hud">
+  <button id="feedback-btn" type="button" aria-label="feedback" aria-haspopup="dialog"><span class="key-tip" aria-hidden="true"><kbd>f</kbd> feedback</span><svg viewBox="0 0 10 10" width="20" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="1" width="8" height="1"/><rect x="0" y="2" width="10" height="4"/><rect x="1" y="6" width="8" height="1"/><rect x="2" y="7" width="2" height="1"/><rect x="2" y="8" width="1" height="1"/></svg></button>
   <button id="sound-btn" type="button" aria-label="sound"><span class="key-tip" aria-hidden="true"><kbd>m</kbd> <span id="sound-tip">music off</span></span><svg class="one" viewBox="0 0 11 10" width="22" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="3" width="2" height="4"/><rect x="2" y="2" width="1" height="6"/><rect x="3" y="1" width="1" height="8"/><rect x="4" y="0" width="1" height="10"/><rect x="6" y="3" width="1" height="4"/></svg><svg class="on" viewBox="0 0 11 10" width="22" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="3" width="2" height="4"/><rect x="2" y="2" width="1" height="6"/><rect x="3" y="1" width="1" height="8"/><rect x="4" y="0" width="1" height="10"/><rect x="6" y="3" width="1" height="4"/><rect x="8" y="1" width="1" height="2"/><rect x="9" y="3" width="1" height="4"/><rect x="8" y="7" width="1" height="2"/></svg><svg class="off" viewBox="0 0 11 10" width="22" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="3" width="2" height="4"/><rect x="2" y="2" width="1" height="6"/><rect x="3" y="1" width="1" height="8"/><rect x="4" y="0" width="1" height="10"/><rect x="6" y="3" width="1" height="1"/><rect x="7" y="4" width="1" height="1"/><rect x="8" y="5" width="1" height="1"/><rect x="9" y="6" width="1" height="1"/><rect x="9" y="3" width="1" height="1"/><rect x="8" y="4" width="1" height="1"/><rect x="7" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/></svg></button>
   <button id="mercy-btn" type="button" aria-label="mercy" class="idle"><span class="key-tip" aria-hidden="true"><kbd>space</kbd> mercy</span><svg class="pause" viewBox="0 0 10 10" width="20" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="1" width="3" height="8"/><rect x="6" y="1" width="3" height="8"/></svg><svg class="play" viewBox="0 0 10 10" width="20" height="20" shape-rendering="crispEdges" aria-hidden="true"><rect x="2" y="1" width="2" height="8"/><rect x="4" y="2" width="2" height="6"/><rect x="6" y="3" width="2" height="4"/><rect x="8" y="4" width="1" height="2"/></svg></button>
+</div>
+
+<!-- Over everything, and the rest of the page is inert while it is up.
+     UNR-197. -->
+<div class="feedback" id="feedback" role="dialog" aria-modal="true" aria-labelledby="feedback-heading" hidden>
+  <form id="feedback-form" novalidate>
+    <div class="head">
+      <h2 id="feedback-heading">Send feedback</h2>
+      <button type="button" id="feedback-close" aria-label="close"><svg viewBox="0 0 10 10" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="1" width="2" height="2"/><rect x="7" y="1" width="2" height="2"/><rect x="3" y="3" width="4" height="4"/><rect x="1" y="7" width="2" height="2"/><rect x="7" y="7" width="2" height="2"/></svg></button>
+    </div>
+    <div class="kinds" role="group" aria-label="kind">
+      <button type="button" data-kind="bug" aria-pressed="false">Bug</button>
+      <button type="button" data-kind="idea" aria-pressed="false">Idea</button>
+      <button type="button" data-kind="fun" aria-pressed="false">Fun</button>
+    </div>
+    <input id="feedback-text" type="text" maxlength="500" autocomplete="off" enterkeyhint="send" aria-label="say more" placeholder="say more (optional)">
+    <button type="submit" id="feedback-send" disabled>Send</button>
+    <p id="feedback-note" role="status"></p>
+    <p>Sent with the game's state and your browser type.</p>
+    <p class="keys"><kbd>enter</kbd> to send &middot; <kbd>esc</kbd> to close</p>
+  </form>
 </div>
 
 <script>
@@ -3649,6 +3734,17 @@ const KEYS = {
 };
 
 document.addEventListener('keydown', (event) => {
+  // While feedback is up every key is its own: letters are words there.
+  if (feedbackOpen) { feedbackKeydown(event); return; }
+
+  // F opens feedback on every screen but initials, where F is a letter.
+  // Cmd-F and Ctrl-F are the browser's find. UNR-197.
+  if (event.key.toLowerCase() === 'f' && !entry && !event.metaKey && !event.ctrlKey && !event.altKey) {
+    event.preventDefault();
+    openFeedback();
+    return;
+  }
+
   // M mutes on every screen, the title included: someone in an office has
   // to be able to silence the game without starting it. Initials are the
   // one exception, where M is a letter. Cmd-M and Ctrl-M belong to the OS.
@@ -4430,7 +4526,7 @@ startBtn.addEventListener('click', pressStart);
 document.addEventListener('pointerdown', (event) => {
   // The corner controls and the star link are not part of the title:
   // muting or leaving for GitHub must not start.
-  if (titling && event.button === 0 && !event.target.closest('#hud, #star-link')) pressStart();
+  if (titling && event.button === 0 && !event.target.closest('#hud, #star-link, #feedback')) pressStart();
 });
 
 // Set up an opening position to look at behind the menu, then start the
@@ -5698,6 +5794,7 @@ function openDojoSelect(fromTitle) {
     clearInterval(dojoTimer);
     dojoTimer = setInterval(() => {
       if (document.hidden) return;              // stopped while the tab is hidden
+      if (feedbackOpen) return;                 // and while feedback is up
       dojoLeft -= 1;
       tickDojoClock();
       if (dojoLeft <= 0) chooseDojo(dojoAt, true);
@@ -6143,6 +6240,247 @@ function leaveDojoSelect() {
 backBtn.addEventListener('click', () => {
   goBack();
   backBtn.blur();       // so Space cannot press it a second time
+});
+
+
+// =====================================================================
+//  14. FEEDBACK - a bug or an idea, from any screen. UNR-197
+// =====================================================================
+// A keycap beside the speaker, and F on every screen but initials. The
+// shortest report is two taps, a kind and Send; the line is optional.
+// What helps read a report - the screen, the run, the input, the layout
+// and the device - is gathered the moment the card opens, so it describes
+// what the player was looking at, not the card.
+//
+// Opening it mid-run calls mercy first, down the same path as Space, so
+// the run's clock stops and Continue is the way back in. Dojo select's
+// countdown holds while it is up.
+//
+// Reports go to the scores' database, sandbox or real by the same rule,
+// into a table the page can add to but never read. See db/scores.sql.
+
+// The database holds the same kinds and limit. test.js fails if they differ.
+const FEEDBACK_KINDS = ['bug', 'idea', 'fun'];
+const FEEDBACK_MAX = 500;
+// The database refuses a context over 4000 bytes. A real one is under
+// 1000, so anything larger is sent without it rather than not at all.
+const FEEDBACK_CONTEXT_MAX = 3000;
+
+// The stylesheet's SHORT WINDOWS query, which puts the page side by side.
+// test.js fails if the two differ.
+const SIDE_BY_SIDE = '(max-height: 970px) and (min-aspect-ratio: 1/1) and (min-width: 800px)';
+
+// Which screen is up, in words a report can be read by. Pure.
+function screenName({ titling, startPressed, dojoPhase, rankingsOpen, phase, entry }) {
+  if (titling) return startPressed ? 'title menu' : 'title';
+  if (dojoPhase !== 'closed') return 'dojo select';
+  if (rankingsOpen) return 'rankings';
+  if (entry) return 'initials';
+  const names = { playing: 'run', bowing: 'bow', paused: 'mercy', dying: 'defeat', over: 'verdict' };
+  return names[phase] || phase;
+}
+
+// A turn as a word. Pure.
+function directionName(turn) {
+  if (!turn) return null;
+  return turn.x > 0 ? 'right' : turn.x < 0 ? 'left' : turn.y < 0 ? 'up' : 'down';
+}
+
+// How the player has been playing this visit: the last input, and every
+// kind seen. 'key', or a pointer type: 'mouse', 'touch' or 'pen'.
+// Captured, so it is noted before anything handles the press.
+let lastInput = null;
+const inputsSeen = new Set();
+function noteInput(kind) {
+  lastInput = kind;
+  inputsSeen.add(kind);
+}
+document.addEventListener('keydown', () => noteInput('key'), true);
+document.addEventListener('pointerdown', (event) => noteInput(event.pointerType || 'mouse'), true);
+
+// Everything a report carries besides what the player wrote. No personal
+// details: initials are already public on the board, and the browser is
+// named only by its user agent.
+function feedbackContext() {
+  let initials = null;
+  try { initials = cleanInitials(localStorage.getItem(INITIALS_KEY)) || null; } catch (e) {}
+  return {
+    screen: screenName({ titling, startPressed, dojoPhase, rankingsOpen, phase, entry }),
+    mode,
+    dojo: currentDojo(),
+    initials,
+    score,
+    hiScore: best,
+    belt: BELTS[beltFor(best) - 1].name,
+    level: levelFor(score),
+    moves,
+    length: snake ? snake.length : null,
+    heading: directionName(direction),
+    turns: (turnQueue || []).map(directionName),
+    died: defeat ? defeat.cause : null,
+    challenge: Boolean(rival),
+    input: lastInput,
+    inputs: [...inputsSeen],
+    layout: matchMedia(SIDE_BY_SIDE).matches ? 'side by side' : 'stacked',
+    window: `${innerWidth}x${innerHeight}`,
+    pixelRatio: globalThis.devicePixelRatio || 1,
+    touch: TOUCH,
+    reducedMotion: REDUCED_MOTION.matches,
+    sound: audioMode,
+    browser: globalThis.navigator?.userAgent || null,
+    language: globalThis.navigator?.language || null
+  };
+}
+
+// The row the database stores, or null if there is nothing to send. Pure.
+function feedbackRow({ kind, message, context }) {
+  kind = FEEDBACK_KINDS.includes(kind) ? kind : null;
+  message = String(message || '').trim().slice(0, FEEDBACK_MAX);
+  if (!kind && !message) return null;
+  context = context && typeof context === 'object' ? context : {};
+  if (JSON.stringify(context).length > FEEDBACK_CONTEXT_MAX) context = { screen: context.screen, oversized: true };
+  return { kind, message, context, version: VERSION };
+}
+
+// What to send, without sending it. The page has no right to read a
+// report, so it asks for nothing back.
+function feedbackRequest(row, service) {
+  return {
+    url: service.url + '/rest/v1/feedback',
+    options: {
+      method: 'POST',
+      headers: {
+        apikey: service.key,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify(row)
+    }
+  };
+}
+
+// Send a report. Resolves to whether it arrived; never throws.
+async function submitFeedback(row, send = globalThis.fetch) {
+  if (!row || !send) return false;
+  const { url, options } = feedbackRequest(row, SCORE_SERVICE);
+  if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
+    options.signal = AbortSignal.timeout(SCORE_TIMEOUT_MS);
+  }
+  try {
+    const response = await send(url, options);
+    if (!response.ok) {
+      console.warn('Feedback not sent:', response.status, await response.text());
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Feedback not sent:', err);
+    return false;
+  }
+}
+
+// ---- the card ---------------------------------------------------------
+const feedbackEl    = document.getElementById('feedback');
+const feedbackBtn   = document.getElementById('feedback-btn');
+const feedbackForm  = document.getElementById('feedback-form');
+const feedbackText  = document.getElementById('feedback-text');
+const feedbackSend  = document.getElementById('feedback-send');
+const feedbackClose = document.getElementById('feedback-close');
+const feedbackNote  = document.getElementById('feedback-note');
+const feedbackKinds = [...feedbackForm.querySelectorAll('[data-kind]')];
+// Inert while the card is up, so neither Tab nor a tap can reach a button
+// behind it: Continue must not resume a run under the card.
+const feedbackBehind = ['page', 'hud', 'back-hud'].map(id => document.getElementById(id));
+
+let feedbackOpen = false;
+let feedbackKind = null;
+let feedbackSending = false;
+let feedbackContextNow = null;   // gathered as the card opened
+
+// A finger opens the card with a tap, and focusing the field then would
+// throw a keyboard over it before a kind is chosen.
+const feedbackTypes = () => !matchMedia('(pointer: coarse)').matches;
+
+function openFeedback() {
+  if (feedbackOpen) return;
+  feedbackContextNow = feedbackContext();          // before mercy changes the screen
+  if (phase === 'playing' || phase === 'bowing') toggleMercy();
+  feedbackOpen = true;
+  for (const el of feedbackBehind) el.inert = true;
+  feedbackEl.hidden = false;
+  if (!feedbackSending) feedbackNote.textContent = '';
+  showFeedback();
+  if (feedbackTypes()) feedbackText.focus({ preventScroll: true });
+}
+
+// A draft survives closing, so a stray Esc costs nothing.
+function closeFeedback() {
+  if (!feedbackOpen) return;
+  feedbackOpen = false;
+  feedbackEl.hidden = true;
+  for (const el of feedbackBehind) el.inert = false;
+  if (entry && feedbackTypes()) entry.focus({ preventScroll: true });
+}
+
+// Output only.
+function showFeedback() {
+  for (const b of feedbackKinds) b.setAttribute('aria-pressed', String(b.dataset.kind === feedbackKind));
+  feedbackSend.disabled = feedbackSending || !feedbackRow({ kind: feedbackKind, message: feedbackText.value });
+}
+
+// Choosing the lit kind again unchooses it.
+function pickFeedbackKind(kind) {
+  feedbackKind = feedbackKind === kind ? null : kind;
+  showFeedback();
+}
+
+async function sendFeedback() {
+  const row = feedbackRow({ kind: feedbackKind, message: feedbackText.value, context: feedbackContextNow });
+  if (!row || feedbackSending) return;
+  feedbackSending = true;
+  feedbackNote.textContent = 'sending…';
+  showFeedback();
+  const sent = await submitFeedback(row);
+  feedbackSending = false;
+  if (sent) {
+    feedbackKind = null;
+    feedbackText.value = '';
+    feedbackNote.textContent = '';
+    closeFeedback();
+    showToast('Heard.', 'Thank you.');
+  } else {
+    feedbackNote.textContent = 'Not sent. Check your connection and try again.';
+  }
+  showFeedback();
+}
+
+// Esc closes. Every other key is left to the card's own field and buttons.
+function feedbackKeydown(event) {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeFeedback();
+  }
+}
+
+feedbackBtn.addEventListener('click', () => {
+  openFeedback();
+  feedbackBtn.blur();
+});
+for (const b of feedbackKinds) {
+  b.addEventListener('click', () => {
+    pickFeedbackKind(b.dataset.kind);
+    if (feedbackTypes()) feedbackText.focus({ preventScroll: true });   // so Enter sends
+  });
+}
+feedbackText.addEventListener('input', showFeedback);
+feedbackForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  sendFeedback();
+});
+feedbackClose.addEventListener('click', closeFeedback);
+// A tap on the dimmed page around the card closes it.
+feedbackEl.addEventListener('click', (event) => {
+  if (event.target === feedbackEl) closeFeedback();
 });
 
 </script>

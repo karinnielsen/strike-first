@@ -5,8 +5,9 @@
 -- first, then run the change in each.
 --
 -- The page holds only the publishable key, and everything below is what
--- stops that key doing more than submitting and reading scores. Whether a
--- score is *possible* is a separate question, answered at the bottom (UNR-132).
+-- stops that key doing more than submitting and reading scores, and sending
+-- feedback. Whether a score is *possible* is a separate question, answered
+-- further down (UNR-132). Feedback is last (UNR-197).
 
 create table public.scores (
   id          bigint generated always as identity primary key,
@@ -210,3 +211,88 @@ drop trigger if exists scores_plausible on public.scores;
 create trigger scores_plausible
   before insert on public.scores
   for each row execute function public.scores_plausible();
+
+-- ---------------------------------------------------------------------
+-- Feedback from any screen. UNR-197.
+-- ---------------------------------------------------------------------
+
+-- A report is a kind, an optional line, and what the game looked like
+-- when it was sent. The page can add one and nothing else: no grant lets
+-- the public key read a report back, so the page asks for return=minimal.
+-- Read them in the Table Editor.
+--
+-- The kinds and the length limit are in the page too, and test.js fails
+-- if the two differ. The context is whatever feedbackContext() in
+-- index.html gathers; only its size is checked here.
+--
+-- Safe to run more than once.
+
+create table if not exists public.feedback (
+  id         bigint generated always as identity primary key,
+  created_at timestamptz not null default now(),
+  kind       text check (kind in ('bug', 'idea', 'fun')),
+  message    text  not null default '' check (char_length(message) <= 500),
+  context    jsonb not null default '{}'
+             check (jsonb_typeof(context) = 'object' and octet_length(context::text) <= 4000),
+  version    text  not null check (char_length(version) <= 20),
+  -- A kind, or a line, or both: an empty report says nothing.
+  constraint feedback_says_something
+    check (kind is not null or char_length(btrim(message)) > 0)
+);
+
+alter table public.feedback enable row level security;
+revoke all on public.feedback from anon, authenticated;
+grant insert (kind, message, context, version) on public.feedback to anon;
+
+drop policy if exists "anyone can send feedback" on public.feedback;
+create policy "anyone can send feedback" on public.feedback
+  for insert to anon with check (true);
+
+-- Rate limited the same way as scores, with its own tally, so a burst of
+-- reports can never use up anyone's chance to sign a score.
+create table if not exists public.feedback_submissions (
+  ip_hash text        not null,
+  at      timestamptz not null default now()
+);
+create index if not exists feedback_submissions_at on public.feedback_submissions (at);
+
+alter table public.feedback_submissions enable row level security;
+revoke all on public.feedback_submissions from anon, authenticated;
+
+create or replace function public.feedback_rate_limit() returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  -- A player with something to say sends one or two. Five covers a
+  -- string of bugs; the limit across everyone holds if IPs are made up.
+  per_caller_limit constant int      := 5;
+  everyone_limit   constant int      := 100;
+  rate_window      constant interval := '10 minutes';
+
+  headers json;
+  caller  text;
+begin
+  headers := coalesce(nullif(current_setting('request.headers', true), ''), '{}')::json;
+  caller  := coalesce(headers->>'cf-connecting-ip',
+                      split_part(headers->>'x-forwarded-for', ',', 1), '');
+  caller  := encode(sha256(convert_to(caller, 'UTF8')), 'hex');
+
+  delete from public.feedback_submissions where at < now() - rate_window;
+  if (select count(*) from public.feedback_submissions) >= everyone_limit
+     or (select count(*) from public.feedback_submissions where ip_hash = caller) >= per_caller_limit then
+    raise exception using errcode = 'P0001', message = 'too much feedback, try again later';
+  end if;
+  insert into public.feedback_submissions (ip_hash) values (caller);
+
+  return new;
+end;
+$$;
+
+revoke all on function public.feedback_rate_limit() from public, anon, authenticated;
+
+drop trigger if exists feedback_rate_limit on public.feedback;
+create trigger feedback_rate_limit
+  before insert on public.feedback
+  for each row execute function public.feedback_rate_limit();
