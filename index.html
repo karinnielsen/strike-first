@@ -2690,18 +2690,19 @@ const SOUNDS = {
     ], 5);
   },
 
-  // A two-note croak, low and rough, because it was a frog, then the
-  // mouse's ding a step higher and held longer, because it was worth two.
+  // A rising "rib-BIT", because it was a frog, then the mouse's ding a
+  // step higher and held longer, because it was worth two. The first croak
+  // fell, low, from A3 to E3, and in play it sounded like a penalty: a
+  // reward has to rise. Chosen by ear from four options.
   frog() {
     tone('p25', [
-      [note('A3'), 0.36, 1], [note('E3'), 0.3, 1], [note('A3'), 0.36, 1], [note('E3'), 0.2, 1],
-      [null, 0, 1],
-      [note('A3'), 0.36, 1], [note('E3'), 0.3, 1], [note('A3'), 0.36, 1], [note('E3'), 0.2, 1],
+      [note('E4'), 0.34, 2], [note('B4'), 0.34, 2], [null, 0, 2],
+      [note('E4'), 0.34, 2], [note('E5'), 0.34, 3],
     ]);
     tone('p25', [
       [note('D6'), 0.4, 3], [note('A6'), 0.4, 5],
       [note('A6'), 0.24, 5], [note('A6'), 0.1, 5],
-    ], 10);
+    ], 12);
   },
 
   // A burp. Pitch jumps up and down every frame (the roughness) while
