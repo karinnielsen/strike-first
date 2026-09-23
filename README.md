@@ -18,6 +18,8 @@
 - **Challenge a friend** with a link that says who they are up against. The
   score to beat sits in the stats for the whole run, struck out the moment
   you pass it. Their score lands on the same board.
+- **A crest that watches.** On the title its cobra follows your pointer like
+  a charmer's pipe. In a run it follows the snake.
 - **Sound.** Arcade effects, and an original soundtrack that stays off until
   you ask for it.
 - **Keyboard or tablet.** Swipe to steer on a touch screen. Phones get a page
