@@ -38,9 +38,9 @@
 
 | | Points | Length | Stays |
 | --- | --- | --- | --- |
-| Egg | +1 | +1 | always one on the board |
-| Mouse | +5 | +2 | long enough to reach it, if you go now |
-| Rotten egg | −3 | none, but you're queasy for 14 moves | 45 moves |
+| 🥚 Egg | +1 | +1 | always one on the board |
+| 🐁 Mouse | +5 | +2 | long enough to reach it, if you go now |
+| 🤢 Rotten egg | −3 | none, but you're queasy for 14 moves | 45 moves |
 
 Rotten eggs land where dodging them costs you something, and get harsher as a
 run goes on.
