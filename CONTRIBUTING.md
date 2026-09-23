@@ -1,7 +1,8 @@
 # Contributing
 
-Thanks for helping. Start with an
-[open starter issue](https://github.com/karinnielsen/strike-first/labels/good%20first%20issue).
+Thanks for helping. There's no list of starter tasks: bring your own idea.
+For anything bigger than a fix, open an issue first so the idea can be
+talked through before it's built.
 
 ## Setup
 
@@ -38,7 +39,9 @@ The version line says `sandbox scores` when that's the case.
 
 - One change per PR, against `main`.
 - `node test.js` passes. CI runs it on every PR.
-- The commit message says *why*, not only what.
+- A commit message is one line: what changed, in the present tense. The
+  reasoning goes in the PR description, or in a comment beside the code if
+  it's worth keeping.
 - A change players can see updates `README.md` in the same commit. The
   commit hook and CI both check this. If the README really doesn't need to
   change, add a line such as
