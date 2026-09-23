@@ -50,6 +50,12 @@
 
   * { box-sizing: border-box; }
 
+  /* Two quick taps, such as PRESS START and then a menu row, are a
+     double-tap to iPad Safari, and it zoomed the page, starting the run
+     with the stats and mercy off screen. manipulation keeps pinch zoom and
+     scrolling and drops only the double-tap. The board narrows it further. */
+  html { touch-action: manipulation; }
+
   body {
     margin: 0;
     /* iPad Safari's 100vh is the height with its toolbar hidden, up to
