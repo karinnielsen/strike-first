@@ -2,6 +2,14 @@
 
 What changed in each release of Strike First.
 
+## [1.0.7] — 2026-09-23
+
+### Fixed
+- A run in a dojo you had just joined never reached the rankings unless it
+  beat your best from your old dojo. Each dojo now keeps its own best, and
+  your first scoring run there is signed.
+- Challenge a friend quoted your best ever, not the run the link leads to.
+
 ## [1.0.6] — 2026-09-22
 
 ### Added
@@ -324,6 +332,13 @@ The core loop.
 First playable version: a cobra-styled snake with apples, mice, score
 popups and a speed-up, in one HTML file.
 
+[1.0.7]: https://github.com/karinnielsen/strike-first/compare/v1.0.6...v1.0.7
+[1.0.6]: https://github.com/karinnielsen/strike-first/compare/v1.0.5...v1.0.6
+[1.0.5]: https://github.com/karinnielsen/strike-first/compare/v1.0.4...v1.0.5
+[1.0.4]: https://github.com/karinnielsen/strike-first/compare/v1.0.3...v1.0.4
+[1.0.3]: https://github.com/karinnielsen/strike-first/compare/v1.0.2...v1.0.3
+[1.0.2]: https://github.com/karinnielsen/strike-first/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/karinnielsen/strike-first/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/karinnielsen/strike-first/compare/v0.5.13...v1.0.0
 [0.5.13]: https://github.com/karinnielsen/strike-first/compare/v0.5.12...v0.5.13
 [0.5.12]: https://github.com/karinnielsen/strike-first/compare/v0.5.11...v0.5.12
