@@ -128,8 +128,8 @@ declare
   belt_names        constant text[] := array['White', 'Orange', 'Green', 'Brown', 'Red', 'Cho Dan Bo', 'Midnight blue'];
   belt_from         constant int[]  := array[0, 15, 35, 65, 110, 175, 275];
   board_cells       constant int     := 441;
-  points_per_move   constant numeric := 8;     -- an egg and a lizard in a row, UNR-204
-  points_per_square constant numeric := 8;
+  points_per_move   constant numeric := 11;    -- an egg and a snake in a row, UNR-205
+  points_per_square constant numeric := 8;     -- an egg and a lizard in a row, UNR-204
   timing_slack      constant numeric := 0.95;
   timing_slack_ms   constant int     := 1000;
 
