@@ -56,6 +56,7 @@ function makeElement() {
     classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
     appendChild() {},
     setAttribute() {},
+    removeAttribute() {},
     remove() {},
     addEventListener() {},
     querySelector: () => makeElement(),
@@ -177,7 +178,7 @@ globalThis.game = {
   BONE_BODY, DUSTY_TAIL, SICK_GREEN, blend, bodyColour, BELT_SEGMENT,
   QUEASY_SHAKE, queasyShake,
   TONGUE_DOUBLE, TONGUE_PAUSE_MIN, TONGUE_PAUSE_MAX, tongueFlickPlan,
-  TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt, tonguePose, CREST_LEAN_MAX, crestLean,
+  TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt, tonguePose, CREST_LEAN_MAX, crestLean, HOOD_FLARE, HOOD_TAPER, HOOD_CENTRE, hoodFlareAt, hoodEdge, PROMOTION_MS, promote,
   DEFEAT_LINES, defeatLine, defeatPool, fillLine, showVerdict,
   BOW_MS, bowPose, bowElapsed,
   DEFEAT_MS, DEFEAT_HOLD_MS, defeatRecoil, defeatDrain, defeatJolt, defeatBow, canRestart,
@@ -1880,6 +1881,35 @@ describe('the crest lean', () => {
 
   test('moves under a degree per column', () => {
     is(game.crestLean(11, game.COLS) < 1, true, 'one column');
+  });
+});
+
+describe('the crest hood flare', () => {
+  test('starts and ends at normal width, inside the promotion', () => {
+    is(game.hoodFlareAt(0), 1, 'at the start');
+    is(game.hoodFlareAt(game.PROMOTION_MS), 1, 'at the end');
+  });
+
+  test('is fully spread while held', () => {
+    is(game.hoodFlareAt(500), game.HOOD_FLARE, 'held');
+  });
+
+  test('at normal width the clip is the outline itself', () => {
+    const [y, left, right] = game.HOOD_TAPER[5];
+    const d = game.hoodEdge(1);
+    is(d.includes(`${right.toFixed(1)} ${y}`) && d.includes(`${left.toFixed(1)} ${y}`), true, 'row on the outline');
+  });
+
+  test('fully spread, the bottom of the taper lands on the neck', () => {
+    const [y, left, right] = game.HOOD_TAPER[game.HOOD_TAPER.length - 1];
+    const c = game.HOOD_CENTRE, s = game.HOOD_FLARE;
+    const d = game.hoodEdge(s);
+    is(d.includes(`${(c + (right - c) / s).toFixed(1)} ${y}`), true, 'right edge, once widened, is the neck');
+    is(d.includes(`${(c - (c - left) / s).toFixed(1)} ${y}`), true, 'left edge, once widened, is the neck');
+  });
+
+  test('a promotion does not throw', () => {
+    game.promote(game.BELTS[1]);
   });
 });
 
