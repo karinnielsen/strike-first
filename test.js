@@ -1903,14 +1903,14 @@ describe('the prey snake, UNR-205', () => {
     is(game.visitor, null, 'all the way off');
   });
 
-  test('it crawls a square every other move, the body following the head', () => {
-    is(game.SNAKE_CRAWL, 2, 'half your speed');
+  test('it crawls a square every move, the body following the head', () => {
+    is(game.SNAKE_CRAWL, 1, 'as fast as you');
     freshGame({ snake: [{x: 5, y: 15}, {x: 4, y: 15}, {x: 3, y: 15}], visitor: prey(12, 5) });
     withRolls([0], () => game.update());
-    is([game.visitor.x, game.visitor.y], [12, 5], 'first move: still');
-    withRolls([0], () => game.update());
-    is([game.visitor.x, game.visitor.y], [13, 5], 'second: a square on');
+    is([game.visitor.x, game.visitor.y], [13, 5], 'first move: a square on');
     is(game.visitor.body, [{x: 12, y: 5}, {x: 11, y: 5}], 'the body follows');
+    withRolls([0], () => game.update());
+    is([game.visitor.x, game.visitor.y], [14, 5], 'second: another');
   });
 
   test('it never crawls backwards, off the board, or out of reach', () => {
