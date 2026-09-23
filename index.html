@@ -5215,6 +5215,9 @@ function charmMove(e) {
 }
 document.addEventListener('pointermove', charmMove, { passive: true });
 document.addEventListener('pointerdown', charmMove, { passive: true });
+// A finger drag starts a pan, which cancels its pointer events before they
+// move (touch-action: manipulation). Touch events carry on through a pan.
+document.addEventListener('touchmove', (e) => charmMove(e.touches[0]), { passive: true });
 
 showCrestPose();
 
