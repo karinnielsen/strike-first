@@ -4,7 +4,7 @@
 
 ### [▶ Play it now](https://karinnielsen.github.io/strike-first/)
 
-[![A run of Strike First: the snake chases down a mouse, earns its green belt, eats a rotten egg and turns queasy, then crashes](assets/demo.gif)](https://karinnielsen.github.io/strike-first/)
+[![A late run of Strike First at Red belt: the snake catches a frog, eats a rotten egg and turns queasy, catches a lizard and is promoted to Cho Dan Bo mid-run, catches a prey snake, then crashes, signs the board and challenges a friend](assets/demo.gif)](https://karinnielsen.github.io/strike-first/)
 
 ## Features
 
