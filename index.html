@@ -2188,7 +2188,10 @@ function showVerdict() {
   showOverlay(forfeited ? 'FORFEIT' : 'DEFEATED', forfeited ? '' : lastDefeatLine);
   rivalEl.textContent = rivalLine(rival, score, mode);
   if (mode === 'practice') return;
-  if (wantsInitials(score, bestAtStart)) openInitials();
+  if (wantsInitials(score, dojoBestAtStart)) {
+    setDojoBest(currentDojo(), score);
+    openInitials();
+  }
   else dueBoard();
 }
 
@@ -4080,8 +4083,9 @@ function startGame() {
   audio();    // always a click or a key, so the browser will allow it
   reset();
   // The mark is cleared here rather than in reset(), which also runs at
-  // load, before the challenge state exists.
+  // load, before the challenge state exists. The dojo's record likewise.
   markToBeat();
+  dojoBestAtStart = dojoBest(currentDojo());
   hideInitials();
   dropBoard();
   overlay.classList.add('hidden');
@@ -4537,6 +4541,41 @@ function commitDojo(dojo) {
   try { localStorage.setItem(DOJO_KEY, dojo); } catch (e) {}
 }
 
+// Your best in each dojo, which is what decides whether a run asks for
+// initials. The hi-score in the header is one number for every dojo, so
+// gating on it kept a new dojo's runs off the board until they beat the
+// old dojo's record. UNR-190.
+//
+// Before this existed there was only the hi-score, and it was earned in
+// the dojo you had then, so that is where it goes: switching nothing
+// asks you to sign again.
+const DOJO_BESTS_KEY = 'strikeFirstDojoBests';
+
+function seedDojoBests(stored, dojo, best) {
+  try {
+    const bests = JSON.parse(stored);
+    if (bests && typeof bests === 'object') return bests;
+  } catch (e) {}
+  return dojo && best > 0 ? { [dojo]: best } : {};
+}
+
+let dojoBests = (() => {
+  try { return seedDojoBests(localStorage.getItem(DOJO_BESTS_KEY), chosenDojo, best); } catch (e) { return {}; }
+})();
+
+// The dojo's record as it stood when this run began, like bestAtStart.
+let dojoBestAtStart = 0;
+
+function dojoBest(dojo) {
+  return Number(dojoBests[dojo]) || 0;
+}
+
+function setDojoBest(dojo, points) {
+  if (!dojoOrNull(dojo)) return;
+  dojoBests[dojo] = points;
+  try { localStorage.setItem(DOJO_BESTS_KEY, JSON.stringify(dojoBests)); } catch (e) {}
+}
+
 // Initials the dojo will not print. Slurs, hate, sexual terms and
 // self-harm; mild cheek like WTF is allowed, as arcades always did, and
 // identities are not on it, because blocking them treats the identity as
@@ -4725,9 +4764,10 @@ const initialsEl = document.getElementById('initials');
 // hands the keyboard back to the game.
 let entry = null;
 
-// Only a run that beats your own hi-score asks. Most runs go straight to
-// the verdict's menu, and a first run with any points at all is always a hi-score, so a
-// new player still signs the board after one run.
+// Only a run that beats your own best in this dojo asks. Most runs go
+// straight to the verdict's menu, and a first run with any points in a dojo
+// is always its best, so a new player, or one who has just switched dojo,
+// still signs the board after one run.
 function wantsInitials(points, bestBefore) {
   return points > 0 && points > bestBefore;
 }
