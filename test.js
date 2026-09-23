@@ -214,7 +214,8 @@ globalThis.game = {
   get board() { return board }, get boardDue() { return boardDue },
   get boardShown() { return !boardEl.hidden },
   backFrom, goBack, get backShown() { return !backHud.hidden }, crestEl, titleScreenEl,
-  verdictItems, challengeUrl, challengeText, challengeIdFrom, rivalRequest, rivalFrom, rivalLine, loadRival,
+  verdictItems, challengeUrl, challengeText, challengeRun, challengeIdFrom,
+  get lastRunShown() { return lastRunShown }, rivalRequest, rivalFrom, rivalLine, loadRival,
   isPhone, PHONE_MAX, ON_PHONE, rivalEl, MENU_LABELS,
   playArcade, showToBeat, markToBeat, toBeatEl, rivalScoreEl, get beaten() { return beaten },
   get rival() { return rival }, set rival(v) { rival = v },
@@ -2546,6 +2547,20 @@ describe('initials', () => {
     is(sandbox.localStorage.getItem('strikeFirstLastRun'), '42', 'id remembered');
   });
 
+  // Signed as a dojo's best, below the hi-score: the challenge must quote
+  // this run, which is the one its link points at.
+  testAsyncInOrder('signing keeps the score and dojo a challenge will quote', async () => {
+    signable('KAR');
+    game.best = 120;
+    game.commitDojo('miyagi-do');
+    await game.signInitials(async () => ({ ok: true, status: 201, json: async () => [{ id: 43 }] }));
+    is(game.lastRunShown, { score: 12, dojo: 'miyagi-do' }, 'kept');
+    is(JSON.parse(sandbox.localStorage.getItem('strikeFirstLastRunShown')), { score: 12, dojo: 'miyagi-do' }, 'remembered');
+    const run = game.challengeRun(game.lastRunShown, game.best, 'cobra-kai');
+    is(game.challengeText(run.score, run.dojo), 'I scored 12 for Miyagi-Do. Beat it.', 'quoted');
+    game.dropBoard();
+  });
+
   // With no skip, asking again would trap an offline player on the entry.
   testAsyncInOrder('a failed save goes straight to the menu, and does not ask again', async () => {
     signable('KAR');
@@ -3054,6 +3069,8 @@ describe('challenge a friend, UNR-116', () => {
     is(game.challengeText(42, 'cobra-kai'), 'I scored 42 for Cobra Kai. Beat it.', 'text');
     is(game.challengeText(42, null), 'I scored 42. Beat it.', 'no dojo chosen yet');
     is(game.challengeText(42, 'no-such-dojo'), 'I scored 42. Beat it.', 'not a dojo');
+    is(game.challengeRun(null, 90, 'cobra-kai'), { score: 90, dojo: 'cobra-kai' }, 'signed before scores were kept');
+    is(game.challengeRun({ score: 12, dojo: 'eagle-fang' }, 90, 'cobra-kai'), { score: 12, dojo: 'eagle-fang' }, 'the run itself');
   });
 
   test('the challenge page carries its own preview card and forwards', () => {
