@@ -2,6 +2,25 @@
 
 What changed in each release of Strike First.
 
+## [1.3.0] — 2026-09-23
+
+Snakes.
+
+### Added
+- **Snakes** come to your dojo once you reach Cho Dan Bo, the last prey a
+  belt unlocks. Worth twenty-one and three squares long, they crawl at half
+  your speed, but only the head counts: bite the body, or wait too long,
+  and it bolts off the board.
+- Earning Cho Dan Bo tells you the snakes are coming.
+
+### Changed
+- On a tablet the rankings keep their title and dojo names in place, and
+  only the list scrolls. On its side, twice as many rows fit.
+
+### Fixed
+- Two quick taps on a tablet, such as PRESS START and then a menu, no
+  longer zoom the page in and start the run with the stats off screen.
+
 ## [1.2.0] — 2026-09-23
 
 Lizards.
