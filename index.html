@@ -1278,6 +1278,13 @@
     overflow-y: auto; overscroll-behavior: contain;
   }
   .rankings .keys { margin-top: 80px; }
+  /* A short window, such as an iPad on its side, gives the list the room
+     the spacing took: 4 rows showed at 692px tall. */
+  @media (max-height: 800px) {
+    .rankings { padding: 24px 0; }
+    .rankings .rankings-bar { margin-top: 24px; }
+    .rankings .keys { margin-top: 24px; }
+  }
   .rankings[hidden] { display: none; }
   .rankings .group { display: grid; justify-items: center; gap: 16px; }
 
