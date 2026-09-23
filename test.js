@@ -2139,6 +2139,7 @@ describe('the charmer', () => {
   test('PRESS START flashes the eyes red', () => {
     is(/function pressStart\(\)[^}]*crestFlash\(\)/.test(html), true, 'flashed on the press');
     is(/@keyframes crest-eye-flash \{\s*0%, 100% \{ fill: #ffff00; \}/.test(html), true, 'yellow at both ends');
+    is(/'animationend', 'animationcancel'[\s\S]{0,200}classList\.remove\('flash'\)/.test(html), true, 'played once, not again on every return');
   });
 });
 
