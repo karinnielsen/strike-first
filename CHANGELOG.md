@@ -2,6 +2,12 @@
 
 What changed in each release of Strike First.
 
+## [1.3.1] — 2026-09-23
+
+### Changed
+- Snakes crawl as fast as you, not at half your speed. Chasing one down
+  was too easy for the most a prey is worth; now it can outlast you.
+
 ## [1.3.0] — 2026-09-23
 
 Snakes.
