@@ -2,6 +2,16 @@
 
 What changed in each release of Strike First.
 
+## [1.2.0] — 2026-09-23
+
+Lizards.
+
+### Added
+- **Lizards** come to your dojo once you reach red belt. Worth fifteen, but
+  they run along the walls as fast as you, so you won't catch one from
+  behind: work out where it's heading and cut it off.
+- Earning red belt tells you the lizards are coming.
+
 ## [1.1.0] — 2026-09-23
 
 Frogs.
@@ -373,6 +383,7 @@ The core loop.
 First playable version: a cobra-styled snake with apples, mice, score
 popups and a speed-up, in one HTML file.
 
+[1.2.0]: https://github.com/karinnielsen/strike-first/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/karinnielsen/strike-first/compare/v1.0.12...v1.1.0
 [1.0.12]: https://github.com/karinnielsen/strike-first/compare/v1.0.11...v1.0.12
 [1.0.11]: https://github.com/karinnielsen/strike-first/compare/v1.0.10...v1.0.11
