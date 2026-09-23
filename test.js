@@ -197,7 +197,9 @@ globalThis.game = {
   POINTS_PER_MOVE, POINTS_PER_SQUARE, TIMING_SLACK, TIMING_SLACK_MS, fastestRun, plausibleRun,
   SCORE_SERVICE, DOJO_IDS, runDuration, scoreRecord, runRecord, scoreRequest, submitScore,
   wantsInitials, cleanInitials, BLOCKED_INITIALS, signInitials, hideInitials,
-  currentDojo, commitDojo, dojoOrNull, DOJO_KEY, DOJO_SECONDS, DOJO_CREEDS, DOJO_SENSEIS,
+  currentDojo, commitDojo, dojoOrNull, DOJO_KEY, DOJO_BESTS_KEY, seedDojoBests, dojoBest,
+  get dojoBestAtStart() { return dojoBestAtStart },
+  get dojoBests() { return dojoBests }, set dojoBests(v) { dojoBests = v }, DOJO_SECONDS, DOJO_CREEDS, DOJO_SENSEIS,
   DOJO_GLOWS, dojoStart, dojoStep, dojoBacks, closeDojoSelect,
   get dojoPhase() { return dojoPhase }, get dojoAt() { return dojoAt },
   get entry() { return entry }, set entry(v) { entry = v },
@@ -2439,6 +2441,54 @@ describe('initials', () => {
     is(game.wantsInitials(5, 40), false, 'short of it');
     is(game.wantsInitials(0, 0), false, 'scored nothing');
     is(game.wantsInitials(1, 0), true, 'a first run with any points');
+  });
+
+  test('the hi-score from before per-dojo bests goes to the dojo you have', () => {
+    is(game.seedDojoBests(null, 'cobra-kai', 90), { 'cobra-kai': 90 }, 'seeded');
+    is(game.seedDojoBests(null, null, 90), {}, 'no dojo yet');
+    is(game.seedDojoBests(null, 'cobra-kai', 0), {}, 'nothing scored');
+    is(game.seedDojoBests('{"eagle-fang":12}', 'cobra-kai', 90), { 'eagle-fang': 12 }, 'stored wins');
+    is(game.seedDojoBests('junk', 'cobra-kai', 90), { 'cobra-kai': 90 }, 'unreadable, seeded again');
+  });
+
+  // The bug: one hi-score for every dojo kept a new dojo's runs unsigned.
+  test('switching dojo asks for initials on the first run that scores', () => {
+    const [first, second] = game.DOJO_IDS;
+    // A run the page would accept: a snake long enough for the points,
+    // and all the moves and time it could need.
+    const endRun = (points) => {
+      game.gameOver('wall', {x: 21, y: 5});
+      game.score = points;
+      game.snake = Array.from({ length: 3 + Math.ceil(points / game.POINTS_PER_SQUARE) }, (_, i) => ({ x: i % 21, y: 5 }));
+      game.moves = 400;
+      game.runMs = 600000;
+      game.best = Math.max(game.best, points);   // as addScore() moves it
+      game.showVerdict();
+    };
+    game.mode = 'arcade';
+    game.dojoBests = {};
+
+    game.commitDojo(first);
+    game.startGame();
+    endRun(30);
+    is(game.entry !== null, true, 'the first dojo asks');
+    is(game.dojoBest(first), 30, 'and keeps its best');
+    game.hideInitials();
+
+    game.commitDojo(second);
+    game.startGame();
+    is(game.dojoBestAtStart, 0, 'the new dojo starts from nothing');
+    endRun(10);
+    is(game.entry !== null, true, 'below the first dojo\'s best, the new dojo still asks');
+    is(game.dojoBest(second), 10, 'its own best');
+    is(JSON.parse(sandbox.localStorage.getItem(game.DOJO_BESTS_KEY)), { [first]: 30, [second]: 10 }, 'remembered');
+    game.hideInitials();
+
+    game.commitDojo(first);
+    game.startGame();
+    endRun(20);
+    is(game.entry, null, 'short of the first dojo\'s best, nothing to sign');
+    is(game.dojoBest(first), 30, 'which keeps its best');
   });
 
   test('anything typed becomes three capitals at most', () => {
