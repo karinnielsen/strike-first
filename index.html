@@ -91,12 +91,34 @@
     height: auto;      /* 1000x360 viewBox, so 400x144 at full size */
   }
 
-  /* The cobra's lean towards the snake (showCrestLean). The origin is the
-     neck joint, in the cobra's own units. Longer than a step at any level,
-     so it glides from one column to the next instead of ticking. */
+  /* The cobra's lean towards the snake, and its sway while it waits
+     (showCrestPose). The origin is the neck joint, in the cobra's own
+     units. The transition is longer than a step at any level, so the lean
+     glides from one column to the next instead of ticking. The sway's
+     delay matches it, so the head is upright before a sway begins. */
   #sf-red-crest-head {
     transform-origin: 633px 735px;
     transition: transform 400ms ease-out;
+  }
+
+  /* Uneven on purpose: stops at irregular times and to different depths,
+     never the same swing twice in one loop. At most 3 degrees, well inside
+     the lean's 8, so it stays clear of the lettering. Starts and ends
+     upright, which is where both handovers meet it. */
+  #sf-red-crest-head.swaying {
+    animation: crest-sway 11s ease-in-out 400ms infinite;
+  }
+  @keyframes crest-sway {
+    0%   { transform: rotate(0deg); }
+    16%  { transform: rotate(2.4deg); }
+    31%  { transform: rotate(-0.8deg); }
+    45%  { transform: rotate(1.4deg); }
+    63%  { transform: rotate(-3deg); }
+    81%  { transform: rotate(-0.4deg); }
+    100% { transform: rotate(0deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #sf-red-crest-head.swaying { animation: none; }
   }
 
   /* One row of evenly spaced items, spanning the width of the board.
@@ -2894,7 +2916,7 @@ function draw() {
   if (defeat) drawImpact(ms);
   ctx.restore();
 
-  showCrestLean();
+  showCrestPose();
 }
 
 
@@ -3874,6 +3896,7 @@ function toggleMercy() {
     bowIn(stepDelay());
   }
   showMercy();
+  showCrestPose();
 }
 
 // The button is only for pausing a run in progress; starting one is the
@@ -4263,13 +4286,35 @@ function crestLean(column, cols) {
 
 const crestHead = document.getElementById('sf-red-crest-head');
 
-// Only while a run is on the board, and never for reduced motion: it is
-// decoration, and the snake says where it is without it.
-function showCrestLean() {
-  const inRun = phase === 'playing' || phase === 'bowing' || phase === 'paused' || phase === 'dying';
-  const deg = inRun && !REDUCED_MOTION.matches ? crestLean(snake[0].x, COLS) : 0;
-  crestHead.style.setProperty('transform', `rotate(${deg.toFixed(2)}deg)`);
+// Outside a run it sways instead: a raised cobra is never quite still while
+// it waits. The sway is the `crest-sway` keyframes in the <style>, on a
+// loop long and uneven enough not to read as a metronome. It starts and
+// ends upright, so each handover goes through upright:
+//
+// - Into a run, the sway is held wherever it is and the lean eases on from
+//   there, rather than the head jumping back first.
+// - Out of one, the lean eases back to upright, and the sway waits for it:
+//   its animation-delay is the length of the lean's transition.
+//
+// Mercy counts as waiting. Reduced motion gets neither: the lean is set to
+// upright here, and the stylesheet drops the sway.
+function showCrestPose() {
+  const inRun = phase === 'playing' || phase === 'bowing' || phase === 'dying';
+  const swaying = crestHead.classList.contains('swaying');
+  if (inRun) {
+    if (swaying) {
+      crestHead.style.setProperty('transform', getComputedStyle(crestHead).transform);
+      crestHead.classList.remove('swaying');
+      crestHead.getBoundingClientRect();   // commit the held pose, so the lean eases from it
+    }
+    const deg = REDUCED_MOTION.matches ? 0 : crestLean(snake[0].x, COLS);
+    crestHead.style.setProperty('transform', `rotate(${deg.toFixed(2)}deg)`);
+  } else if (!swaying) {
+    crestHead.style.setProperty('transform', 'rotate(0deg)');
+    crestHead.classList.add('swaying');
+  }
 }
+showCrestPose();
 
 // ---- the crest's tongue ----------------------------------------------
 // Real snakes flick their tongues to smell, constantly and irregularly: a
