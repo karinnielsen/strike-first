@@ -2114,6 +2114,11 @@ describe('the charmer', () => {
     is(game.charmAim(5000, 100, 800), game.CREST_LEAN_MAX, 'never past the lean');
   });
 
+  // A pan cancels a finger's pointer events, so a drag needs touchmove.
+  test('a finger drag charms it too', () => {
+    is(/addEventListener\('touchmove', \(e\) => charmMove\(e\.touches\[0\]\)/.test(html), true, 'touchmove');
+  });
+
   test('holds still on the title, and sways everywhere else', () => {
     is(/\.wrap\.titling #sf-red-crest-head\.swaying \{ animation: none; \}/.test(html), true, 'stilled on the title');
   });
