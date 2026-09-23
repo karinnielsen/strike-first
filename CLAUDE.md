@@ -148,6 +148,14 @@ noted after it.
 - Serve it with the `snake` config in `.claude/launch.json`.
 - Running it means *playing* it, with real key events, not calling
   internals.
+- **A new feature ends with a play-test link,** given unasked, that opens
+  the game ready to test it. `design/play.html` sets the state first (the
+  best score, and so the belt: `?best=110` is Red) and then loads the
+  game, so nobody has to play their way to Red to try a Red feature. Give
+  a second link for the moment that leads into it, such as one point short
+  of the promotion that unlocks it. If the page can't set up what the
+  feature needs, extend it. `design/` is gitignored, so on a fresh clone,
+  write the page first.
 - `node test.js` needs Node 15+. An older Node fails with a bare
   `SyntaxError`.
 - The board is 21×21 cells at 30px. `CELL` only changes how large it's
