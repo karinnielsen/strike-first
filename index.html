@@ -6414,8 +6414,10 @@ function dojoKeydown(event) {
 dojoCards.forEach((li, i) => {
   // Movement, not presence: Arcade's row sits where the middle card
   // appears, so a pointer resting after the click must not take the light
-  // away from your dojo.
-  li.addEventListener('mousemove', () => highlightDojo(i));
+  // away from your dojo. A real mouse only: a tap sends a mousemove first,
+  // and lighting the card reveals its corner, which iPad Safari takes as
+  // a hover and so drops the tap's click.
+  li.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') highlightDojo(i); });
   li.addEventListener('animationend', (e) => { if (e.animationName === 'card-tease') li.classList.remove('tease'); });
   li.querySelector('.pick').addEventListener('click', () => chooseDojo(i, false));
   li.querySelector('.corner').addEventListener('click', () => flipDojo(i));
