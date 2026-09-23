@@ -128,8 +128,8 @@ declare
   belt_names        constant text[] := array['White', 'Orange', 'Green', 'Brown', 'Red', 'Cho Dan Bo', 'Midnight blue'];
   belt_from         constant int[]  := array[0, 15, 35, 65, 110, 175, 275];
   board_cells       constant int     := 441;
-  points_per_move   constant int     := 3;
-  points_per_square constant int     := 3;
+  points_per_move   constant numeric := 5.5;   -- an egg and a frog in a row, UNR-201
+  points_per_square constant numeric := 5.5;
   timing_slack      constant numeric := 0.95;
   timing_slack_ms   constant int     := 1000;
 
@@ -140,8 +140,8 @@ declare
   everyone_limit    constant int      := 300;
   rate_window       constant interval := '10 minutes';
 
-  peak     bigint;
-  most     bigint;
+  peak     numeric;
+  most     numeric;
   delay    int;
   fastest  bigint := 0;
   earned   int := 1;

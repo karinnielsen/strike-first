@@ -9,7 +9,8 @@
 ## Features
 
 - **The Snake you know.** Same rules, same controls.
-- **Three foods,** each a decision rather than a free lunch.
+- **Four foods,** each a decision rather than a free lunch. Frogs join from
+  Brown belt.
 - **Belts.** Real Tang Soo Do ranks, earned by beating your best. Promotion
   can land mid-run.
 - **Dojos.** Fight for Cobra Kai, Miyagi-Do or Eagle Fang. Every run counts
@@ -40,12 +41,13 @@
 | --- | --- | --- | --- |
 | 🥚 Egg | +1 | +1 | always one on the board |
 | 🐁 Mouse | +5 | +2 | long enough to reach it, if you go now |
+| 🐸 Frog, from Brown belt | +10 | +2 | longer than a mouse, since it hops a square every 6 moves |
 | 🤢 Rotten egg | −3 | none, but you're queasy for 14 moves | 45 moves |
 
 Rotten eggs land where dodging them costs you something, and get harsher as a
 run goes on.
 
-A mouse or a rotten egg blinks once a move before it leaves. While you can
+A mouse, frog or rotten egg blinks once a move before it leaves. While you can
 see it, you can still reach it.
 
 ## Belts
