@@ -218,6 +218,7 @@ Nothing is open.
 | Dojo crests and 18px badges | Shipped v0.5.0. Sources and prompts in draft PR #6 |
 | Character portraits | Dropped 18 September. Spec on `mock/character-select` |
 | Frog, sitting and mid-hop | Drawn in code as a four-path silhouette for UNR-201, judged at actual size beside the other foods |
+| Lizard, standing and running | A rainbow agama drawn in code for UNR-204 from references, seven paths. Terracotta was tried and is kept for rodents |
 
 The dojo crests are the reference for any new pixel art. Keep these rules
 for any redraw:
