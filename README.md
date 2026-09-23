@@ -81,9 +81,9 @@ learning never stops.
 
 ## Contribute
 
-PRs welcome — start with an
-[open starter issue](https://github.com/karinnielsen/strike-first/labels/good%20first%20issue).
-Local copies write to a sandbox, not the live board.
+PRs welcome. Bring your own idea: open an issue, or send the pull request.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Local copies write to a sandbox, not
+the live board.
 
 Current version: **v1.3.1** — see [CHANGELOG.md](CHANGELOG.md).
 
