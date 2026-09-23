@@ -4236,7 +4236,7 @@ const MENU_LABELS = {
 
 // The verdict's rows. Challenge a friend needs a signed run to point at,
 // so it only appears once you have one - your latest signed run, which is
-// always your hi-score, since only a hi-score asks to be signed. Pure.
+// your best in the dojo it was played for. Pure.
 function verdictItems(mode, runId) {
   if (mode === 'practice') return ['practice', 'arcade', 'menu'];
   return runId ? ['rematch', 'challenge', 'rankings', 'menu'] : ['rematch', 'rankings', 'menu'];
@@ -4753,6 +4753,18 @@ const LAST_RUN_KEY = 'strikeFirstLastRun';
 // didn't ask for initials. Survives a reload, like the initials do.
 let lastRunId = Number(localStorage.getItem(LAST_RUN_KEY)) || null;
 
+// What that run scored and for which dojo, so a challenge quotes the run
+// its link points at. Runs are signed per dojo, so it can be below the
+// hi-score. Saved before this existed, a run has none, and was signed as
+// a hi-score, so the challenge falls back to the hi-score. UNR-191.
+const LAST_RUN_SHOWN_KEY = 'strikeFirstLastRunShown';
+let lastRunShown = (() => {
+  try {
+    const run = JSON.parse(localStorage.getItem(LAST_RUN_SHOWN_KEY));
+    return run && Number.isInteger(run.score) ? run : null;
+  } catch (e) { return null; }
+})();
+
 // The row being saved right now, or null. Leaving the verdict clears it,
 // which is how a save that finishes late knows not to reopen the entry
 // over a run that has already started.
@@ -4861,6 +4873,8 @@ async function signInitials(send = globalThis.fetch) {
   if (saved && saved.id) {
     lastRunId = saved.id;
     localStorage.setItem(LAST_RUN_KEY, saved.id);
+    lastRunShown = { score: record.score, dojo: record.dojo };
+    localStorage.setItem(LAST_RUN_SHOWN_KEY, JSON.stringify(lastRunShown));
   }
   if (signing !== record) return;            // the verdict has gone
   signing = null;
@@ -5276,9 +5290,9 @@ function showChallenge() {
 // What a challenge says, with the number in it: a bare link pasted into a
 // chat gave no reason to click, and the link's preview is the same card
 // for every run. The run a challenge points at is your latest signed one,
-// which is always your hi-score (see verdictItems). The dojo is the one
-// you fight for now, taken from this device rather than read back from the
-// run, since a share sheet has to open straight from the press. The preview
+// and the score and dojo are that run's, kept on this device when it was
+// signed rather than read back from the database, since a share sheet has
+// to open straight from the press. The preview
 // card beside it names the game, so the text doesn't. Pure.
 function challengeText(score, dojo) {
   const side = DOJO_NAMES[dojo] ? ` for ${DOJO_NAMES[dojo]}` : '';
@@ -5341,10 +5355,17 @@ function hideToast() {
 document.addEventListener('keydown', hideToast, true);
 document.addEventListener('pointerdown', hideToast, true);
 
+// The run a challenge quotes: the one it links to, or, for a run signed
+// before its score was kept, the hi-score it was signed as. Pure.
+function challengeRun(shown, best, dojo) {
+  return shown || { score: best, dojo };
+}
+
 async function sendChallenge() {
   if (!lastRunId) return;
   const url = challengeUrl(location, lastRunId);
-  const text = challengeText(best, chosenDojo);
+  const run = challengeRun(lastRunShown, best, chosenDojo);
+  const text = challengeText(run.score, run.dojo);
   const result = await shareLink(url, text, `${text} ${url}`);
   if (result === 'failed') return window.prompt('Copy this link:', `${text} ${url}`);
   if (result === 'copied') showToast('Link copied.', 'Paste it to a friend.');
