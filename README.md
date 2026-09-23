@@ -85,7 +85,7 @@ PRs welcome. Bring your own idea: open an issue, or send the pull request.
 See [CONTRIBUTING.md](CONTRIBUTING.md). Local copies write to a sandbox, not
 the live board.
 
-Current version: **v1.3.1** — see [CHANGELOG.md](CHANGELOG.md).
+Current version: **v1.3.2** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Credits and licence
 

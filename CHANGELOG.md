@@ -2,6 +2,13 @@
 
 What changed in each release of Strike First.
 
+## [1.3.2] — 2026-09-23
+
+### Changed
+- The crest's cobra follows your pointer on the title, like a charmer's
+  pipe, and looks where it leans. Left alone, it holds still and watches.
+- Press start and its eyes flash red.
+
 ## [1.3.1] — 2026-09-23
 
 ### Changed
