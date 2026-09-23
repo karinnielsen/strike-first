@@ -174,7 +174,7 @@ globalThis.game = {
   BONE_BODY, DUSTY_TAIL, SICK_GREEN, blend, bodyColour, BELT_SEGMENT,
   QUEASY_SHAKE, queasyShake,
   TONGUE_DOUBLE, TONGUE_PAUSE_MIN, TONGUE_PAUSE_MAX, tongueFlickPlan,
-  TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt, tonguePose,
+  TONGUE_FLICK_MS, TONGUE_POSES, tonguePoseAt, tonguePose, CREST_LEAN_MAX, crestLean,
   DEFEAT_LINES, defeatLine, defeatPool, fillLine, showVerdict,
   BOW_MS, bowPose, bowElapsed,
   DEFEAT_MS, DEFEAT_HOLD_MS, defeatRecoil, defeatDrain, defeatJolt, defeatBow, canRestart,
@@ -1740,6 +1740,21 @@ describe('the board tongue lashes, in steps, UNR-160', () => {
 
   test('the board is drawn on the step and nowhere else', () => {
     is(/requestAnimationFrame\(playingFrame\)/.test(html), false, 'no per-frame drawing during a run');
+  });
+});
+
+describe('the crest lean', () => {
+  test('upright over the middle column', () => {
+    is(game.crestLean(10, game.COLS), 0, 'lean');
+  });
+
+  test('leans furthest at the edges, left negative', () => {
+    is(game.crestLean(0, game.COLS), -game.CREST_LEAN_MAX, 'left edge');
+    is(game.crestLean(game.COLS - 1, game.COLS), game.CREST_LEAN_MAX, 'right edge');
+  });
+
+  test('moves under a degree per column', () => {
+    is(game.crestLean(11, game.COLS) < 1, true, 'one column');
   });
 });
 
