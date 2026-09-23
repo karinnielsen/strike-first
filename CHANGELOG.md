@@ -2,6 +2,14 @@
 
 What changed in each release of Strike First.
 
+## [1.0.8] — 2026-09-23
+
+### Added
+- Feedback from any screen: the speech bubble in the corner, or F. Pick
+  bug, idea or fun, add a line if you like, and send. It arrives with what
+  was on screen, so there is no need to explain where you were. Mid-run it
+  calls mercy first.
+
 ## [1.0.7] — 2026-09-23
 
 ### Fixed
@@ -332,6 +340,7 @@ The core loop.
 First playable version: a cobra-styled snake with apples, mice, score
 popups and a speed-up, in one HTML file.
 
+[1.0.8]: https://github.com/karinnielsen/strike-first/compare/v1.0.7...v1.0.8
 [1.0.7]: https://github.com/karinnielsen/strike-first/compare/v1.0.6...v1.0.7
 [1.0.6]: https://github.com/karinnielsen/strike-first/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/karinnielsen/strike-first/compare/v1.0.4...v1.0.5
