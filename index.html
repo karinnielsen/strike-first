@@ -1606,6 +1606,10 @@ let runMs;          // first move to death, pauses taken out. Set at death.
 // five times as much, but it expires and it costs you extra length. The
 // ROTTEN egg is the hazard: it takes points off you.
 //
+// From Brown belt a FROG joins them: the first of the prey a belt unlocks,
+// richer than a mouse and harder to pin down. It shares the mouse's slot
+// rather than adding a fourth role. See the frog constants below.
+//
 // Only ever two things on the board - the egg, plus at most one visitor.
 // That's enforced by there being a single `visitor` slot rather than by
 // anyone remembering the rule, and it keeps every decision binary: the
@@ -1701,6 +1705,45 @@ const MOUSE_FLOOR  = 10;   // ...but never so few that a close one is a trick
 // per step, so a wall-clock wobble is sampled far too slowly to be a wobble
 // at all. See UNR-161.
 const MOUSE_TWITCH = 6;
+
+// THE FROG, UNR-201. Past Brown the belt gaps widen while eggs and mice
+// stay the same, so runs got longer without getting richer. Each belt from
+// Brown brings a new prey instead, and this is the first.
+//
+// Worth double a mouse, and it costs the same two squares. Its own cost is
+// that it won't sit still: it hops a square every FROG_HOP moves, so the
+// route you planned is wrong by the time you get there. It leaves on a
+// clock set from the route, like a mouse's but longer, since chasing
+// something that moves takes longer. It lands in the same band as a mouse
+// but anywhere in it, since a frog in a pocket would only have one way to
+// hop.
+//
+// A hop only ever lands on an open square the snake can still reach, so
+// the frog is never out of reach unless the board already put it there.
+const FROG_POINTS = 10;
+const FROG_GROWTH = 2;
+const FROG_BELT   = 'Brown';   // the rank that brings frogs
+const FROG_SHARE  = 2 / 3;     // of the visitors that aren't rotten: the newest prey is the likeliest
+const FROG_HOP    = 6;         // moves between hops
+// The frog's clock, settled by play at Brown on 23 September: the mouse's
+// 1.5 was too hard to catch, 2.5 too easy, and this is halfway.
+const FROG_SLACK  = 2;         // moves allowed per move of the route; a mouse gets 1.5
+const FROG_FLOOR  = 13;        // ...and never fewer than this; a mouse gets 10
+
+// The frog breathes while it sits: its feet stay on the ground and its top
+// rises and falls. One breath lasts FROG_BREATH moves, counted in moves for
+// the same reason as MOUSE_TWITCH, so it quickens as the game does. Chosen
+// over a 4-move breath, which read as panting.
+const FROG_BREATH       = 8;
+const FROG_BREATH_DEPTH = 0.07;   // how much taller at the top of a breath
+const FROG_GROUND       = 16.7;   // where its feet are, in the artwork's 20x20 box
+
+// What each prey is worth and what it costs in length, so eating one is a
+// lookup rather than a branch per animal.
+const PREY = {
+  mouse: { points: MOUSE_POINTS, growth: MOUSE_GROWTH },
+  frog:  { points: FROG_POINTS,  growth: FROG_GROWTH }
+};
 
 // How long the snake looks ill after a rotten egg. Counted in YOUR MOVES
 // like everything else, so it lasts the same number of decisions at every
@@ -1857,6 +1900,19 @@ function openSides(spot) {
 // just behind a wall of your own body counts as far. A square with no route
 // at all never gets a mouse, and if nowhere is reachable, no mouse comes.
 function mouseSquare() {
+  const spots = preySquares();
+  if (!spots.length) return null;
+  const pick   = list => list[Math.floor(Math.random() * list.length)];
+  const pocket = spots.filter(s => openSides(s) === MOUSE_CRAMP);
+  if (pocket.length) return pick(pocket);
+  const wall = spots.filter(s => openSides(s) === MOUSE_CRAMP + 1);
+  if (wall.length) return pick(wall);
+  return pick(spots);
+}
+
+// Every empty square in the band a prey may land in, measured along the
+// real route around the body.
+function preySquares() {
   const moves = routeMoves(snake, direction, grow);
   const spots = [];
   for (let x = 0; x < COLS; x++) {
@@ -1867,13 +1923,46 @@ function mouseSquare() {
       if (d >= MOUSE_NEAR && d <= MOUSE_FAR) spots.push(spot);
     }
   }
-  if (!spots.length) return null;
-  const pick   = list => list[Math.floor(Math.random() * list.length)];
-  const pocket = spots.filter(s => openSides(s) === MOUSE_CRAMP);
-  if (pocket.length) return pick(pocket);
-  const wall = spots.filter(s => openSides(s) === MOUSE_CRAMP + 1);
-  if (wall.length) return pick(wall);
-  return pick(spots);
+  return spots;
+}
+
+// Where a frog goes: anywhere in the band. It hops, so a tight spot would
+// only leave it one way out.
+function frogSquare() {
+  const spots = preySquares();
+  return spots.length ? spots[Math.floor(Math.random() * spots.length)] : null;
+}
+
+// Whether frogs come to this player: from Brown belt, going by the best
+// score. A promotion to Brown mid-run brings them from the next egg on.
+function frogsCome() {
+  return beltFor(best) >= BELTS.findIndex(b => b.name === FROG_BELT) + 1;
+}
+
+// Where the frog hops to, or null if it stays put: one of the open squares
+// beside it that the snake can still reach. Called on every FROG_HOP-th
+// move of its life, after the snake has moved, so a frog you land on is
+// caught before it can hop. `r` is a roll of the dice.
+function frogHopTo(frog, r) {
+  const reach = routeMoves(snake, direction, grow);
+  const spots = [{x: 1, y: 0}, {x: -1, y: 0}, {x: 0, y: 1}, {x: 0, y: -1}]
+    .map(d => ({x: frog.x + d.x, y: frog.y + d.y}))
+    .filter(s => onBoard(s) && !isOccupied(s) && reach.has(s.x + ',' + s.y));
+  return spots.length ? spots[Math.floor(r * spots.length)] : null;
+}
+
+// Move the frog if this is a hop move. update() decides it here and sets
+// `hopping` for this move only, so draw() knows which pose to show.
+function frogStep() {
+  visitor.hopping = false;
+  const age = visitor.born - visitor.life;    // 0 on the move it arrived
+  if (age === 0 || age % FROG_HOP !== 0) return;
+  const to = frogHopTo(visitor, Math.random());
+  if (!to) return;                       // hemmed in: it waits for the next hop
+  if (to.x !== visitor.x) visitor.facing = Math.sign(to.x - visitor.x);
+  visitor.x = to.x;
+  visitor.y = to.y;
+  visitor.hopping = true;
 }
 
 // The clock a mouse arrives with, counted from the real route to it. The
@@ -1882,8 +1971,19 @@ function mouseSquare() {
 // half times longer: a third of mice around 60 points could not be caught
 // by perfect play. UNR-183.
 function mouseClock(spot) {
+  return preyClock(spot, MOUSE_SLACK, MOUSE_FLOOR);
+}
+
+// A frog's clock is longer, because it moves: the route you measured is
+// wrong by the time you get there. On the mouse's clock it was too hard
+// to get in the first play test at Brown.
+function frogClock(spot) {
+  return preyClock(spot, FROG_SLACK, FROG_FLOOR);
+}
+
+function preyClock(spot, slack, floor) {
   const d = routeMoves(snake, direction, grow).get(spot.x + ',' + spot.y) ?? stepsBetween(snake[0], spot);
-  return Math.max(MOUSE_FLOOR, Math.ceil(d * MOUSE_SLACK));
+  return Math.max(floor, Math.ceil(d * slack));
 }
 
 // The fewest moves from the head to every square it can reach, keyed
@@ -1964,12 +2064,20 @@ function maybeSpawnVisitor() {
     if (spot) spawn('rotten', spot);
     return;
   }
+  if (frogsCome() && Math.random() < FROG_SHARE) {
+    const spot = frogSquare();
+    if (spot) spawn('frog', spot);
+    return;
+  }
   const spot = mouseSquare();
   if (spot) spawn('mouse', spot);
 }
 
+// Prey arrive on a clock set from the route to them.
 function spawn(kind, spot) {
-  const clock = kind === 'rotten' ? ROTTEN_LIFE : mouseClock(spot);
+  const clock = kind === 'rotten' ? ROTTEN_LIFE
+              : kind === 'frog'   ? frogClock(spot)
+              :                     mouseClock(spot);
   visitor = {
     kind,
     x:      spot.x,
@@ -1995,7 +2103,7 @@ function spawn(kind, spot) {
 // thing you see is where it was. Pure, so it needs no harness to test.
 function visitorShows(v) {
   if (v.leaving) return v.life % 2 === 0;
-  const warn = v.kind === 'mouse' ? Math.max(4, Math.round(v.born / 3)) : WARNING_MOVES;
+  const warn = PREY[v.kind] ? Math.max(4, Math.round(v.born / 3)) : WARNING_MOVES;
   return v.life >= warn || v.life % 2 === 1;
 }
 
@@ -2154,9 +2262,9 @@ function update() {
     placeEgg();
     maybeSpawnVisitor();        // an egg sometimes brings something with it
   } else if (visitor && head.x === visitor.x && head.y === visitor.y) {
-    if (visitor.kind === 'mouse') {
-      addScore(MOUSE_POINTS, 'mouse');
-      grow += MOUSE_GROWTH;     // the cost: worth five, but you carry two
+    if (PREY[visitor.kind]) {
+      addScore(PREY[visitor.kind].points, visitor.kind);
+      grow += PREY[visitor.kind].growth;   // the cost: the points come with length to carry
       sinceRotten += 1;
       visitor = null;
     } else {
@@ -2178,6 +2286,10 @@ function update() {
   // steps rather than needing a special case.
   if (grow > 0) grow -= 1;
   else snake.pop();
+
+  // Last, once the body is where it will be drawn, so a hop is judged
+  // against the board as it really is.
+  if (visitor && visitor.kind === 'frog') frogStep();
 }
 
 // Every point in the game goes through here, so the feedback can never
@@ -2228,7 +2340,7 @@ function addScore(points, kind) {
   // adds the next food type.
   const pop = document.createElement('div');
   pop.className = 'score-pop'
-                + (kind === 'mouse'  ? ' big'   : '')
+                + (PREY[kind]        ? ' big'   : '')
                 + (points < 0        ? ' minus' : '');
   pop.textContent = (points < 0 ? '−' : '+') + Math.abs(points);
   scoreEl.parentElement.appendChild(pop);
@@ -2578,6 +2690,20 @@ const SOUNDS = {
     ], 5);
   },
 
+  // A two-note croak, low and rough, because it was a frog, then the
+  // mouse's ding a step higher and held longer, because it was worth two.
+  frog() {
+    tone('p25', [
+      [note('A3'), 0.36, 1], [note('E3'), 0.3, 1], [note('A3'), 0.36, 1], [note('E3'), 0.2, 1],
+      [null, 0, 1],
+      [note('A3'), 0.36, 1], [note('E3'), 0.3, 1], [note('A3'), 0.36, 1], [note('E3'), 0.2, 1],
+    ]);
+    tone('p25', [
+      [note('D6'), 0.4, 3], [note('A6'), 0.4, 5],
+      [note('A6'), 0.24, 5], [note('A6'), 0.1, 5],
+    ], 10);
+  },
+
   // A burp. Pitch jumps up and down every frame (the roughness) while
   // sliding down overall (running out of air), volume flutters on
   // alternate frames (the throat), and low noise crackles underneath.
@@ -2919,8 +3045,9 @@ function draw() {
   drawEgg(egg.x * CELL + CELL / 2, egg.y * CELL + CELL / 2, breathe);
 
   if (visitor && visitorShows(visitor)) {
-    if (visitor.kind === 'mouse') drawMouse();
-    else                          drawRottenEgg();
+    if (visitor.kind === 'mouse')     drawMouse();
+    else if (visitor.kind === 'frog') drawFrog();
+    else                              drawRottenEgg();
   }
 
   drawSnake();
@@ -2977,6 +3104,31 @@ const SPRITE = {
     { fill: '#b89a7e', d: 'M8.7 9C6.4 8.2 5.7 5.8 6.1 3.8C6.4 2.2 8 2.8 9 4.4C10 6.1 10.6 8.1 8.7 9ZM13.3 8.3C12.1 6.6 13.3 3.4 15.2 2.9C16.8 2.5 17.3 4.3 16.7 6.4C16.2 8.2 14.8 9.6 13.3 8.3ZM8.7 7.6C9.6 6.25 12.1 6.05 13.7 7.2C14.8 7.95 14.65 9.1 15.7 10.15C16.3 10.85 15.65 12.15 14.7 12.65L12.35 13.5C11.35 13.65 10.3 12.55 9.25 11.95C8.05 11.1 7.8 9.05 8.7 7.6Z' },
     { fill: '#d9938a', d: 'M8.5 7.8C7 7.1 6.4 5.1 6.8 3.9C7.6 3.8 9.2 6.8 8.5 7.8ZM14.2 7.9C13.7 6.6 14.3 4.1 15.4 3.7C16.5 3.8 15.8 7.1 14.2 7.9Z' },
     { fill: '#ece6da', d: 'M9.42 8.65A1.03 1.38 0 1 0 11.48 8.65A1.03 1.38 0 1 0 9.42 8.65ZM12.75 8.6A0.8 1.12 0 1 0 14.35 8.6A0.8 1.12 0 1 0 12.75 8.6Z' }
+  ],
+
+  // THE FROG, side on and facing right like the mouse, in two poses that
+  // share four paths in the same order: body with eye bumps, throat, legs,
+  // eyes. Drawn here rather than commissioned: a four-shape silhouette,
+  // judged at actual size beside the other foods. Green, not brown, so it
+  // can't be taken for the mouse; a grass green, not the rotten egg's lime.
+  //
+  // The eye bumps are wound the same way as the body outline. Wound the
+  // other way, nonzero fill cuts them out and each eye gets a black ring.
+  frog: [
+    { fill: '#5fae3e', d: 'M3 15.8C2 13.5 2.6 10.2 5.4 9C7.4 8.1 9.4 8 11.4 7.8C14.6 7.6 17.6 9.4 17.8 12.2C17.9 14.2 16.8 16 14.6 16.4L5 16.6C4 16.6 3.4 16.4 3 15.8ZM9 7.4A2.2 2.2 0 1 1 13.4 7.4A2.2 2.2 0 1 1 9 7.4ZM13.4 8A1.9 1.9 0 1 1 17.2 8A1.9 1.9 0 1 1 13.4 8Z' },
+    { fill: '#a6d77a', d: 'M9.8 16.5C10.4 14.7 12.3 13.8 14.4 13.9C15.9 14 17.1 14.5 17 15.2C16.6 15.9 15.7 16.4 14.6 16.4Z' },
+    { fill: '#3f7f2c', d: 'M3.2 14C3.2 11.4 5.2 10.4 7.2 11C9 11.6 9.5 13.8 8.7 15.2L10.8 15.4C11.4 15.5 11.4 16.7 10.8 16.7L4.6 16.7C3.6 16.7 3.2 15.4 3.2 14Z' },
+    { fill: '#09090b', d: 'M10.9 7.3A0.95 1.05 0 1 1 12.8 7.3A0.95 1.05 0 1 1 10.9 7.3ZM14.9 7.9A0.8 0.95 0 1 1 16.5 7.9A0.8 0.95 0 1 1 14.9 7.9Z' }
+  ],
+
+  // Mid-hop, shown only on the step the frog moves: the body stretched on
+  // a rising diagonal, the back leg kicked out straight behind, the front
+  // foot reaching ahead. Mirrored when it hops left.
+  frogHop: [
+    { fill: '#5fae3e', d: 'M4.2 13.2C3.6 11.2 5.6 8.8 8.6 7.4C11.4 6.1 14.6 4.9 16.6 6C18.2 6.9 17.8 9.2 15.8 10.6C13.6 12.2 10.6 13.6 7.8 14.4C6 14.9 4.6 14.6 4.2 13.2ZM10.4 6.3A1.9 1.9 0 1 1 14.2 6.3A1.9 1.9 0 1 1 10.4 6.3ZM13.6 5.2A1.6 1.6 0 1 1 16.8 5.2A1.6 1.6 0 1 1 13.6 5.2Z' },
+    { fill: '#a6d77a', d: 'M8.6 14.2C11 13.2 13.8 11.6 15.9 10.5C15.6 11.6 13.2 13.4 10.6 14.2C9.8 14.4 9 14.4 8.6 14.2Z' },
+    { fill: '#3f7f2c', d: 'M3.9 12.6C4.1 11.2 5.7 10.6 7 11.3C8 11.9 8.1 13 7.6 13.8L4 17C3.8 17.2 3.9 17.5 4.2 17.6L4.6 17.8C5 18 4.8 18.6 4.4 18.6L1.2 18.6C0.6 18.6 0.5 17.9 1 17.6L2.6 16.6L4.4 14.4C4 13.9 3.8 13.3 3.9 12.6ZM14 10.5L17.6 11.4C18.2 11.6 18.1 12.5 17.5 12.4L13.4 11.9Z' },
+    { fill: '#09090b', d: 'M11.7 6.1A0.85 0.95 0 1 1 13.4 6.1A0.85 0.95 0 1 1 11.7 6.1ZM14.7 5A0.72 0.85 0 1 1 16.14 5A0.72 0.85 0 1 1 14.7 5Z' }
   ],
 
   // THE COBRA'S HEAD, in four groups so the eyes can change state without
@@ -3063,7 +3215,11 @@ const TAIL_ART_WIDTH = 11.3;
 const SPRITE_SIZE = {
   egg:       { scale: 1.35, cx: 10.0, cy: 10.0 },
   rottenEgg: { scale: 1.25, cx: 10.5, cy: 11.2 },
-  mouse:     { scale: 1.25, cx:  9.4, cy: 10.4 }
+  mouse:     { scale: 1.25, cx:  9.4, cy: 10.4 },
+  // The frog is squat, so it needs the egg's scale to stand as tall as a
+  // food must. Its centre sits a little low so it rests on the cell.
+  frog:      { scale: 1.35, cx: 10.2, cy: 11.2 },
+  frogHop:   { scale: 1.35, cx:  9.3, cy: 11.1 }
 };
 
 // Turn the authored paths into Path2D once, at load. These are painted
@@ -3190,6 +3346,42 @@ function drawMouse() {
   ctx.scale(m * visitor.facing, m);   // facing -1 mirrors it
   ctx.translate(-size.cx, -size.cy);
   for (const layer of SPRITE.mouse) {
+    ctx.fillStyle = layer.fill;
+    ctx.fill(layer.path);
+  }
+  ctx.restore();
+}
+
+
+// ---- the frog ---------------------------------------------------------
+// Sits and breathes, and on the move it hops it is drawn mid-leap in the
+// square it landed on. One pose per step, like the mouse's twitch.
+
+// How tall the sitting frog is on a given move: 1 at rest, rising to
+// 1 + FROG_BREATH_DEPTH at the top of a breath. Pure.
+function frogBreath(move) {
+  return 1 + FROG_BREATH_DEPTH * (1 - Math.cos(2 * Math.PI * (move % FROG_BREATH) / FROG_BREATH)) / 2;
+}
+
+function drawFrog() {
+  const cx   = visitor.x * CELL + CELL / 2;
+  const cy   = visitor.y * CELL + CELL / 2;
+  const name = visitor.hopping ? 'frogHop' : 'frog';
+  const size = SPRITE_SIZE[name];
+  // The hop pose stays under reduced motion: it says the frog moved, which
+  // is information. The breathing is only life, so it stops.
+  const tall = visitor.hopping || REDUCED_MOTION.matches ? 1 : frogBreath(moves + visitor.beat);
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  const m = size.scale * CELL_SCALE;
+  ctx.scale(m * visitor.facing, m);   // facing -1 mirrors it, like the mouse
+  ctx.translate(-size.cx, -size.cy);
+  // Breathing stretches the height about the ground, so the feet stay put.
+  ctx.translate(0, FROG_GROUND);
+  ctx.scale(1, tall);
+  ctx.translate(0, -FROG_GROUND);
+  for (const layer of SPRITE[name]) {
     ctx.fillStyle = layer.fill;
     ctx.fill(layer.path);
   }
@@ -3334,7 +3526,7 @@ function drawHead() {
   const ahead = { x: head.x + fwd.x, y: head.y + fwd.y };
   const treatAhead =
        (egg.x === ahead.x && egg.y === ahead.y)
-    || (visitor && visitor.kind === 'mouse'
+    || (visitor && PREY[visitor.kind]
         && visitor.x === ahead.x && visitor.y === ahead.y);
   if (phase !== 'playing') return;
   // Something to eat ahead, or feeling ill: it keeps tasting, out and
@@ -4204,12 +4396,21 @@ function promote(belt) {
   playSound('promotion');
   flareHood();
 
+  // A belt that brings new prey says so once the belt has been read, so a
+  // higher score in the rankings has a cause you were shown.
+  const news = UNLOCKS[belt.name];
   setTimeout(() => {
     stageEl.classList.remove('promoting');
     hintEl.classList.remove('promoting');
-    hintEl.textContent = HINT_TEXT;
+    hintEl.textContent = news || HINT_TEXT;
+    if (news) setTimeout(() => { hintEl.textContent = HINT_TEXT; }, UNLOCK_MS);
   }, PROMOTION_MS);
 }
+
+// What each belt brings, shown in the hint after its promotion. Hints are
+// lowercase; the belt name before it is the one line allowed voice caps.
+const UNLOCKS = { [FROG_BELT]: 'frogs now come to your dojo' };
+const UNLOCK_MS = 2400;   // longer than the belt: a sentence, not two words
 
 // The header swatch, which is the persistent one. It annotates `hi-score`
 // because that score is what produced the rank.
@@ -4903,13 +5104,14 @@ function runDuration(startedAt, endedAt, paused) {
 // Replaying runs server-side would be tighter, and is parked until someone
 // actually cheats.
 //
-// The best a run can do is an egg and a mouse, one after the other, on
-// consecutive moves - a mouse only ever arrives after an egg. That pair is
-// six points over two moves. It also realises only two squares of length,
-// because a mouse's second square is still owed if you die straight away.
-// So neither moves nor length can buy more than three points each.
-const POINTS_PER_MOVE   = (EGG_POINTS + MOUSE_POINTS) / 2;
-const POINTS_PER_SQUARE = (EGG_POINTS + MOUSE_POINTS) / (EGG_GROWTH + MOUSE_GROWTH - 1);
+// The best a run can do is an egg and the richest prey, one after the
+// other, on consecutive moves - prey only ever arrive after an egg. Since
+// the frog (UNR-201) that pair is eleven points over two moves. It also
+// realises only two squares of length, because the frog's second square is
+// still owed if you die straight away. So neither moves nor length can buy
+// more than five and a half points each. Before the frog it was three.
+const POINTS_PER_MOVE   = (EGG_POINTS + FROG_POINTS) / 2;
+const POINTS_PER_SQUARE = (EGG_POINTS + FROG_POINTS) / (EGG_GROWTH + FROG_GROWTH - 1);
 
 // Timers only ever fire late, so a real run is never faster than the speed
 // curve. The slack is for clocks that don't read exactly: some browsers

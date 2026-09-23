@@ -217,6 +217,7 @@ Nothing is open.
 | Board sprites: egg, rotten egg, mouse, head, body | Shipped v0.3.1 as vector. Sources on `asset-review/board-sprites` |
 | Dojo crests and 18px badges | Shipped v0.5.0. Sources and prompts in draft PR #6 |
 | Character portraits | Dropped 18 September. Spec on `mock/character-select` |
+| Frog, sitting and mid-hop | Drawn in code as a four-path silhouette for UNR-201, judged at actual size beside the other foods |
 
 The dojo crests are the reference for any new pixel art. Keep these rules
 for any redraw:

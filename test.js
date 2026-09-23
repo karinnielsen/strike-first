@@ -163,6 +163,9 @@ globalThis.game = {
   levelFor,
   MOUSE_CRAMP, MOUSE_NEAR, MOUSE_FAR, MOUSE_SLACK, MOUSE_FLOOR, MOUSE_TWITCH,
   openSides, mouseSquare, mouseClock, mouseIdle, spawn, visitorShows, routeMoves,
+  FROG_POINTS, FROG_GROWTH, FROG_BELT, FROG_SHARE, FROG_HOP, FROG_BREATH, FROG_BREATH_DEPTH,
+  PREY, UNLOCKS, frogsCome, frogSquare, frogHopTo, frogBreath, promote,
+  FROG_SLACK, FROG_FLOOR, frogClock,
   TONGUE_GAP_MIN, TONGUE_GAP_MAX, nextFlickIn,
   SCORE_SERVICES, SCORE_TARGET, serviceFor, BEFORE_LAUNCH,
   get tongueOut() { return tongueOut }, set tongueOut(v) { tongueOut = v },
@@ -1604,6 +1607,120 @@ describe('the defeat sequence', () => {
 });
 
 
+// The first prey a belt unlocks. UNR-201.
+describe('the frog, UNR-201', () => {
+  // Feed Math.random a list of rolls, one per call, the last repeating.
+  function withRolls(rolls, fn) {
+    const math = vm.runInContext('Math', sandbox);
+    const real = math.random;
+    let i = 0;
+    math.random = () => rolls[Math.min(i++, rolls.length - 1)];
+    try { fn(); } finally { math.random = real; }
+  }
+  const brown = () => game.BELTS.find(b => b.name === game.FROG_BELT).from;
+  const frog  = (x, y, more) => ({kind: 'frog', x, y, life: 30, born: 30, facing: 1, beat: 0, ...more});
+  const saved = game.best;
+
+  test('frogs come from Brown belt, going by the best score', () => {
+    game.best = brown() - 1;
+    is(game.frogsCome(), false, 'one point short');
+    game.best = brown();
+    is(game.frogsCome(), true, 'at Brown');
+    game.best = saved;
+  });
+
+  // 0.4 brings a visitor, isn't rotten, and is under the frog's share.
+  test('below Brown the same roll brings a mouse, from Brown a frog', () => {
+    freshGame({ egg: {x: 15, y: 15} });
+    game.best = brown() - 1;
+    withRolls([0.4], () => game.maybeSpawnVisitor());
+    is(game.visitor && game.visitor.kind, 'mouse', 'below Brown');
+    freshGame({ egg: {x: 15, y: 15} });
+    game.best = brown();
+    withRolls([0.4], () => game.maybeSpawnVisitor());
+    is(game.visitor && game.visitor.kind, 'frog', 'at Brown');
+    game.best = saved;
+  });
+
+  test('a roll over the frog share still brings a mouse at Brown', () => {
+    freshGame({ egg: {x: 15, y: 15} });
+    game.best = brown();
+    withRolls([0.4, 0.4, 0.9, 0.4], () => game.maybeSpawnVisitor());
+    is(game.visitor && game.visitor.kind, 'mouse', 'mouse');
+    game.best = saved;
+  });
+
+  test('eating a frog scores ten, grows two, and clears the slot', () => {
+    freshGame({ visitor: frog(6, 5) });
+    game.update();
+    is(game.score, game.FROG_POINTS, 'score');
+    is(game.FROG_POINTS, 10, 'double a mouse');
+    is(game.snake.length + game.grow, 3 + game.FROG_GROWTH, 'length owed');
+    is(game.visitor, null, 'visitor');
+  });
+
+  test('it hops one square every six moves, and sits still in between', () => {
+    freshGame({ visitor: frog(15, 5) });
+    for (let i = 1; i < game.FROG_HOP; i++) {
+      game.update();
+      is([game.visitor.x, game.visitor.y, game.visitor.hopping], [15, 5, false], 'move ' + i);
+    }
+    game.update();
+    const v = game.visitor;
+    is(Math.abs(v.x - 15) + Math.abs(v.y - 5), 1, 'one square');
+    is(v.hopping, true, 'drawn mid-hop on that move');
+    game.update();
+    is(game.visitor.hopping, false, 'and sitting again on the next');
+  });
+
+  // It moves, so the mouse's clock was too short to catch it in play.
+  test('a frog stays longer than a mouse would on the same square', () => {
+    freshGame();
+    for (const spot of [{x: 7, y: 5}, {x: 15, y: 5}, {x: 18, y: 18}]) {
+      const frogLife  = game.frogClock(spot);
+      const mouseLife = game.mouseClock(spot);
+      is(frogLife > mouseLife, true, JSON.stringify(spot) + ': ' + frogLife + ' vs ' + mouseLife);
+    }
+    is(game.frogClock({x: 7, y: 5}), game.FROG_FLOOR, 'close by, the floor');
+    game.spawn('frog', {x: 15, y: 5});
+    is(game.visitor.born, game.frogClock({x: 15, y: 5}), 'a frog arrives on its own clock');
+  });
+
+  test('a frog you land on is caught before it can hop', () => {
+    freshGame({ visitor: frog(6, 5, { life: 25 }) });   // this move is its sixth
+    game.update();
+    is(game.score, game.FROG_POINTS, 'caught');
+  });
+
+  test('a hop never lands on the snake, the egg or off the board', () => {
+    freshGame({ snake: [{x: 3, y: 0}, {x: 2, y: 0}, {x: 1, y: 0}], egg: {x: 0, y: 2} });
+    const penned = frog(0, 0);
+    game.visitor = penned;
+    is(game.frogHopTo(penned, 0), {x: 0, y: 1}, 'the one open side');
+    is(game.frogHopTo(penned, 0.99), {x: 0, y: 1}, 'whatever the roll');
+    game.egg = {x: 0, y: 1};
+    is(game.frogHopTo(penned, 0), null, 'nowhere open: it stays put');
+  });
+
+  test('it warns before it leaves, like a mouse', () => {
+    is(game.visitorShows({kind: 'frog', life: 3, born: 30}), true, 'odd move, shown');
+    is(game.visitorShows({kind: 'frog', life: 2, born: 30}), false, 'even move, hidden');
+    is(game.visitorShows({kind: 'frog', life: 20, born: 30}), true, 'before the warning');
+  });
+
+  test('a breath lasts eight moves and rises seven per cent', () => {
+    is(game.frogBreath(0), 1, 'rest');
+    is(Math.abs(game.frogBreath(4) - 1.07) < 1e-9, true, 'top');
+    is(game.frogBreath(8), 1, 'rest again');
+  });
+
+  test('promotion to Brown says frogs now come, and no other belt says anything', () => {
+    is(game.UNLOCKS[game.FROG_BELT], 'frogs now come to your dojo', 'Brown');
+    is(Object.keys(game.UNLOCKS), [game.FROG_BELT], 'only Brown, for now');
+  });
+});
+
+
 describe('sprites', () => {
   test('every sprite layer has a fill and real path data', () => {
     let bad = [];
@@ -1643,7 +1760,8 @@ describe('sprites', () => {
     const heights = {
       egg:       12.8 * game.SPRITE_SIZE.egg.scale,
       rottenEgg: 13.6 * game.SPRITE_SIZE.rottenEgg.scale,
-      mouse:     14.8 * game.SPRITE_SIZE.mouse.scale
+      mouse:     14.8 * game.SPRITE_SIZE.mouse.scale,
+      frog:      11.5 * game.SPRITE_SIZE.frog.scale
     };
     const small = Object.entries(heights).filter(([, h]) => h < 15);
     is(small.length, 0, 'too small: ' + JSON.stringify(small));
@@ -1651,6 +1769,13 @@ describe('sprites', () => {
 
   test('the mouse keeps only the paths that survive cell size', () => {
     is(game.SPRITE.mouse.length, 5, 'mouse paths');
+  });
+
+  // The two poses swap on the step the frog hops, so they must paint the
+  // same parts in the same order and the same colours.
+  test('the frog has four paths in both poses, matching layer for layer', () => {
+    is(game.SPRITE.frog.length, 4, 'sitting paths');
+    is(game.SPRITE.frog.map(l => l.fill).join(), game.SPRITE.frogHop.map(l => l.fill).join(), 'same fills in order');
   });
 
   // The regression that mattered. The snake is bone and it is most of what
@@ -2247,9 +2372,9 @@ describe('scores you can trust', () => {
     });
   };
 
-  test('an egg and a mouse in a row is the most a move or a square can earn', () => {
-    is(game.POINTS_PER_MOVE, 3, 'per move');
-    is(game.POINTS_PER_SQUARE, 3, 'per square');
+  test('an egg and a frog in a row is the most a move or a square can earn', () => {
+    is(game.POINTS_PER_MOVE, 5.5, 'per move');
+    is(game.POINTS_PER_SQUARE, 5.5, 'per square');
   });
 
   test('the page and the database hold the same numbers', () => {
@@ -2267,7 +2392,7 @@ describe('scores you can trust', () => {
   test('the fastest run climbs the curve as steeply as the score allows', () => {
     is(game.fastestRun(0, 3), 0, 'no moves');
     is(game.fastestRun(10, 3), 2600, 'no growth, so level 1 throughout');
-    is(game.fastestRun(2, 5), 520, 'six points at most, still level 1');
+    is(game.fastestRun(2, 5), 485, 'eleven points at most, so level 2 on the second move');
     is(game.fastestRun(1e9, 441) > 0, true, 'a huge claim still answers');
   });
 
@@ -2279,7 +2404,7 @@ describe('scores you can trust', () => {
       { score: 999999, length: 999999, moves: 999999 },
       { length: 500 },                          // more than the board
       { moves: 20 },                            // grew faster than it moved
-      { score: 82 },                            // more than 3 a square
+      { score: 149 },                           // more than 5.5 a square
       { durationMs: 1000 }                      // faster than the curve
     ];
     for (const change of forged) {
@@ -2289,7 +2414,7 @@ describe('scores you can trust', () => {
   });
 
   test('the limits are inclusive, so the best possible run is allowed', () => {
-    is(game.plausibleRun({ ...honest, score: 81 }), true, 'three a square exactly');
+    is(game.plausibleRun({ ...honest, score: 148.5 }), true, 'five and a half a square exactly');
     is(game.plausibleRun({ ...honest, moves: 27 }), true, 'a square a move exactly');
     const fastest = game.fastestRun(honest.moves, honest.length);
     is(game.plausibleRun({ ...honest, durationMs: fastest }), true, 'the curve exactly');
