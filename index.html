@@ -1761,12 +1761,40 @@ const LIZARD_RUN    = 1;         // moves per square it runs: as fast as you
 const LIZARD_SLACK  = 2;         // its clock, the frog's to start with: settle by play at Red
 const LIZARD_FLOOR  = 13;
 
+// THE SNAKE, UNR-205: the last prey, from Cho Dan Bo. Cobras eat other
+// snakes, head first.
+//
+// It is the first prey longer than one square: SNAKE_LENGTH squares, head
+// first, still the one visitor. It crawls a square every SNAKE_CRAWL moves,
+// slower than you, and like the frog and lizard it only ever crawls onto an
+// open square the snake can still reach, so its head is never out of reach
+// unless the board already put it there.
+//
+// Only the head is a catch. Eating one grows you by its whole length. Bite
+// it anywhere else, or let its clock run out, and it bolts: it slithers
+// straight off the board at a square a move and fades as it goes, and
+// can't be caught. Its body is never solid, so a missed bite costs the
+// prey, not the run.
+//
+// Value, speed and length are first guesses: settle them by play at Cho Dan Bo.
+const SNAKE_LENGTH   = 3;
+const SNAKE_POINTS   = 21;         // seven a square, under the lizard's 7.5
+const SNAKE_GROWTH   = SNAKE_LENGTH;
+const SNAKE_BELT     = 'Cho Dan Bo';
+const SNAKE_SHARE    = 1 / 2;
+const SNAKE_CRAWL    = 2;          // moves per square it crawls: half your speed
+const SNAKE_STRAIGHT = 0.6;        // chance it carries straight on when it can
+const SNAKE_SLACK    = 2;          // its clock, the frog's to start with
+const SNAKE_FLOOR    = 13;
+const SNAKE_EXIT     = 6;          // moves it takes to fade out once it bolts
+
 // What each prey is worth and what it costs in length, so eating one is a
 // lookup rather than a branch per animal.
 const PREY = {
   mouse:  { points: MOUSE_POINTS,  growth: MOUSE_GROWTH },
   frog:   { points: FROG_POINTS,   growth: FROG_GROWTH },
-  lizard: { points: LIZARD_POINTS, growth: LIZARD_GROWTH }
+  lizard: { points: LIZARD_POINTS, growth: LIZARD_GROWTH },
+  snake:  { points: SNAKE_POINTS,  growth: SNAKE_GROWTH }
 };
 
 // How long the snake looks ill after a rotten egg. Counted in YOUR MOVES
@@ -1904,6 +1932,7 @@ function isOccupied(spot) {
   if (snake.some(part => part.x === spot.x && part.y === spot.y)) return true;
   if (egg     && egg.x     === spot.x && egg.y     === spot.y) return true;
   if (visitor && visitor.x === spot.x && visitor.y === spot.y) return true;
+  if (visitor && visitor.body && onPreySnakeBody(spot)) return true;
   return false;
 }
 
@@ -1998,6 +2027,10 @@ function lizardsCome() {
 // takes its share first, and the older ones split the rest as they did
 // before it came: a half, a third and a sixth at Red.
 function preyKind(r) {
+  if (snakesCome()) {
+    if (r < SNAKE_SHARE) return 'snake';
+    r = (r - SNAKE_SHARE) / (1 - SNAKE_SHARE);
+  }
   if (lizardsCome()) {
     if (r < LIZARD_SHARE) return 'lizard';
     r = (r - LIZARD_SHARE) / (1 - LIZARD_SHARE);
@@ -2057,6 +2090,95 @@ function lizardStep() {
   visitor.running = visitor.strides % 2 === 1;
 }
 
+// Whether snakes come to this player: from Cho Dan Bo.
+function snakesCome() {
+  return beltFor(best) >= BELTS.findIndex(b => b.name === SNAKE_BELT) + 1;
+}
+
+// Whether a square is under the prey snake's body, not counting its head.
+function onPreySnakeBody(spot) {
+  return visitor.body.some(s => s.x === spot.x && s.y === spot.y);
+}
+
+// Where a snake goes: its head in the mouse's band, lying straight behind
+// it on open squares. Returns the head with the way it faces, or null if
+// no square in the band has room.
+function preySnakeSquare() {
+  const fits = [];
+  for (const spot of preySquares()) {
+    for (const dir of [{x: 1, y: 0}, {x: -1, y: 0}, {x: 0, y: 1}, {x: 0, y: -1}]) {
+      const body = preySnakeBody(spot, dir);
+      if (body.every(s => onBoard(s) && !isOccupied(s))) fits.push({x: spot.x, y: spot.y, dir});
+    }
+  }
+  return fits.length ? fits[Math.floor(Math.random() * fits.length)] : null;
+}
+
+// The squares behind a head facing `dir`, nearest first.
+function preySnakeBody(head, dir) {
+  return Array.from({length: SNAKE_LENGTH - 1}, (_, i) =>
+    ({x: head.x - dir.x * (i + 1), y: head.y - dir.y * (i + 1)}));
+}
+
+// Where the snake's head crawls next, and which way it then faces, or null
+// if it is boxed in. Never backwards, and only onto an open square the
+// snake can still reach. It carries straight on SNAKE_STRAIGHT of the time
+// when it can, and otherwise takes any open way. `r` is a roll of the dice.
+function preySnakeCrawlTo(ps, r) {
+  const reach = routeMoves(snake, direction, grow);
+  const turns = [ps.dir, {x: ps.dir.y, y: -ps.dir.x}, {x: -ps.dir.y, y: ps.dir.x}];
+  const open  = turns
+    .map(dir => ({ to: {x: ps.x + dir.x, y: ps.y + dir.y}, dir }))
+    .filter(c => onBoard(c.to) && !isOccupied(c.to) && reach.has(c.to.x + ',' + c.to.y));
+  if (!open.length) return null;
+  if (open[0].dir === ps.dir && r < SNAKE_STRAIGHT) return open[0];
+  return open[Math.floor(r * open.length)];
+}
+
+// The head moves on and the body follows it, square for square.
+function preySnakeMove(to, dir) {
+  visitor.body.unshift({x: visitor.x, y: visitor.y});
+  visitor.body.pop();
+  visitor.x   = to.x;
+  visitor.y   = to.y;
+  visitor.dir = dir;
+}
+
+// Crawl if this is a crawling move, or head for the edge if it has bolted.
+function preySnakeStep() {
+  if (visitor.leaving) return preySnakeFlee();
+  const age = visitor.born - visitor.life;    // 0 on the move it arrived
+  if (age === 0 || age % SNAKE_CRAWL !== 0) return;
+  const c = preySnakeCrawlTo(visitor, Math.random());
+  if (c) preySnakeMove(c.to, c.dir);
+}
+
+// Missed: it slithers off. It can't be caught from here on, and fades over
+// SNAKE_EXIT moves whether or not it has reached the edge.
+function preySnakeBolts() {
+  visitor.leaving = true;
+  visitor.life    = SNAKE_EXIT;
+}
+
+// A square a move, straight on and off the edge. Squares past the edge are
+// simply not drawn. It turns aside for anything in its way on the board,
+// and waits if boxed in.
+function preySnakeFlee() {
+  const d     = visitor.dir;
+  const turns = [d, {x: d.y, y: -d.x}, {x: -d.y, y: d.x}];
+  const way   = turns.find(dir => {
+    const to = {x: visitor.x + dir.x, y: visitor.y + dir.y};
+    return !onBoard(to) || !isOccupied(to);
+  });
+  if (way) preySnakeMove({x: visitor.x + way.x, y: visitor.y + way.y}, way);
+  if (![visitor, ...visitor.body].some(onBoard)) visitor = null;   // all the way off
+}
+
+// Whether the visitor can be eaten: anything but a snake that has bolted.
+function catchable(v) {
+  return !(v.kind === 'snake' && v.leaving);
+}
+
 // The clock a mouse arrives with, counted from the real route to it. The
 // straight-line distance ignored the body, and late in a run, when the body
 // fences off the tight spots mice land in, the route was up to two and a
@@ -2075,6 +2197,10 @@ function frogClock(spot) {
 
 function lizardClock(spot) {
   return preyClock(spot, LIZARD_SLACK, LIZARD_FLOOR);
+}
+
+function preySnakeClock(spot) {
+  return preyClock(spot, SNAKE_SLACK, SNAKE_FLOOR);
 }
 
 function preyClock(spot, slack, floor) {
@@ -2161,7 +2287,8 @@ function maybeSpawnVisitor() {
     return;
   }
   const kind = preyKind(Math.random());
-  const spot = kind === 'lizard' ? lizardSquare()
+  const spot = kind === 'snake'  ? preySnakeSquare()
+             : kind === 'lizard' ? lizardSquare()
              : kind === 'frog'   ? frogSquare()
              :                     mouseSquare();
   if (spot) spawn(kind, spot);
@@ -2170,6 +2297,7 @@ function maybeSpawnVisitor() {
 // Prey arrive on a clock set from the route to them.
 function spawn(kind, spot) {
   const clock = kind === 'rotten' ? ROTTEN_LIFE
+              : kind === 'snake'  ? preySnakeClock(spot)
               : kind === 'lizard' ? lizardClock(spot)
               : kind === 'frog'   ? frogClock(spot)
               :                     mouseClock(spot);
@@ -2187,6 +2315,11 @@ function spawn(kind, spot) {
     const dirs = wallDirs(spot);
     visitor.dir = dirs[Math.floor(Math.random() * dirs.length)];
   }
+  // A snake arrives lying straight behind its head.
+  if (kind === 'snake') {
+    visitor.dir  = spot.dir;
+    visitor.body = preySnakeBody(spot, spot.dir);
+  }
 }
 
 // Whether a visitor is drawn this move. It flashes when it's nearly out of
@@ -2202,7 +2335,7 @@ function spawn(kind, spot) {
 // speeds. UNR-181. A warning ends on a move where it shows, so the last
 // thing you see is where it was. Pure, so it needs no harness to test.
 function visitorShows(v) {
-  if (v.leaving) return v.life % 2 === 0;
+  if (v.leaving) return v.kind === 'snake' || v.life % 2 === 0;   // a snake fades instead
   const warn = PREY[v.kind] ? Math.max(4, Math.round(v.born / 3)) : WARNING_MOVES;
   return v.life >= warn || v.life % 2 === 1;
 }
@@ -2361,7 +2494,9 @@ function update() {
     } else sinceRotten += 1;
     placeEgg();
     maybeSpawnVisitor();        // an egg sometimes brings something with it
-  } else if (visitor && head.x === visitor.x && head.y === visitor.y) {
+  } else if (visitor && visitor.body && !visitor.leaving && onPreySnakeBody(head)) {
+    preySnakeBolts();           // bitten anywhere but the head: missed
+  } else if (visitor && catchable(visitor) && head.x === visitor.x && head.y === visitor.y) {
     if (PREY[visitor.kind]) {
       addScore(PREY[visitor.kind].points, visitor.kind);
       grow += PREY[visitor.kind].growth;   // the cost: the points come with length to carry
@@ -2378,6 +2513,7 @@ function update() {
 
   if (visitor && visitor === expired) {
     if (visitor.kind === 'rotten') rottenGone();
+    else if (visitor.kind === 'snake' && !visitor.leaving) preySnakeBolts();
     else visitor = null;
   }
 
@@ -2391,6 +2527,7 @@ function update() {
   // against the board as it really is.
   if (visitor && visitor.kind === 'frog')   frogStep();
   if (visitor && visitor.kind === 'lizard') lizardStep();
+  if (visitor && visitor.kind === 'snake')  preySnakeStep();
 }
 
 // Every point in the game goes through here, so the feedback can never
@@ -2820,6 +2957,18 @@ const SOUNDS = {
     ], 8);
   },
 
+  // A hiss that rises, because it was a snake, then the ding a step higher
+  // again than the lizard's. A first guess: choose by ear, as the others were.
+  snake() {
+    const hiss = [];
+    for (let k = 0; k < 8; k++) hiss.push([0.8 + k * 0.08, 0.2, 1]);
+    noise(hiss);
+    tone('p25', [
+      [note('F#6'), 0.4, 3], [note('C#7'), 0.4, 5],
+      [note('C#7'), 0.24, 5], [note('C#7'), 0.1, 5],
+    ], 9);
+  },
+
   // A burp. Pitch jumps up and down every frame (the roughness) while
   // sliding down overall (running out of air), volume flutters on
   // alternate frames (the throat), and low noise crackles underneath.
@@ -3164,6 +3313,7 @@ function draw() {
     if (visitor.kind === 'mouse')       drawMouse();
     else if (visitor.kind === 'frog')   drawFrog();
     else if (visitor.kind === 'lizard') drawLizard();
+    else if (visitor.kind === 'snake')  drawPreySnake();
     else                                drawRottenEgg();
   }
 
@@ -3575,6 +3725,204 @@ function drawLizard() {
 }
 
 
+// ---- the prey snake ---------------------------------------------------
+// Seen from above, like the reference it was drawn from: one continuous
+// body through its squares rather than blocks, so it can never be taken for
+// your own snake. A dark outline, a lighter band of scales, bright spots
+// down the spine, a blunt diamond head with gold eyes, and a tail that
+// tapers to a point. It slithers: the body sways a little each move,
+// counted in moves like everything else, and never at the head, which
+// stays in its square. Held straight for reduced motion.
+//
+// Measured in the 20-unit cell box and scaled by CELL_SCALE, like all the
+// board art. Squares past the edge while it flees are drawn anyway; the
+// canvas clips them. It fades as it goes.
+const PREY_SNAKE_FILL = {
+  outline: '#24173a', body: '#7d4cb8', scales: '#a878dc', spot: '#eadcfb',
+  iris: '#e8b53a', pupil: '#09090b',
+  tongue: '#a6d77a'   // the frog's light green: red is your cobra's, and points lost
+};
+const PREY_SNAKE_WIDTH  = 7.5;   // across the body, outline not included
+const PREY_SNAKE_LINE   = 1.5;   // the outline
+const PREY_SNAKE_SPOTS  = 6.5;   // units between spots down the spine
+const PREY_SNAKE_SWAY   = 1.6;   // how far the body sways, at the tail
+const PREY_SNAKE_TONGUE = 7;     // moves between flicks
+
+// The body's centre line, tail tip first, one point per unit: the tip,
+// then through the centre of each square to the head, with a curve where
+// it bends. In board pixels.
+function preySnakeSpine(v) {
+  const u  = CELL_SCALE;
+  const at = s => ({ x: s.x * CELL + CELL / 2, y: s.y * CELL + CELL / 2 });
+  const squares = [...v.body].reverse().concat([v]).map(at);   // tail to head
+  const t = squares[0], n = squares[1];
+  const tip = { x: t.x + (t.x - n.x) * 0.45, y: t.y + (t.y - n.y) * 0.45 };
+  // Corners become curves between the midpoints either side of them.
+  const pts  = [tip, t];
+  for (let i = 1; i < squares.length - 1; i++) {
+    const a = squares[i - 1], b = squares[i], c = squares[i + 1];
+    const m1 = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const m2 = { x: (b.x + c.x) / 2, y: (b.y + c.y) / 2 };
+    for (let k = 0; k <= 8; k++) {
+      const q = k / 8, r = 1 - q;
+      pts.push({ x: r * r * m1.x + 2 * r * q * b.x + q * q * m2.x,
+                 y: r * r * m1.y + 2 * r * q * b.y + q * q * m2.y });
+    }
+  }
+  pts.push(squares[squares.length - 1]);
+  // Resample to a point per unit, so widths and spots are even.
+  const out = [pts[0]];
+  let carry = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i];
+    const len = Math.hypot(b.x - a.x, b.y - a.y);
+    let d = u - carry;
+    while (d <= len) {
+      out.push({ x: a.x + (b.x - a.x) * d / len, y: a.y + (b.y - a.y) * d / len });
+      d += u;
+    }
+    carry = len - (d - u);
+  }
+  out.push(pts[pts.length - 1]);
+  return out;
+}
+
+// The body's width at `s` units from the tip of a spine `total` units
+// long: a long, even taper from a sharp point, full width only from the
+// middle square, and a narrower neck under the head. Pure. Blunter or
+// wider, it read as a slug.
+function preySnakeWidth(s, total) {
+  const taper = Math.min(1, 0.12 + s / 26);
+  const neck  = s > total - 9 ? 0.7 : 1;
+  return PREY_SNAKE_WIDTH * taper * neck;
+}
+
+// The outline of the body at `scale` of its width, as a closed path.
+function preySnakeRibbon(spine, widths, scale) {
+  const left = [], right = [];
+  spine.forEach((p, i) => {
+    const a = spine[Math.max(0, i - 1)], b = spine[Math.min(spine.length - 1, i + 1)];
+    const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    const nx = -(b.y - a.y) / len, ny = (b.x - a.x) / len;
+    const w = widths[i] * scale / 2;
+    left.push([p.x + nx * w, p.y + ny * w]);
+    right.push([p.x - nx * w, p.y - ny * w]);
+  });
+  ctx.beginPath();
+  ctx.moveTo(...left[0]);
+  for (const q of left.slice(1)) ctx.lineTo(...q);
+  for (const q of right.reverse()) ctx.lineTo(...q);
+  ctx.closePath();
+}
+
+function drawPreySnake() {
+  const v = visitor;
+  const u = CELL_SCALE;
+  let spine = preySnakeSpine(v);
+  const total = spine.length - 1;
+
+  // The sway: a wave along the body that moves on each move, nothing at the
+  // head and most at the tail.
+  if (!REDUCED_MOTION.matches) {
+    const bent = spine.map((p, i) => {
+      const a = spine[Math.max(0, i - 1)], b = spine[Math.min(total, i + 1)];
+      const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+      const off = PREY_SNAKE_SWAY * u * Math.min(1, (total - i) / 20)
+                * Math.sin(i / 5 + moves * Math.PI / 2);
+      return { x: p.x - (b.y - a.y) / len * off, y: p.y + (b.x - a.x) / len * off };
+    });
+    spine = bent;
+  }
+  const widths = spine.map((_, i) => preySnakeWidth(i, total) * u);
+
+  ctx.save();
+  if (v.leaving) ctx.globalAlpha = v.life / SNAKE_EXIT;
+  ctx.lineJoin = 'round';
+
+  // Body: outline, then the body, then the band of scales down the back.
+  preySnakeRibbon(spine, widths, 1);
+  ctx.strokeStyle = PREY_SNAKE_FILL.outline;
+  ctx.lineWidth   = PREY_SNAKE_LINE * 2 * u;
+  ctx.stroke();
+  ctx.fillStyle = PREY_SNAKE_FILL.body;
+  ctx.fill();
+  preySnakeRibbon(spine, widths, 0.58);
+  ctx.fillStyle = PREY_SNAKE_FILL.scales;
+  ctx.fill();
+
+  // Spots down the spine, each set in a dark ring, from the tail up to the neck.
+  for (let s = 12; s < total - 8; s += PREY_SNAKE_SPOTS) {
+    const p = spine[Math.round(s)];
+    ctx.fillStyle = PREY_SNAKE_FILL.body;
+    circle(p.x, p.y, 1.7 * u);
+    ctx.fillStyle = PREY_SNAKE_FILL.spot;
+    circle(p.x, p.y, 1.0 * u);
+  }
+
+  // The head, facing its way, drawn over the neck.
+  const cx = v.x * CELL + CELL / 2, cy = v.y * CELL + CELL / 2;
+  ctx.translate(cx, cy);
+  ctx.rotate(Math.atan2(v.dir.y, v.dir.x));
+  ctx.scale(u, u);
+  const tongue = preySnakeTongue((moves + v.beat) % PREY_SNAKE_TONGUE);
+  if (tongue && !v.leaving && phase === 'playing') {
+    ctx.save();
+    ctx.scale(1 / u, 1 / u);
+    drawTongue(10 * u - (CELL / 2 - u), 0, {x: 1, y: 0}, {x: 0, y: 1},
+               tongue.reach, REDUCED_MOTION.matches ? 0 : tongue.lash, PREY_SNAKE_FILL.tongue);
+    ctx.restore();
+  }
+  preySnakeHead(1);
+  ctx.strokeStyle = PREY_SNAKE_FILL.outline;
+  ctx.lineWidth   = PREY_SNAKE_LINE * 2;
+  ctx.stroke();
+  ctx.fillStyle = PREY_SNAKE_FILL.body;
+  ctx.fill();
+  // The crown: a lighter diamond of scales, a spot at its centre.
+  ctx.save();
+  ctx.translate(-1, 0);
+  preySnakeHead(0.6);
+  ctx.fillStyle = PREY_SNAKE_FILL.scales;
+  ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = PREY_SNAKE_FILL.spot;
+  circle(-1.5, 0, 1.3);
+  // Eyes on top, near the front: gold, with a slit.
+  for (const side of [-1, 1]) {
+    ctx.fillStyle = PREY_SNAKE_FILL.outline;
+    circle(3.5, side * 4.2, 2.5);
+    ctx.fillStyle = PREY_SNAKE_FILL.iris;
+    circle(3.5, side * 4.2, 1.8);
+    ctx.fillStyle = PREY_SNAKE_FILL.pupil;
+    ctx.beginPath();
+    ctx.ellipse(3.8, side * 4.2, 1.3, 0.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// The prey snake's tongue, `since` moves into its cycle: a lash over three
+// moves, out and swung one way, then the other, then half back in, and
+// nothing for the rest. Longer than your own two-pose flick, because it is
+// tasting for you. Pure; null when the tongue is in.
+function preySnakeTongue(since) {
+  return [{ reach: 0.8, lash: 1 }, { reach: 0.8, lash: -1 }, { reach: 0.5, lash: 1 }][since] || null;
+}
+
+// A blunt diamond, facing right, centred on the square, at `k` of its size.
+// Wider than the body, as the reference's is.
+function preySnakeHead(k) {
+  const pts = [[-6, -3.5], [-1, -7.5], [5, -6.5], [10, -2], [10, 2], [5, 6.5], [-1, 7.5], [-6, 3.5]]
+    .map(([x, y]) => [x * k, y * k]);
+  // Rounded corners: a curve through each corner, between edge midpoints.
+  const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  ctx.beginPath();
+  ctx.moveTo(...mid(pts[pts.length - 1], pts[0]));
+  pts.forEach((p, i) => ctx.quadraticCurveTo(...p, ...mid(p, pts[(i + 1) % pts.length])));
+  ctx.closePath();
+}
+
+
 // ---- the snake --------------------------------------------------------
 // Drawn tail-first, so the head always ends up painted on top.
 function drawSnake() {
@@ -3712,7 +4060,7 @@ function drawHead() {
   const ahead = { x: head.x + fwd.x, y: head.y + fwd.y };
   const treatAhead =
        (egg.x === ahead.x && egg.y === ahead.y)
-    || (visitor && PREY[visitor.kind]
+    || (visitor && PREY[visitor.kind] && catchable(visitor)
         && visitor.x === ahead.x && visitor.y === ahead.y);
   if (phase !== 'playing') return;
   // Something to eat ahead, or feeling ill: it keeps tasting, out and
@@ -3775,7 +4123,7 @@ const TONGUE_LASH   = 3;      // how far the tip swings either side
 
 // `reach` is how far out, 0 to 1; `swing` which way the tip is thrown,
 // -1 to 1, from tonguePose().
-function drawTongue(cx, cy, fwd, side, reach = 1, swing = 0) {
+function drawTongue(cx, cy, fwd, side, reach = 1, swing = 0, colour = '#d3262f') {
   const s = CELL_SCALE;
   const lash = swing * TONGUE_LASH * s * reach;
   const baseX = cx + fwd.x * (CELL / 2 - s);
@@ -3788,7 +4136,7 @@ function drawTongue(cx, cy, fwd, side, reach = 1, swing = 0) {
   const midY  = baseY + fwd.y * len * 0.5 - side.y * lash * 0.7;
   const fork  = 3.5 * s * reach, spread = 2.5 * s * reach;
 
-  ctx.strokeStyle = '#d3262f';
+  ctx.strokeStyle = colour;
   ctx.lineWidth   = 1.6 * s;
   ctx.lineCap     = 'round';
   ctx.beginPath();
@@ -4597,7 +4945,8 @@ function promote(belt) {
 // lowercase; the belt name before it is the one line allowed voice caps.
 const UNLOCKS = {
   [FROG_BELT]:   'frogs now come to your dojo',
-  [LIZARD_BELT]: 'lizards now come to your dojo'
+  [LIZARD_BELT]: 'lizards now come to your dojo',
+  [SNAKE_BELT]:  'snakes now come to your dojo'
 };
 const UNLOCK_MS = 2400;   // longer than the belt: a sentence, not two words
 
@@ -5293,15 +5642,17 @@ function runDuration(startedAt, endedAt, paused) {
 // Replaying runs server-side would be tighter, and is parked until someone
 // actually cheats.
 //
-// The best a run can do is an egg and the richest prey, one after the
-// other, on consecutive moves - prey only ever arrive after an egg. Since
-// the lizard (UNR-204) that pair is sixteen points over two moves. It also
-// realises only two squares of length, because the lizard's second square
-// is still owed if you die straight away. So neither moves nor length can
-// buy more than eight points each. It was three before the frog, and five
-// and a half before the lizard.
-const POINTS_PER_MOVE   = (EGG_POINTS + LIZARD_POINTS) / 2;
-const POINTS_PER_SQUARE = (EGG_POINTS + LIZARD_POINTS) / (EGG_GROWTH + LIZARD_GROWTH - 1);
+// The best a run can do is an egg and a prey, one after the other, on
+// consecutive moves - prey only ever arrive after an egg. The pair realises
+// one square less than it grows, because the prey's last square is still
+// owed if you die straight away. So the most a move can buy is the richest
+// pair over two moves, and the most a square can buy is the best pair per
+// square it realises: since the snake (UNR-205), eleven a move for an egg
+// and a snake, and still eight a square for an egg and a lizard. It was
+// three each before the frog.
+const POINTS_PER_MOVE   = Math.max(...Object.values(PREY).map(p => (EGG_POINTS + p.points) / 2));
+const POINTS_PER_SQUARE = Math.max(...Object.values(PREY).map(p =>
+  (EGG_POINTS + p.points) / (EGG_GROWTH + p.growth - 1)));
 
 // Timers only ever fire late, so a real run is never faster than the speed
 // curve. The slack is for clocks that don't read exactly: some browsers

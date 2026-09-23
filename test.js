@@ -168,6 +168,8 @@ globalThis.game = {
   FROG_SLACK, FROG_FLOOR, frogClock,
   LIZARD_POINTS, LIZARD_GROWTH, LIZARD_BELT, LIZARD_SHARE, LIZARD_RUN, LIZARD_SLACK, LIZARD_FLOOR,
   lizardsCome, preyKind, onWall, lizardSquare, wallDirs, lizardRunTo, lizardClock, lizardPose,
+  SNAKE_LENGTH, SNAKE_POINTS, SNAKE_GROWTH, SNAKE_BELT, SNAKE_SHARE, SNAKE_CRAWL, SNAKE_EXIT,
+  snakesCome, preySnakeSquare, preySnakeBody, preySnakeCrawlTo, preySnakeClock, catchable, preySnakeTongue,
   TONGUE_GAP_MIN, TONGUE_GAP_MAX, nextFlickIn,
   SCORE_SERVICES, SCORE_TARGET, serviceFor, BEFORE_LAUNCH,
   get tongueOut() { return tongueOut }, set tongueOut(v) { tongueOut = v },
@@ -1716,10 +1718,11 @@ describe('the frog, UNR-201', () => {
     is(game.frogBreath(8), 1, 'rest again');
   });
 
-  test('promotion to Brown says frogs now come, and to Red lizards', () => {
+  test('promotion to Brown says frogs now come, to Red lizards, and to Cho Dan Bo snakes', () => {
     is(game.UNLOCKS[game.FROG_BELT], 'frogs now come to your dojo', 'Brown');
     is(game.UNLOCKS[game.LIZARD_BELT], 'lizards now come to your dojo', 'Red');
-    is(Object.keys(game.UNLOCKS), [game.FROG_BELT, game.LIZARD_BELT], 'no other belt says anything');
+    is(game.UNLOCKS[game.SNAKE_BELT], 'snakes now come to your dojo', 'Cho Dan Bo');
+    is(Object.keys(game.UNLOCKS), [game.FROG_BELT, game.LIZARD_BELT, game.SNAKE_BELT], 'no other belt says anything');
   });
 });
 
@@ -1820,6 +1823,121 @@ describe('the lizard, UNR-204', () => {
   test('both poses paint the same seven layers in the same colours', () => {
     is(game.SPRITE.lizard.length, 7, 'standing paths');
     is(game.SPRITE.lizard.map(l => l.fill).join(), game.SPRITE.lizardRun.map(l => l.fill).join(), 'same fills in order');
+  });
+});
+
+
+// The last prey a belt unlocks, and the first longer than a square. UNR-205.
+describe('the prey snake, UNR-205', () => {
+  function withRolls(rolls, fn) {
+    const math = vm.runInContext('Math', sandbox);
+    const real = math.random;
+    let i = 0;
+    math.random = () => rolls[Math.min(i++, rolls.length - 1)];
+    try { fn(); } finally { math.random = real; }
+  }
+  const beltScore = name => game.BELTS.find(b => b.name === name).from;
+  // A snake lying left to right, head at (x, y), facing right.
+  const prey = (x, y, more) => ({
+    kind: 'snake', x, y, dir: {x: 1, y: 0},
+    body: game.preySnakeBody({x, y}, {x: 1, y: 0}),
+    life: 30, born: 30, facing: 1, beat: 0, ...more
+  });
+  const saved = game.best;
+
+  test('snakes come from Cho Dan Bo, going by the best score', () => {
+    game.best = beltScore('Cho Dan Bo') - 1;
+    is(game.snakesCome(), false, 'one point short');
+    game.best = beltScore('Cho Dan Bo');
+    is(game.snakesCome(), true, 'at Cho Dan Bo');
+    game.best = saved;
+  });
+
+  test('at Cho Dan Bo a snake takes half the prey, and the rest split as they did at Red', () => {
+    game.best = beltScore('Cho Dan Bo');
+    is(game.preyKind(0.49), 'snake', 'first half');
+    is(game.preyKind(0.51), 'lizard', 'then a lizard');
+    is(game.preyKind(0.99), 'mouse', 'the last of it a mouse');
+    game.best = saved;
+  });
+
+  test('a snake lands head in the band, lying straight on open squares', () => {
+    freshGame({ egg: {x: 15, y: 15} });
+    game.best = beltScore('Cho Dan Bo');
+    withRolls([0.4, 0.4, 0.3], () => game.maybeSpawnVisitor());   // comes, isn't rotten, is a snake
+    const v = game.visitor;
+    is(v && v.kind, 'snake', 'a snake');
+    is(v.body.length, game.SNAKE_LENGTH - 1, 'its body');
+    is(v.body, game.preySnakeBody(v, v.dir), 'straight behind its head');
+    is(v.body.every(s => s.x >= 0 && s.x < 21 && s.y >= 0 && s.y < 21), true, 'all on the board');
+    is(game.isOccupied(v.body[0]), true, 'its body takes up squares');
+    game.best = saved;
+  });
+
+  test('catching it by the head scores its points and grows you by its length', () => {
+    freshGame({ visitor: prey(6, 5, { dir: {x: -1, y: 0}, body: [{x: 7, y: 5}, {x: 8, y: 5}] }) });
+    game.update();
+    is(game.score, game.SNAKE_POINTS, 'score');
+    is(game.snake.length + game.grow, 3 + game.SNAKE_LENGTH, 'length owed');
+    is(game.visitor, null, 'visitor');
+  });
+
+  test('a bite anywhere but the head misses: it bolts, fades and can\'t be caught', () => {
+    // Head at (6,4), body down through (6,5) and (6,6); you arrive at (6,5).
+    freshGame({ visitor: prey(6, 4, { dir: {x: 0, y: -1}, body: [{x: 6, y: 5}, {x: 6, y: 6}] }) });
+    game.update();
+    const v = game.visitor;
+    is(game.score, 0, 'no points');
+    is(v.leaving, true, 'it bolts');
+    is(game.catchable(v), false, 'no longer a catch');
+    is(game.visitorShows(v), true, 'it fades rather than blinks');
+    is([v.x, v.y], [6, 3], 'straight on, a square a move');
+  });
+
+  test('when its clock runs out it slithers off the edge and is gone', () => {
+    freshGame({ visitor: prey(19, 15, { life: 1 }) });
+    game.update();
+    is(game.visitor && game.visitor.leaving, true, 'it bolts');
+    is(game.visitor.x, 20, 'toward the edge');
+    for (let i = 0; i < 3; i++) game.update();
+    is(game.visitor, null, 'all the way off');
+  });
+
+  test('it crawls a square every other move, the body following the head', () => {
+    is(game.SNAKE_CRAWL, 2, 'half your speed');
+    freshGame({ snake: [{x: 5, y: 15}, {x: 4, y: 15}, {x: 3, y: 15}], visitor: prey(12, 5) });
+    withRolls([0], () => game.update());
+    is([game.visitor.x, game.visitor.y], [12, 5], 'first move: still');
+    withRolls([0], () => game.update());
+    is([game.visitor.x, game.visitor.y], [13, 5], 'second: a square on');
+    is(game.visitor.body, [{x: 12, y: 5}, {x: 11, y: 5}], 'the body follows');
+  });
+
+  test('it never crawls backwards, off the board, or out of reach', () => {
+    freshGame({ snake: [{x: 5, y: 15}, {x: 4, y: 15}, {x: 3, y: 15}] });
+    const v = prey(20, 5);
+    game.visitor = v;
+    const c = game.preySnakeCrawlTo(v, 0.99);
+    is(c.to.x, 20, 'turns at the wall rather than leave');
+    is(Math.abs(c.to.y - 5), 1, 'up or down');
+    // Fenced in: the player's body across its way ahead and to both sides.
+    freshGame({ snake: [{x: 11, y: 4}, {x: 12, y: 4}, {x: 13, y: 4}, {x: 13, y: 5}, {x: 13, y: 6}, {x: 12, y: 6}, {x: 11, y: 6}],
+                direction: {x: -1, y: 0} });
+    const boxed = prey(12, 5);
+    game.visitor = boxed;
+    is(game.preySnakeCrawlTo(boxed, 0), null, 'boxed in: it waits');
+  });
+
+  test('its tongue lashes over three moves, then rests', () => {
+    is(game.preySnakeTongue(0), { reach: 0.8, lash: 1 }, 'out, one way');
+    is(game.preySnakeTongue(1), { reach: 0.8, lash: -1 }, 'then the other');
+    is(game.preySnakeTongue(2), { reach: 0.5, lash: 1 }, 'half back in');
+    is(game.preySnakeTongue(3), null, 'in');
+  });
+
+  test('its clock starts where the frog\'s is', () => {
+    freshGame();
+    is(game.preySnakeClock({x: 15, y: 0}), game.frogClock({x: 15, y: 0}), 'same clock, for now');
   });
 });
 
@@ -2476,8 +2594,8 @@ describe('scores you can trust', () => {
     });
   };
 
-  test('an egg and a lizard in a row is the most a move or a square can earn', () => {
-    is(game.POINTS_PER_MOVE, 8, 'per move');
+  test('an egg and a snake is the most a move can earn, an egg and a lizard the most a square can', () => {
+    is(game.POINTS_PER_MOVE, 11, 'per move');
     is(game.POINTS_PER_SQUARE, 8, 'per square');
   });
 
