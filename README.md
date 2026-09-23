@@ -76,8 +76,12 @@ learning never stops.
 
 - **Client:** vanilla JS + Canvas 2D in a single `index.html`. No framework, no build step.
 - **Backend:** Supabase (Postgres + REST, row-level security).
-- **Built with:** [Claude Code](https://claude.com/claude-code).
-- **Assets:** Astra (art, soundtrack), Cyanite (music analysis).
+
+| Part | Made with |
+| --- | --- |
+| Code, tests and docs | Claude Opus 5 and Claude Opus 5.5, in [Claude Code](https://claude.com/claude-code) |
+| Art and soundtrack | Astra, an OpenAI model |
+| Music analysis | Cyanite, which analysed the series' music so the original soundtrack could match its feel |
 
 ## Contribute
 
