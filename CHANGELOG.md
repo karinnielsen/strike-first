@@ -2,6 +2,11 @@
 
 What changed in each release of Strike First.
 
+## [1.0.12] — 2026-09-23
+
+### Added
+- Earn a new belt and the crest cobra spreads its hood.
+
 ## [1.0.11] — 2026-09-23
 
 ### Added
@@ -358,6 +363,7 @@ The core loop.
 First playable version: a cobra-styled snake with apples, mice, score
 popups and a speed-up, in one HTML file.
 
+[1.0.12]: https://github.com/karinnielsen/strike-first/compare/v1.0.11...v1.0.12
 [1.0.11]: https://github.com/karinnielsen/strike-first/compare/v1.0.10...v1.0.11
 [1.0.10]: https://github.com/karinnielsen/strike-first/compare/v1.0.9...v1.0.10
 [1.0.9]: https://github.com/karinnielsen/strike-first/compare/v1.0.8...v1.0.9
