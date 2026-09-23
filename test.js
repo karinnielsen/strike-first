@@ -219,7 +219,11 @@ globalThis.game = {
   isPhone, PHONE_MAX, ON_PHONE, rivalEl, MENU_LABELS,
   playArcade, showToBeat, markToBeat, toBeatEl, rivalScoreEl, get beaten() { return beaten },
   get rival() { return rival }, set rival(v) { rival = v },
-  STARS_SHOWN_FROM, starCountText, starsFrom, fetchStars, loadStars
+  STARS_SHOWN_FROM, starCountText, starsFrom, fetchStars, loadStars,
+  FEEDBACK_KINDS, FEEDBACK_MAX, FEEDBACK_CONTEXT_MAX, SIDE_BY_SIDE, screenName, directionName,
+  feedbackContext, feedbackRow, feedbackRequest, submitFeedback, openFeedback, closeFeedback,
+  pickFeedbackKind, get feedbackOpen() { return feedbackOpen }, get feedbackKind() { return feedbackKind },
+  get feedbackContextNow() { return feedbackContextNow }, set titling(v) { titling = v }
 };`;
 
 vm.createContext(sandbox);
@@ -3236,6 +3240,141 @@ describe('the star count', () => {
     let asked = false;
     await game.loadStars('?stars=42', async () => { asked = true; });
     is(asked, false, 'asked');
+  });
+});
+
+describe('feedback, UNR-197', () => {
+  const sql = fs.readFileSync(path.join(__dirname, 'db', 'scores.sql'), 'utf8');
+
+  test('the kinds and the limit match the database', () => {
+    const kinds = sql.match(/kind\s+text check \(kind in \(([^)]*)\)\)/);
+    is(kinds && kinds[1].split(',').map(k => k.trim().slice(1, -1)), game.FEEDBACK_KINDS, 'kinds');
+    const max = sql.match(/char_length\(message\) <= (\d+)/);
+    is(max && Number(max[1]), game.FEEDBACK_MAX, 'limit');
+    const bytes = sql.match(/octet_length\(context::text\) <= (\d+)/);
+    is(bytes && Number(bytes[1]) > game.FEEDBACK_CONTEXT_MAX, true, 'context fits');
+  });
+
+  test('side by side is the stylesheet\'s own query', () => {
+    is(html.includes('@media ' + game.SIDE_BY_SIDE + ' {'), true, 'same query');
+  });
+
+  test('every screen has a name', () => {
+    const base = { titling: false, startPressed: false, dojoPhase: 'closed', rankingsOpen: false, phase: 'ready', entry: null };
+    const cases = [
+      [{ titling: true }, 'title'],
+      [{ titling: true, startPressed: true }, 'title menu'],
+      [{ dojoPhase: 'open' }, 'dojo select'],
+      [{ rankingsOpen: true }, 'rankings'],
+      [{ phase: 'over', entry: {} }, 'initials'],
+      [{ phase: 'playing' }, 'run'],
+      [{ phase: 'bowing' }, 'bow'],
+      [{ phase: 'paused' }, 'mercy'],
+      [{ phase: 'dying' }, 'defeat'],
+      [{ phase: 'over' }, 'verdict']
+    ];
+    for (const [change, name] of cases) is(game.screenName({ ...base, ...change }), name, name);
+  });
+
+  test('directions read as words', () => {
+    is(['up', 'down', 'left', 'right'].map(k => game.directionName(game.KEYS[
+      { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' }[k]])),
+       ['up', 'down', 'left', 'right'], 'words');
+    is(game.directionName(null), null, 'none');
+  });
+
+  test('a kind alone, or a line alone, is a report', () => {
+    is(game.feedbackRow({ kind: 'bug' }).kind, 'bug', 'kind');
+    const line = game.feedbackRow({ message: '  turns lag  ' });
+    is([line.kind, line.message], [null, 'turns lag'], 'line, trimmed');
+    is(line.version, game.VERSION, 'version');
+  });
+
+  test('nothing, or only spaces, is not a report', () => {
+    is(game.feedbackRow({}), null, 'nothing');
+    is(game.feedbackRow({ message: '   ' }), null, 'spaces');
+    is(game.feedbackRow({ kind: 'rant' }), null, 'unknown kind');
+  });
+
+  test('a long line is cut to the limit, not refused', () => {
+    const row = game.feedbackRow({ kind: 'idea', message: 'a'.repeat(900) });
+    is(row.message.length, game.FEEDBACK_MAX, 'cut');
+  });
+
+  test('a context too large to store is sent without its detail', () => {
+    const row = game.feedbackRow({ kind: 'bug', context: { screen: 'run', browser: 'x'.repeat(5000) } });
+    is(row.context, { screen: 'run', oversized: true }, 'trimmed');
+  });
+
+  test('the context describes the game and fits', () => {
+    const wasTitling = game.titling;
+    game.titling = false;
+    freshGame({ direction: { x: 0, y: -1 }, turnQueue: [{ x: 1, y: 0 }] });
+    const context = game.feedbackContext();
+    game.titling = wasTitling;
+    is([context.screen, context.heading, context.turns, context.length], ['run', 'up', ['right'], 3], 'the run');
+    for (const field of ['mode', 'belt', 'layout', 'window', 'input', 'touch', 'browser']) {
+      is(field in context, true, field);
+    }
+    is(JSON.stringify(context).length < game.FEEDBACK_CONTEXT_MAX, true, 'fits');
+  });
+
+  test('the request asks for nothing back and carries only the public key', () => {
+    const { url, options } = game.feedbackRequest({ kind: 'fun' }, game.SCORE_SERVICE);
+    is(url, game.SCORE_SERVICE.url + '/rest/v1/feedback', 'url');
+    is(options.headers.Prefer, 'return=minimal', 'no read');
+    is(options.headers.apikey, game.SCORE_SERVICE.key, 'apikey');
+    is('Authorization' in options.headers, false, 'no bearer token');
+  });
+
+  const reply = (ok) => async () => ({ ok, status: ok ? 201 : 400, text: async () => '' });
+
+  testAsync('feedback: a sent report is true', async () => {
+    is(await game.submitFeedback(game.feedbackRow({ kind: 'fun' }), reply(true)), true, 'sent');
+  });
+
+  testAsync('feedback: a refused report is false, not an error', async () => {
+    is(await quietly(() => game.submitFeedback(game.feedbackRow({ kind: 'fun' }), reply(false))), false, 'refused');
+  });
+
+  testAsync('feedback: no network is false, not an error', async () => {
+    const offline = async () => { throw new Error('offline'); };
+    is(await quietly(() => game.submitFeedback(game.feedbackRow({ kind: 'fun' }), offline)), false, 'offline');
+  });
+
+  testAsync('feedback: an empty report is never sent', async () => {
+    let sent = false;
+    await game.submitFeedback(null, async () => { sent = true; });
+    is(sent, false, 'not sent');
+  });
+
+  test('F mid-run calls mercy, and the report remembers the run', () => {
+    const wasTitling = game.titling;
+    game.titling = false;
+    game.entry = null;
+    freshGame();
+    pressKey('f');
+    is(game.feedbackOpen, true, 'open');
+    is(game.phase, 'paused', 'mercy');
+    is(game.feedbackContextNow.screen, 'run', 'the screen it was opened from');
+
+    // Keys are the card's: an arrow neither steers nor resumes.
+    pressKey('ArrowUp');
+    pressKey(' ');
+    is([game.phase, game.turnQueue.length], ['paused', 0], 'nothing reaches the game');
+
+    pressKey('Escape');
+    is(game.feedbackOpen, false, 'Esc closes');
+    is(game.phase, 'paused', 'still in mercy: Continue is the way back');
+    game.toggleMercy();
+    game.titling = wasTitling;
+  });
+
+  test('choosing a kind twice unchooses it', () => {
+    game.pickFeedbackKind('idea');
+    is(game.feedbackKind, 'idea', 'chosen');
+    game.pickFeedbackKind('idea');
+    is(game.feedbackKind, null, 'unchosen');
   });
 });
 

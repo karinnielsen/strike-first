@@ -158,6 +158,11 @@ or drops its full stop fails.
 | `arrows / wasd · space = mercy · m = sound · b = rankings` | footer | Utility |
 | `swipe to move · ❚❚ = mercy` | footer, touch | Utility |
 | `mercy` | touch pause button's accessible name | Utility |
+| `f feedback` / `feedback` | corner key tip / accessible name | Utility |
+| `Send feedback` / `Bug` `Idea` `Fun` / `say more (optional)` / `Send` | feedback card | Utility |
+| `Sent with the game's state and your browser type.` / `enter to send · esc to close` | feedback card | Utility |
+| `sending…` / `Not sent. Check your connection and try again.` | feedback card | Utility |
+| `Heard. Thank you.` | toast, feedback sent | Dojo |
 
 ## Appendix: dojo voices (not built)
 

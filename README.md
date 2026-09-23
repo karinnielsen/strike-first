@@ -32,6 +32,7 @@
 | Sound | M | speaker |
 | Rankings | B | menu |
 | Back | Esc | ← |
+| Feedback | F | speech bubble |
 
 ## Food
 
