@@ -1231,8 +1231,8 @@
   /* ALL VALLEY RANKINGS. UNR-134. A screen of its own, like dojo select,
      and built only from what the game already has: dojo select's title,
      spacing, dim-to-lit names and key line, and the defeat overlay's rows
-     and dojo lines. Settled from a mock on 17 September. It scrolls as a
-     page, so on a tablet a swipe here is a scroll - the stage, where a
+     and dojo lines. Settled from a mock on 17 September. Only the list
+     scrolls, so on a tablet a swipe on it is a scroll - the stage, where a
      swipe steers, is hidden while it is open. */
   /* Pinned to the top, not centred: the lists change length as you move
      between dojos, and a centred page moved the title and filter with them. */
@@ -1242,43 +1242,41 @@
        first dojo name. */
     justify-self: stretch;
     display: flex; flex-direction: column; justify-content: flex-start;
-    min-height: 100svh; box-sizing: border-box;
+    /* Exactly one screen, never more: the page doesn't scroll here, so the
+       title, the filter and Safari's own bars stay where they are. */
+    height: 100vh; height: 100svh; box-sizing: border-box;
   }
+  /* A drag beside the list still rubber-banded the page on an iPad,
+     sliding the title and filter up and back. */
+  html:has(.wrap.ranking) { overscroll-behavior: none; }
   .wrap.ranking header,
   .wrap.ranking .stage,
   .wrap.ranking .hint,
   .wrap.ranking .version { display: none; }
 
-  .rankings { display: grid; justify-items: center; text-align: center; padding: 56px 0; --bar: 68px; }
-
-  /* THE BAR. The title scrolls away; the filter stays pinned at the top,
-     and the column names pin just under it, so however far down the list
-     you are you can see which dojo it is and what each column means. The
-     way out is the corner's back control, which is fixed, so it never
-     scrolls away either. Asked for 17 September after landscape on an iPad
-     left none of that on screen. The page itself still scrolls - a swipe
-     is a scroll, as before - only these stick. The headers stay in the
-     table, below the crest, so they keep their columns' widths. */
+  /* THE FRAME. The title, the filter and the key line hold still, and only
+     the list between them scrolls, with its column names pinned to its
+     top, so however far down you are you can see which dojo it is and what
+     each column means. The way out is the corner's back control, which is
+     fixed. A scrolling page lost the title and, on an iPad, collapsed
+     Safari's bars with it. The headers stay in the table, below the crest,
+     so they keep their columns' widths. */
+  .rankings {
+    display: grid; justify-items: center; text-align: center; padding: 56px 0;
+    flex: 1; min-height: 0; grid-template-rows: auto auto minmax(0, 1fr) auto;
+  }
   .rankings .rankings-bar {
-    position: sticky; top: 0; z-index: 2;
-    justify-self: stretch; margin-top: 80px; height: var(--bar); padding: 12px 0; box-sizing: border-box;
+    justify-self: stretch; margin-top: 80px; height: 68px; padding: 12px 0; box-sizing: border-box;
     display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
-    background: var(--bg);
   }
   .rankings .rankings-bar ul { grid-column: 2; }
-  /* Pinned, the bar shares the top of the window with the corner keycaps,
-     and under 880px wide the filter reaches under them: on an iPad in
-     portrait, Eagle Fang sat beneath the speaker, and a tap there muted
-     instead of filtering. Measured: the filter clears the keycaps by 16px,
-     their own inset, from 880 up. Narrower, the bar is taller at the top
-     and 64px less far down the page, so it sits exactly where it did until
-     it pins - then the filter pins 16px under the keycaps, not beside
-     them. */
-  @media (max-width: 879px) {
-    .rankings { --bar: 132px; }
-    .rankings .rankings-bar { margin-top: 16px; padding-top: 76px; }
+  /* Full width, so a swipe anywhere across the middle scrolls it, and the
+     scroll stops at its ends rather than dragging the page. */
+  .rankings .list {
+    margin-top: 20px;                                /* 32px under the names, with the bar's padding */
+    justify-self: stretch; align-content: start; min-height: 0;
+    overflow-y: auto; overscroll-behavior: contain;
   }
-  .rankings .list { margin-top: 20px; }            /* 32px under the names, with the bar's padding */
   .rankings .keys { margin-top: 80px; }
   .rankings[hidden] { display: none; }
   .rankings .group { display: grid; justify-items: center; gap: 16px; }
@@ -1337,11 +1335,11 @@
   /* No text-align here: .board table already defaults to left, and setting
      it again would outrank the by-kind convention above. */
   .rankings .board td, .rankings .board th { height: 44px; padding: 0 24px; }
-  /* The same column names, larger here, and pinned: only the rankings
-     scroll, so only they need the header to stay put. */
+  /* The same column names, larger here, and pinned to the top of the list:
+     only the rankings scroll, so only they need the header to stay put. */
   .rankings .board th {
     font-size: 14px;
-    position: sticky; top: var(--bar); z-index: 1; background: var(--bg);
+    position: sticky; top: 0; z-index: 1; background: var(--bg);
   }
   /* The alignment convention lives with .board now, and covers both. */
   /* Every place is bone now, so the podium's stand out by weight rather
@@ -6610,6 +6608,7 @@ function openRankings() {
   pageEl.classList.add('ranking');
   rankingsEl.hidden = false;
   if (typeof scrollTo === 'function') scrollTo(0, 0);
+  listToTop();
   showBack();
   filterRankings(0);
 }
@@ -6628,18 +6627,16 @@ function closeRankings() {
   showBack();
 }
 
-// Changing dojo while scrolled down starts the new list at its top, just
-// under the bar, rather than wherever the old list happened to leave you.
-function keepListInView() {
-  if (typeof scrollTo !== 'function') return;
-  const stuckAt = scrollY + document.getElementById('rankings-title').getBoundingClientRect().bottom +
-    parseFloat(getComputedStyle(document.getElementById('rankings-bar')).marginTop);
-  if (scrollY > stuckAt) scrollTo(0, stuckAt);
+// Opening the rankings or changing dojo starts the list at its top, rather
+// than wherever the old list happened to leave you. Only the list scrolls.
+function listToTop() {
+  const list = rankingsEl.querySelector && rankingsEl.querySelector('.list');
+  if (list) list.scrollTop = 0;
 }
 
 // Resolves once the filter has settled, for tests.
 async function filterRankings(i) {
-  if (i !== rankingsAt) keepListInView();
+  if (i !== rankingsAt) listToTop();
   rankingsAt = i;
   const dojo = RANKINGS_FILTERS[i];
   const load = ++rankingsLoads;
