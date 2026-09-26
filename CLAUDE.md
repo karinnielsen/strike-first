@@ -70,15 +70,14 @@ Workspace **Unruly labs** (`UNR`), project
   leave the ID out of the branch name and write `Part of UNR-N`.
 - **An issue ID goes only where it should link,** never as context. A release
   PR lists one `Closes UNR-N` per issue.
-- **New issues:** ask first if none matches, and set `assignee: "me"`. A
-  title, then two to five lines: the problem, and "done when".
+- **New issues:** ask first if none matches.
 - **Two kinds of comment, no others:**
   - At `In Review`: what changed and how it was checked, in at most three
     bullets.
   - A handoff when work stops unfinished: status, blocker and next step, in
     three lines.
-- **Labels:** Feature, Improvement, Bug, Chore, Design, Delight, and Money
-  across them. Apply them freely; ask before creating one.
+- **Labels:** Design, Delight and Money, on top of the four type labels. Apply
+  them freely; ask before creating one.
 - **Ask before changing configuration:** workflow states, project structure,
   views.
 - **Leave old verbose issues alone,** unless you're touching one anyway: then
