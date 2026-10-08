@@ -1,8 +1,10 @@
 # Supabase pauses a free project after about a week with little activity.
-# A daily read of the live scores keeps it awake. A failed run means the
-# database didn't answer, and GitHub emails about it.
+# A daily read of both score databases keeps them awake. Each database is
+# its own job, so a failed run names the one that didn't answer, and GitHub
+# emails about it.
 #
-# Run it by hand from the Actions tab to test: it defaults to the sandbox.
+# Run it by hand from the Actions tab to test: it defaults to the sandbox,
+# and "both" runs exactly what the daily schedule runs.
 
 name: keep scores awake
 
@@ -14,7 +16,7 @@ on:
       target:
         description: Which database to read
         type: choice
-        options: [sandbox, production]
+        options: [sandbox, production, both]
         default: sandbox
 
 permissions:
@@ -22,10 +24,16 @@ permissions:
 
 jobs:
   ping:
+    name: ping ${{ matrix.target }}
     runs-on: ubuntu-latest
+    strategy:
+      # One database failing must not cancel the read of the other.
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON((github.event_name == 'schedule' || inputs.target == 'both') && '["production","sandbox"]' || format('["{0}"]', inputs.target)) }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: lts/*
-      - run: node .github/ping-scores.js "${{ inputs.target || 'production' }}"
+      - run: node .github/ping-scores.js "${{ matrix.target }}"

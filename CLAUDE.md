@@ -190,7 +190,8 @@ after it.
   hand in each project's SQL Editor.
 - **Only a publishable key may appear in the page.** A test enforces it.
 - **Free projects pause after a quiet week,** so `keep-scores-awake.yml`
-  reads production daily. Run by hand, it defaults to the sandbox.
+  reads both databases daily, one job each. Run by hand, it defaults to
+  the sandbox; `both` runs what the schedule runs.
 - **To check permissions without writing a row,** send an insert that breaks
   a `check` constraint. An allowed insert fails with `23514`, a forbidden one
   with `42501`. Updates and deletes should always return `42501`.
