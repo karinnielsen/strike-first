@@ -67,7 +67,13 @@
     min-height: 100svh;
     display: grid;
     place-items: center;
-    background: var(--bg);
+    /* A gradient of one colour, not a flat fill. Chromium draws a tile of
+       nothing but a flat colour as a shortcut, and on a wide-gamut display
+       (Dia on the BenQ) the shortcut lands a shade lighter than painted
+       tiles. In a run the board is its own layer, so whole rows of page
+       went flat and a hard band crossed the screen at a quarter-height
+       tile edge. A gradient always gets painted, so every tile matches. */
+    background: linear-gradient(var(--bg), var(--bg)) var(--bg);
     color: var(--text);
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   }
