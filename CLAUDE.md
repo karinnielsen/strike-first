@@ -1,3 +1,5 @@
+@AGENTS.md
+
 # Working on Strike First
 
 How this repo is worked on with Claude Code: the rules a session follows,
