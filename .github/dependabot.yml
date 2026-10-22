@@ -1,0 +1,16 @@
+# Strike First has no package manifest, so GitHub Actions is the only
+# ecosystem to watch. Patch and minor updates merge themselves once CI
+# passes (dependabot-auto-merge.yml); majors wait for review.
+
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # Patch and minor bumps share one PR. A major arrives on its own, so it
+    # never rides along in a PR that merges itself.
+    groups:
+      actions:
+        patterns: ['*']
+        update-types: [minor, patch]
