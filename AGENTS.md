@@ -1,8 +1,8 @@
 <!-- brain-pointer -->
-# Karin's shared rules
+# Shared rules
 
 Before starting any task, before answering anything, read Brain's `AGENTS.md` and follow it for the
-rest of the task. It holds the rules every agent working with Karin shares, and they apply to every
+rest of the task. It holds the rules every agent shares, and they apply to every
 project. Read it again at the start of each new task, because it changes.
 
 - In a Codex cloud task: `/workspace/brain/AGENTS.md`.
