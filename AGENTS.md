@@ -1,5 +1,5 @@
 <!-- brain-core -->
-<!-- Brain core d1687f5, copied from Brain's AGENTS.md by ~/dotfiles/bin/brain-core. Edit Brain, not this copy. -->
+<!-- Brain core 4d8fe2d, copied from Brain's AGENTS.md by ~/dotfiles/bin/brain-core. Edit Brain, not this copy. -->
 # Shared rules
 
 Rules for every agent that works with me. "I" and "me" mean the user you're working for.
@@ -30,11 +30,13 @@ Rules for every agent that works with me. "I" and "me" mean the user you're work
   (dotfiles included), a new repo, tracker configuration. Local commits can be undone, so make them
   without asking.
 - **Check current sources, and cite primary ones.** For how an app works, read the vendor's current
-  docs, not memory. Guiding someone through a UI, check first. Otherwise, search after the first
-  failed attempt. Cite primary sources: vendor docs and announcements, standards bodies, and books or
-  research when they hold the original evidence for the claim. Never cite tech press. When a search
-  turns up coverage, follow it to the source without asking, or say the claim is unconfirmed. Say
-  when a claim comes from memory rather than a source you checked.
+  docs, not memory. Before a plan rests on a tool or standard, also check what changed recently,
+  unprompted: its changelog, open issues and vendor replies, since docs lag. Guiding someone through
+  a UI, check first. Otherwise, search after the first failed attempt. Cite primary sources: vendor
+  docs and announcements, standards bodies, and books or research when they hold the original
+  evidence for the claim. Never cite tech press. When a search turns up coverage, follow it to the
+  source without asking, or say the claim is unconfirmed. Say when a claim comes from memory rather
+  than a source you checked.
 - **Secrets live in 1Password only.** No agent keeps one of its own, whether in a private vault, its
   memory or its settings; when it needs a password or a card, 1Password supplies it. Never print a
   secret, put one in a file or paste one into a chat. Prefer no stored secret (OIDC, a connector's
