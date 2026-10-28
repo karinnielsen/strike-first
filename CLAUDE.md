@@ -17,30 +17,23 @@ Also read:
 
 ## Working rules
 
-- **Ask before acting.** "Is there a way…", "what about…" and "could we…" get
-  an answer and a proposal, not an implementation. Exploring is never a
-  request to build. When unsure, ask.
-- **Confirm before anything outward-facing:** committing, pushing, creating
-  repos, changing Linear configuration. Issue statuses and the two kinds of
-  Linear comment don't need confirming.
+Brain's shared rules (through `AGENTS.md`) apply here. These are this
+repo's additions and overrides.
+
+- **Commits need confirming here too,** unlike Brain's default for local
+  commits. Issue statuses and the two kinds of Linear comment don't.
 - **Less is more.** Push back on scope. This governs what ships; writing an
   idea down costs nothing.
-- **Show two versions rather than describing the difference.** Change one
-  variable, judge at actual size, and never shrink two versions to fit side
-  by side. Keep the losing version on a branch (e.g. `assets/pixel-sprites`).
-- **Say when another tool is the right one.** Detailed artwork goes to
-  ChatGPT or Astra; never hand-code an illustration as SVG. Fun, music and
-  motion feel are judged by a play test or a specialist tool. Contrast
-  checks, research and structural code belong here.
-- **Anything new in the stack arrives with a safe way to test it.** Before
-  the first commit that writes to or calls something new, define what a
-  local run looks like and how it is told apart from the real thing.
+- **Comparing two versions:** never shrink them to fit side by side, and
+  keep the losing version on a branch (e.g. `assets/pixel-sprites`).
+- **Which tool:** detailed artwork goes to ChatGPT or Astra; never hand-code
+  an illustration as SVG. Fun, music and motion feel are judged by a play
+  test or a specialist tool. Contrast checks, research and structural code
+  belong here.
 - **Shell commands must match the allowlist** in `.claude/settings.json`, or
   they prompt. Each part of `a && b` is checked separately. Never use
   `git -C`. A command that keeps prompting belongs in the shared file, not in
   "always allow".
-- **Docs and comments read as specs:** what is true, what to do, and why.
-  Never write about people ("X wants", "X's call").
 - **A commit message is one line:** what changed, in the present tense.
   Reasoning worth keeping goes where it will be read again: a comment beside
   the code, a rule in this file, or the Linear issue. Older commits keep
@@ -64,9 +57,9 @@ Workspace **Unruly labs** (`UNR`), project
 
   Promotion out of `Idea` is always deliberate. Once work starts, the status
   follows the code.
-- **One issue per branch,** named `unr-N-short-slug`. Every branch merges
-  through a PR (`gh pr create`, then `gh pr merge --merge`), never locally. A
-  release branch only receives merges from issue branches.
+- **Branches** are named `unr-N-short-slug` and merge through a PR
+  (`gh pr create`, then `gh pr merge --merge`), never locally. A release
+  branch only receives merges from issue branches.
 - **Only a merged PR closes an issue,** by its branch name. `Closes UNR-N` in
   a commit does nothing. Check the status after merging. For partial work,
   leave the ID out of the branch name and write `Part of UNR-N`.
@@ -78,10 +71,10 @@ Workspace **Unruly labs** (`UNR`), project
     bullets.
   - A handoff when work stops unfinished: status, blocker and next step, in
     three lines.
-- **Labels:** Design, Delight and Money, on top of the four type labels. Apply
-  them freely; ask before creating one.
-- **Ask before changing configuration:** workflow states, project structure,
-  views.
+- **Labels:** Design and Delight, on top of the four type labels. Apply them
+  freely.
+- **Linear configuration** that needs asking first includes workflow states,
+  project structure and views.
 - **Leave old verbose issues alone,** unless you're touching one anyway: then
   trim it.
 
