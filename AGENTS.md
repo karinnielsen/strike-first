@@ -1,5 +1,5 @@
 <!-- brain-core -->
-<!-- Brain core b959082, copied from Brain's AGENTS.md by ~/dotfiles/bin/brain-core. Edit Brain, not this copy. -->
+<!-- Brain core d1687f5, copied from Brain's AGENTS.md by ~/dotfiles/bin/brain-core. Edit Brain, not this copy. -->
 # Shared rules
 
 Rules for every agent that works with me. "I" and "me" mean the user you're working for.
@@ -48,7 +48,8 @@ Rules for every agent that works with me. "I" and "me" mean the user you're work
 
 ## Rules for other tasks
 
-When planning work, shipping code, changing a rule or adding a tool, first read Brain's `AGENTS.md`
-for the rules those tasks need: `~/Code/personal/brain/AGENTS.md` on a Mac, or `AGENTS.md` in the
+Procedures for planning work, shipping code, changing a rule, adding a tool and visual work are
+skills in Brain's `skills/` folder, one `SKILL.md` each. Where your tool hasn't loaded them, read
+the one the task needs: `~/Code/personal/brain/skills/` on a Mac, or `skills/` in the
 `karinnielsen/brain` GitHub repo elsewhere.
 <!-- /brain-core -->
