@@ -140,12 +140,12 @@ motion turns it off.
 
 Each is a milestone, and each ships as a version.
 
-- **Make it sing** — sound and motion, built once the layout has settled
+- **The All Valley** — pick a dojo, sign your initials, and land on a player
+  board and a dojo board kept in a database
 - **Dojo recruitment** — a challenge link that carries your score and belt
-- **Choose your fighter** — pick a dojo, then a character
+- **Choose your fighter** — pick a character
 - **Forbidden techniques** — secrets, and modes you earn rather than pick
-- **The All Valley** — a tournament: accounts, and a leaderboard that outlives
-  one browser
+- **Sekai Taikai** — accounts, and playing against each other
 
 ## How it's made
 
