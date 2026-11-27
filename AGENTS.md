@@ -1,5 +1,5 @@
 <!-- brain-core -->
-<!-- Brain core 4d8fe2d, copied from Brain's AGENTS.md by ~/dotfiles/bin/brain-core. Edit Brain, not this copy. -->
+<!-- Brain core 2eb1e6e, copied from Brain's AGENTS.md by ~/dotfiles/bin/brain-core. Edit Brain, not this copy. -->
 # Shared rules
 
 Rules for every agent that works with me. "I" and "me" mean the user you're working for.
@@ -45,8 +45,11 @@ Rules for every agent that works with me. "I" and "me" mean the user you're work
   that needs it gets it from 1Password, never pasted in. A secret that leaks is reported at once and
   rotated; deleting it isn't enough.
 - Keep existing commands working; ask before removing anything that's installed or holds data.
-- **A command line before a GUI.** Before asking me to click through an app, check whether it has a
-  CLI or headless mode that can do the step, and set that up once instead of handing me repeats.
+- **Do the clicks yourself.** When a step happens in an app or on a web page, do it yourself (a
+  command line first, then the browser panel or computer use) rather than sending me instructions,
+  or asking me to copy things or send screenshots. Hand over only what must be mine: signing in, any
+  secret, approving a permission, and the click that creates keys, spends money or sends something.
+  Then name that exact click.
 
 ## Rules for other tasks
 
